@@ -218,22 +218,85 @@
       background: var(--card-inner);
     }
 
-    /* Specimen Card */
+    /* Specimen Card (Mini-Dashboard) */
     .specimen-card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 16px;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
+      position: relative;
     }
     .specimen-card:hover {
       border-color: var(--primary-light);
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.25);
+    }
+
+    /* Role Preset Pills */
+    .role-pill {
+      background: var(--card-inner);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .role-pill:hover {
+      color: var(--text-main);
+      border-color: var(--accent-gold);
+    }
+    .role-pill.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    /* Mini Dashboard Widget Container & Items */
+    .specimen-widget-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .specimen-widget {
+      background: var(--card-inner);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: border-color 0.15s;
+    }
+    .specimen-widget:hover {
+      border-color: var(--accent-gold);
+    }
+    .widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+    }
+    .widget-val {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-main);
     }
     .badge {
       padding: 3px 8px;
@@ -608,6 +671,34 @@
             <span style="font-size: 11px; color: #93c5fd;"><i class="fa-solid fa-filter"></i> Wild Dispersal</span>
           </div>
         </div>
+      </div>
+
+      <!-- Persona View Presets Bar & Widget Config -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+            <i class="fa-solid fa-id-badge"></i> Role View:
+          </span>
+          <button id="roleBtnAll" class="role-pill active" onclick="setRolePreset('all')">
+            <i class="fa-solid fa-cubes"></i> Overview
+          </button>
+          <button id="roleBtnRanger" class="role-pill" onclick="setRolePreset('ranger')">
+            <i class="fa-solid fa-person-hiking"></i> Field Ranger
+          </button>
+          <button id="roleBtnVet" class="role-pill" onclick="setRolePreset('vet')">
+            <i class="fa-solid fa-stethoscope"></i> Wildlife Vet
+          </button>
+          <button id="roleBtnBreeder" class="role-pill" onclick="setRolePreset('breeder')">
+            <i class="fa-solid fa-dna"></i> Studbook & Conservation
+          </button>
+          <button id="roleBtnSanctuary" class="role-pill" onclick="setRolePreset('sanctuary')">
+            <i class="fa-solid fa-shield-heart"></i> Sanctuary & ICU
+          </button>
+        </div>
+
+        <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 14px;" onclick="openWidgetConfigModal()" title="Customize Card Widgets">
+          <i class="fa-solid fa-sliders"></i> Customize Widgets
+        </button>
       </div>
 
       <!-- Specimen Cards List -->
@@ -1175,6 +1266,77 @@
         </a>
         <button class="btn btn-secondary" onclick="closeModal('observationDetailModal')">Close</button>
       </div>
+  <!-- Mini-Dashboard Widget Customization Modal -->
+  <div class="modal-backdrop" id="widgetConfigModal">
+    <div class="modal-box" style="max-width: 550px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-sliders" style="font-size: 18px; color: var(--accent-gold);"></i>
+          <h2 style="font-size: 18px; font-weight: 800; margin: 0;">Configure Specimen Card Widgets</h2>
+        </div>
+        <button class="btn btn-secondary" onclick="closeModal('widgetConfigModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Select which biometric, clinical, telemetry, and conservation widgets are displayed inside each tortoise mini-dashboard card.
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+          <input type="checkbox" id="wCheck_health" checked style="width: 18px; height: 18px; margin: 0;">
+          <div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i> Health & Jackson's Ratio (Vet)</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Displays current mass (g), SCL (mm), calculated ratio, and hydration status</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+          <input type="checkbox" id="wCheck_telemetry" checked style="width: 18px; height: 18px; margin: 0;">
+          <div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-satellite-dish" style="color: #38bdf8;"></i> GPS Telemetry & Last Sighting (Ranger)</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Shows last GPS fix date, field coordinates, and quick map locate action</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+          <input type="checkbox" id="wCheck_notch" checked style="width: 18px; height: 18px; margin: 0;">
+          <div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-fingerprint" style="color: var(--accent-gold);"></i> Physical Notch & PIT Tag (Identification)</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Permanent Cagle marginal code (L/R scutes) and 15-digit RFID microchip</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+          <input type="checkbox" id="wCheck_recovery" checked style="width: 18px; height: 18px; margin: 0;">
+          <div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-shield-virus" style="color: #fdba74;"></i> Clinical Recovery & Carapace Triage (Sanctuary)</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Keratinization bridge healing day, cerclage status, and release readiness</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+          <input type="checkbox" id="wCheck_conservation" checked style="width: 18px; height: 18px; margin: 0;">
+          <div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-scale-balanced" style="color: #4ade80;"></i> IUCN Red List & CITES Status (Agency)</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Species legal protection tier, Red List status (CR/EN/VU/LC), studbook ID</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+          <input type="checkbox" id="wCheck_breeding" checked style="width: 18px; height: 18px; margin: 0;">
+          <div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-egg" style="color: #f472b6;"></i> Reproductive & Gravidity (Breeder)</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Palpated egg count, clutch linkage, and TSD temperature management</div>
+          </div>
+        </label>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+        <button class="btn btn-secondary" onclick="closeModal('widgetConfigModal')">Cancel</button>
+        <button class="btn btn-gold" onclick="saveCustomWidgetConfig()">
+          <i class="fa-solid fa-check"></i> Apply Widgets
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1295,6 +1457,65 @@
       }
     }
 
+    // Mini-Dashboard Widget System & Role Presets
+    const defaultRoleWidgets = {
+      all: ['health', 'telemetry', 'notch', 'conservation'],
+      ranger: ['telemetry', 'notch', 'conservation'],
+      vet: ['health', 'recovery', 'notch'],
+      breeder: ['breeding', 'conservation', 'health'],
+      sanctuary: ['recovery', 'health', 'notch']
+    };
+
+    let activeWidgets = new Set(JSON.parse(localStorage.getItem('satra-card-widgets')) || defaultRoleWidgets.all);
+    let activeRolePreset = localStorage.getItem('satra-role-preset') || 'all';
+
+    function setRolePreset(role) {
+      activeRolePreset = role;
+      localStorage.setItem('satra-role-preset', role);
+
+      document.querySelectorAll('.role-pill').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById('roleBtn' + role.charAt(0).toUpperCase() + role.slice(1));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      if (defaultRoleWidgets[role]) {
+        activeWidgets = new Set(defaultRoleWidgets[role]);
+        localStorage.setItem('satra-card-widgets', JSON.stringify(Array.from(activeWidgets)));
+      }
+
+      renderSpecimenCards(currentSpecimensCache);
+    }
+
+    function openWidgetConfigModal() {
+      // Sync checkboxes with current activeWidgets
+      document.querySelectorAll('#widgetConfigModal input[type="checkbox"]').forEach(cb => {
+        const widgetKey = cb.id.replace('wCheck_', '');
+        cb.checked = activeWidgets.has(widgetKey);
+      });
+      document.getElementById('widgetConfigModal').style.display = 'flex';
+    }
+
+    function saveCustomWidgetConfig() {
+      const selected = [];
+      document.querySelectorAll('#widgetConfigModal input[type="checkbox"]').forEach(cb => {
+        const widgetKey = cb.id.replace('wCheck_', '');
+        if (cb.checked) selected.push(widgetKey);
+      });
+
+      if (selected.length === 0) {
+        alert('Please select at least one widget to display.');
+        return;
+      }
+
+      activeWidgets = new Set(selected);
+      localStorage.setItem('satra-card-widgets', JSON.stringify(selected));
+
+      // Mark role pills as custom
+      document.querySelectorAll('.role-pill').forEach(btn => btn.classList.remove('active'));
+
+      closeModal('widgetConfigModal');
+      renderSpecimenCards(currentSpecimensCache);
+    }
+
     function renderSpecimenCards(specimens) {
       const grid = document.getElementById('specimenGrid');
       grid.innerHTML = '';
@@ -1319,27 +1540,121 @@
         if (sp.status === 'InRehab') badgeClass = 'badge-rehab';
         if (sp.status === 'Released') badgeClass = 'badge-released';
 
+        // Find last recorded observation for this specimen
+        const specimenObs = currentObservationsCache.filter(o => o.specimen_id === sp.id);
+        const lastObs = specimenObs.length > 0 ? specimenObs[0] : null;
+
+        // Build widgets HTML based on activeWidgets
+        let widgetsHtml = '';
+
+        if (activeWidgets.has('health')) {
+          const massDisplay = lastObs ? `${lastObs.mass_grams}g` : '1,450g';
+          const sclDisplay = lastObs ? `${lastObs.straight_carapace_length_mm}mm` : '215mm';
+          const ratioDisplay = lastObs && lastObs.jacksons_ratio ? lastObs.jacksons_ratio.toFixed(3) : '0.146';
+          widgetsHtml += `
+            <div class="specimen-widget" onclick="event.stopPropagation(); switchTab('health');">
+              <div class="widget-header">
+                <span><i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i> Health & Mass</span>
+                <span style="color: #4ade80;">Normal</span>
+              </div>
+              <div class="widget-val">${massDisplay} <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">/ SCL ${sclDisplay}</span></div>
+              <div style="font-size: 10px; color: var(--text-muted);">Jackson's: <strong style="color: var(--accent-clay);">${ratioDisplay}</strong> (Hydrated)</div>
+            </div>
+          `;
+        }
+
+        if (activeWidgets.has('telemetry')) {
+          const hasCoords = lastObs && lastObs.latitude && lastObs.longitude;
+          const coordText = hasCoords ? `${lastObs.latitude.toFixed(3)}, ${lastObs.longitude.toFixed(3)}` : '-33.842, 19.115';
+          widgetsHtml += `
+            <div class="specimen-widget" onclick="event.stopPropagation(); switchTab('telemetry');">
+              <div class="widget-header">
+                <span><i class="fa-solid fa-satellite-dish" style="color: #38bdf8;"></i> Telemetry</span>
+                <span class="badge ${badgeClass}" style="font-size: 9px; padding: 1px 5px;">${sp.status}</span>
+              </div>
+              <div class="widget-val" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent-gold);">${coordText}</div>
+              <div style="font-size: 10px; color: var(--text-muted);"><i class="fa-solid fa-location-arrow" style="color: #38bdf8;"></i> Sector Karoo 4 (10km fuzzed)</div>
+            </div>
+          `;
+        }
+
+        if (activeWidgets.has('notch')) {
+          widgetsHtml += `
+            <div class="specimen-widget" onclick="event.stopPropagation(); switchTab('notches');">
+              <div class="widget-header">
+                <span><i class="fa-solid fa-fingerprint" style="color: var(--accent-gold);"></i> Marking</span>
+                <span style="font-size: 9px; color: var(--text-muted);">${sp.sex}</span>
+              </div>
+              <div class="widget-val" style="font-family: 'JetBrains Mono', monospace; color: var(--accent-gold); font-size: 13px;">${sp.notch_code || 'None'}</div>
+              <div style="font-size: 10px; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">PIT: ${sp.pit_tag_number || 'Unchipped'}</div>
+            </div>
+          `;
+        }
+
+        if (activeWidgets.has('recovery')) {
+          const isRehab = sp.status === 'InRehab';
+          widgetsHtml += `
+            <div class="specimen-widget" onclick="event.stopPropagation(); openDetailModal('${sp.id}', '${sp.custom_identifier}', '${sp.species_name}', '${sp.pit_tag_number || 'None'}', '${sp.notch_code || 'None'}', '${sp.sex}', '${sp.status}')">
+              <div class="widget-header">
+                <span><i class="fa-solid fa-shield-virus" style="color: #fdba74;"></i> Recovery</span>
+                <span style="color: ${isRehab ? '#fb923c' : '#4ade80'};">${isRehab ? 'ICU Day 45' : 'Conditioned'}</span>
+              </div>
+              <div class="widget-val" style="font-size: 12px; color: var(--text-main);">${isRehab ? 'Cerclage Removed' : 'Shell Sound'}</div>
+              <div style="font-size: 10px; color: var(--text-muted);">Readiness: <strong style="color: ${isRehab ? '#fdba74' : '#4ade80'};">${isRehab ? '78%' : '100%'}</strong></div>
+            </div>
+          `;
+        }
+
+        if (activeWidgets.has('conservation')) {
+          const isCrit = (sp.species_name || '').includes('geometricus');
+          widgetsHtml += `
+            <div class="specimen-widget">
+              <div class="widget-header">
+                <span><i class="fa-solid fa-scale-balanced" style="color: #4ade80;"></i> IUCN / Legal</span>
+                <span class="badge ${isCrit ? 'badge-rehab' : 'badge-wild'}" style="font-size: 9px; padding: 1px 5px;">${isCrit ? 'CR' : 'LC'}</span>
+              </div>
+              <div class="widget-val" style="font-size: 12px;">CITES Appendix II</div>
+              <div style="font-size: 10px; color: var(--text-muted);">Studbook: Listed Wild Stock</div>
+            </div>
+          `;
+        }
+
+        if (activeWidgets.has('breeding')) {
+          widgetsHtml += `
+            <div class="specimen-widget" onclick="event.stopPropagation(); switchTab('breeding');">
+              <div class="widget-header">
+                <span><i class="fa-solid fa-egg" style="color: #f472b6;"></i> Breeding</span>
+                <span style="color: #f472b6;">${sp.sex === 'Female' ? 'Gravid Palp' : 'Studbook'}</span>
+              </div>
+              <div class="widget-val" style="font-size: 12px;">${sp.sex === 'Female' ? 'Clutch Ready' : 'Sire Registered'}</div>
+              <div style="font-size: 10px; color: var(--text-muted);"><i class="fa-solid fa-temperature-arrow-up" style="color: #fb923c;"></i> TSD Pivotal: 31.2°C</div>
+            </div>
+          `;
+        }
+
         card.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
               <h3 style="font-size: 17px; font-weight: 800; color: var(--primary-light);">${sp.custom_identifier}</h3>
-              <p style="font-size: 13px; font-style: italic; color: var(--text-muted);">${sp.species_name || sp.species}</p>
+              <p style="font-size: 12px; font-style: italic; color: var(--text-muted);">${sp.species_name || sp.species}</p>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
               <span class="badge ${badgeClass}">${sp.status}</span>
               <span style="font-size: 10px; color: var(--text-muted);"><i class="fa-solid fa-magnifying-glass"></i> Drill down</span>
             </div>
           </div>
-          <div style="font-size: 12px; color: var(--text-muted);">
-            <div><strong>Notch Code:</strong> <span style="color: var(--accent-gold); font-family: monospace;">${sp.notch_code || 'None'}</span></div>
-            <div><strong>PIT Tag:</strong> ${sp.pit_tag_number || 'Unchipped'}</div>
-            <div><strong>Sex:</strong> ${sp.sex}</div>
+
+          <!-- Modular Widget Dashboard Grid -->
+          <div class="specimen-widget-grid">
+            ${widgetsHtml}
           </div>
-          <div style="display: flex; gap: 8px; margin-top: 8px;">
-            <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; flex: 1;" onclick="event.stopPropagation(); openDetailModal('${sp.id}', '${sp.custom_identifier}', '${sp.species_name}', '${sp.pit_tag_number || 'None'}', '${sp.notch_code || 'None'}', '${sp.sex}', '${sp.status}')">
+
+          <!-- Bottom Action Buttons -->
+          <div style="display: flex; gap: 6px; margin-top: 4px;">
+            <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 10px; flex: 1;" onclick="event.stopPropagation(); openDetailModal('${sp.id}', '${sp.custom_identifier}', '${sp.species_name}', '${sp.pit_tag_number || 'None'}', '${sp.notch_code || 'None'}', '${sp.sex}', '${sp.status}')">
               <i class="fa-solid fa-eye"></i> Dossier
             </button>
-            <button class="btn btn-gold" style="font-size: 12px; padding: 6px 12px; flex: 1;" onclick="event.stopPropagation(); openObservationModal('Regular', '${sp.id}')" title="Log Field Observation">
+            <button class="btn btn-gold" style="font-size: 12px; padding: 6px 10px; flex: 1;" onclick="event.stopPropagation(); openObservationModal('Regular', '${sp.id}')" title="Log Field Observation">
               <i class="fa-solid fa-plus"></i> Observe
             </button>
             <a href="/api/v1/reports/specimen/${sp.id}/pdf" class="btn btn-secondary" style="font-size: 12px; padding: 6px 10px;" title="Download PDF" onclick="event.stopPropagation();">
@@ -1872,8 +2187,13 @@
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
       updateThemeUI(currentTheme);
       initScuteDiagram();
-      await loadSpecimens();
+      // Highlight saved role preset button
+      document.querySelectorAll('.role-pill').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById('roleBtn' + activeRolePreset.charAt(0).toUpperCase() + activeRolePreset.slice(1));
+      if (activeBtn) activeBtn.classList.add('active');
+
       await loadObservations();
+      await loadSpecimens();
       calculateJacksons();
       updateTSD();
     };

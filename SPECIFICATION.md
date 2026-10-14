@@ -117,6 +117,35 @@ flowchart TD
    - Progressive local thumbnail generation.
    - Multi-resolution pipeline: WebP thumbnail (150px) for instant scroll, balanced display image (1200px), and background RAW/high-res sync when connected to Wi-Fi.
 
+### 3.6 Reproductive & Breeding Management (Conservation Studbook)
+1. **Mating & Courtship Logging**:
+   - Pairing records: Female (Dam) ID, Male (Sire) ID, cohabitation enclosure/field GPS.
+   - Courtship behaviors observed: mounting, head bobbing, ramming/circling, vocalization, successful copulation.
+2. **Gravidity & Pre-Nesting Monitoring**:
+   - Inguinal fossa palpation logs (calcified egg detection, estimated clutch size).
+   - Radiography (X-Ray) and Ultrasound media linkage with egg count and calcification scoring.
+   - Pre-oviposition behavioral flags: pacing, exploratory digging, appetite changes.
+3. **Nesting & Oviposition Event Recording**:
+   - Exact nest location (GPS point with anti-poaching security).
+   - Nest micro-environment: soil type, depth (cm), chamber diameter, vegetation shade percentage, soil moisture, ground temperature.
+   - In-situ vs. ex-situ decision: nest protected in place (cage/predator barrier) or collected for artificial incubation.
+4. **Clutch & Individual Egg Management**:
+   - Clutch ID auto-generation linked to Dam and Sire.
+   - Clutch metrics: total eggs, viable eggs, damaged/broken, infertile/undeveloped.
+   - Individual egg tracking:
+     - Egg code (e.g., `CLUTCH-042-E01`), weight ($0.1g$ precision), length and width ($0.1mm$ precision).
+     - Orientation marking flag (ensuring egg is not inverted after embryonic chalking).
+5. **Incubation & Temperature-Dependent Sex Determination (TSD)**:
+   - Target sex ratio management:
+     - Tortoises exhibit Pattern Ia TSD (temperatures below pivotal ~$30^\circ\text{C}$ yield predominantly males; temperatures above ~$31.5^\circ\text{C}$ yield females; species-specific customizable pivotal thresholds).
+   - Incubator environment logging: temperature, relative humidity, substrate (vermiculite/perlite:water ratio by weight).
+   - **Candling Timeline**: Regular embryonic development milestones (chalking band expansion, blood vessel spidering, eye spot, movement, late-term absorption, embryo mortality).
+6. **Hatching, Emergence & Neonate Lineage Enrollment**:
+   - Pipping date, emergence date, incubation duration in days.
+   - Neonate health assessment: emergence mass ($g$), initial SCL ($mm$), yolk sac status (absorbed / unabsorbed / rupture risk), egg tooth presence, scute anomalies.
+   - Automatic generation of juvenile specimen record, inheriting taxonomic data and establishing studbook pedigree (Sire, Dam, F-generation level).
+   - Juvenile survival cohorts: 30-day, 90-day, and 1-year monitoring protocols.
+
 ---
 
 ## 4. Technical Architecture
@@ -208,16 +237,59 @@ erDiagram
     SPECIMEN ||--o{ PHOTO_RECORD : "contains"
     SPECIMEN ||--o{ TREATMENT_RECORD : "undergoes"
     SPECIES_TAXONOMY ||--o{ SPECIMEN : "classifies"
-    
+    SPECIMEN ||--o{ BREEDING_PAIRING : "participates as Dam/Sire"
+    BREEDING_PAIRING ||--o{ CLUTCH : "produces"
+    CLUTCH ||--o{ EGG_RECORD : "contains"
+    EGG_RECORD ||--o| SPECIMEN : "hatches into (neonate)"
+
     SPECIMEN {
         uuid id PK
         string custom_identifier UK
         string pit_tag_number
         string notch_code
         uuid species_id FK
+        uuid dam_specimen_id FK
+        uuid sire_specimen_id FK
         string sex "Male|Female|Juvenile|Undetermined"
-        string status "Wild|Intake|InRehab|Deceased|Released"
+        string status "Wild|Intake|InRehab|Breeding|Deceased|Released"
         timestamp created_at
+    }
+
+    BREEDING_PAIRING {
+        uuid id PK
+        uuid dam_id FK
+        uuid sire_id FK
+        timestamp pairing_date
+        string enclosure_or_gps
+        string courtship_behaviors
+        boolean copulation_confirmed
+    }
+
+    CLUTCH {
+        uuid id PK
+        uuid pairing_id FK
+        uuid dam_id FK
+        string clutch_code UK
+        timestamp oviposition_date
+        geometry nest_location_point
+        int total_eggs
+        int viable_eggs
+        string incubation_mode "InSitu|Artificial"
+        float target_incubation_temp_c
+        string predicted_sex "PredominantlyMale|PredominantlyFemale|Mixed"
+    }
+
+    EGG_RECORD {
+        uuid id PK
+        uuid clutch_id FK
+        string egg_code UK
+        float initial_mass_grams
+        float length_mm
+        float width_mm
+        string fertility_status "Fertile|Infertile|EarlyDeath|Viable"
+        timestamp pipping_date
+        timestamp emergence_date
+        uuid neonate_specimen_id FK
     }
 
     SIGHTING {
@@ -234,11 +306,13 @@ erDiagram
     HEALTH_INSPECTION {
         uuid id PK
         uuid specimen_id FK
-        string inspection_type "Intake|Scheduled|AdHoc"
+        string inspection_type "Intake|Scheduled|AdHoc|PreBreeding|GravidCheck"
         float mass_grams
         float straight_carapace_length_mm
         float plastron_length_mm
         int body_condition_score "1 to 5"
+        boolean eggs_palpated
+        int estimated_egg_count
         string shell_condition_notes
         jsonb systemic_symptoms
         timestamp inspected_at
@@ -248,7 +322,8 @@ erDiagram
         uuid id PK
         uuid specimen_id FK
         uuid inspection_id FK
-        string photo_type "Carapace|Plastron|Head|Injury|General"
+        uuid egg_id FK
+        string photo_type "Carapace|Plastron|Head|Injury|Radiograph|EggCandling|Nest"
         string local_uri
         string cloud_url
         float[] feature_embedding "Vector(512)"

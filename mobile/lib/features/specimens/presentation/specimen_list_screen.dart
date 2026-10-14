@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/colors.dart';
 import '../models/specimen.dart';
 import 'intake_screen.dart';
+import 'specimen_detail_screen.dart';
 
 class SpecimenListScreen extends StatefulWidget {
   const SpecimenListScreen({super.key});
@@ -154,7 +155,12 @@ class _SpecimenListScreenState extends State<SpecimenListScreen> {
                       size: 20,
                     ),
                     onTap: () {
-                      // Navigate to detail
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SpecimenDetailScreen(specimen: sp),
+                        ),
+                      );
                     },
                   ),
                 );

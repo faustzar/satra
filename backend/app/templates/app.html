@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SATRA - Tortoise Conservation, Rescue & Telemetry Platform</title>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Google Fonts & Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    :root {
+      --primary: #2D5A27;
+      --primary-light: #4ade80;
+      --accent-gold: #D4A373;
+      --earth-brown: #583101;
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      background: #090d16;
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+    .brand i { font-size: 28px; color: var(--primary-light); }
+    .brand-title { font-size: 18px; font-weight: 800; letter-spacing: 0.5px; }
+    .brand-sub { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Navigation Tabs */
+    nav {
+      display: flex;
+      gap: 6px;
+      background: #151f30;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.05); }
+    .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(45,90,39,0.4); }
+
+    /* Main Content Container */
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 16px 80px 16px;
+    }
+
+    .tab-content { display: none; animation: fadeIn 0.25s ease; }
+    .tab-content.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .card-title { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+    /* Grid Layouts */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+    /* Specimen Card */
+    .specimen-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 16px;
+      transition: all 0.2s;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .specimen-card:hover {
+      border-color: var(--primary-light);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .badge {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-wild { background: #064e3b; color: #6ee7b7; }
+    .badge-rehab { background: #7c2d12; color: #fdba74; }
+    .badge-released { background: #1e3a8a; color: #93c5fd; }
+
+    /* Buttons */
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn:hover { background: #23481e; }
+    .btn-secondary { background: #334155; color: var(--text-main); }
+    .btn-secondary:hover { background: #475569; }
+    .btn-gold { background: var(--accent-gold); color: #000; font-weight: 700; }
+    .btn-gold:hover { background: #c59364; }
+
+    /* Interactive Scute Notch Diagram */
+    .shell-container {
+      background: #172033;
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid var(--border-color);
+    }
+    .scute-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .scute-col { display: flex; flex-direction: column; gap: 4px; }
+    .scute-btn {
+      width: 48px;
+      height: 26px;
+      background: #334155;
+      border: 1px solid #475569;
+      color: #e2e8f0;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .scute-btn:hover { border-color: #ffd600; }
+    .scute-btn.notched {
+      background: #ffd600;
+      color: #000;
+      border-color: #d97706;
+      box-shadow: 0 0 10px rgba(255, 214, 0, 0.6);
+    }
+    .shell-center {
+      width: 140px;
+      height: 380px;
+      background: #452a16;
+      border-radius: 70px / 190px;
+      border: 2px solid #78350f;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      align-items: center;
+      color: rgba(255,255,255,0.7);
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .nuchal-scute {
+      width: 50px;
+      height: 22px;
+      background: #78350f;
+      border-radius: 8px 8px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    .supracaudal-scute {
+      width: 60px;
+      height: 24px;
+      background: #78350f;
+      border-radius: 0 0 8px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    /* Healing Comparison Slider */
+    .comparison-container {
+      position: relative;
+      width: 100%;
+      height: 280px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 2px solid var(--border-color);
+      user-select: none;
+    }
+    .comparison-layer {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 20px;
+    }
+    .layer-before { background: #3e2723; color: white; width: 50%; overflow: hidden; z-index: 2; border-right: 3px solid #ffd600; }
+    .layer-after { background: #14532d; color: white; z-index: 1; }
+    .slider-handle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #ffd600;
+      color: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      cursor: ew-resize;
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      max-width: 700px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    /* Form Inputs */
+    input, select, textarea {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: white;
+      font-family: inherit;
+      font-size: 14px;
+      margin-top: 6px;
+      margin-bottom: 14px;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-light); }
+
+    /* Map container */
+    #dashboardMap { height: 480px; border-radius: 14px; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      header { flex-direction: column; gap: 12px; }
+      nav { width: 100%; overflow-x: auto; }
+      .nav-btn { font-size: 12px; padding: 6px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header>
+    <a href="/" class="brand">
+      <i class="fa-solid fa-shield-cat"></i>
+      <div>
+        <div class="brand-title">SATRA CONSERVATION</div>
+        <div class="brand-sub">Tortoise Rehabilitation & Telemetry</div>
+      </div>
+    </a>
+
+    <nav>
+      <button class="nav-btn active" onclick="switchTab('specimens')">
+        <i class="fa-solid fa-shield"></i> Specimen Registry
+      </button>
+      <button class="nav-btn" onclick="switchTab('notches')">
+        <i class="fa-solid fa-fingerprint"></i> Scute Notch Picker
+      </button>
+      <button class="nav-btn" onclick="switchTab('telemetry')">
+        <i class="fa-solid fa-map-location-dot"></i> Telemetry Map
+      </button>
+      <button class="nav-btn" onclick="switchTab('health')">
+        <i class="fa-solid fa-heart-pulse"></i> Health & Jackson Ratio
+      </button>
+      <button class="nav-btn" onclick="switchTab('breeding')">
+        <i class="fa-solid fa-egg"></i> Breeding & TSD
+      </button>
+      <a href="/report" class="nav-btn" style="color: #6ee7b7; border: 1px solid #166534;">
+        <i class="fa-solid fa-plus"></i> Citizen Rescue
+      </a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- TAB 1: SPECIMEN REGISTRY -->
+    <div id="tab-specimens" class="tab-content active">
+      <div class="card-header">
+        <div>
+          <h2 style="font-size: 22px; font-weight: 800;">Registered Chelonian Specimens</h2>
+          <p style="color: var(--text-muted); font-size: 13px;">Manage physical markings, clinical dossiers, and studbook lineage.</p>
+        </div>
+        <button class="btn btn-gold" onclick="openIntakeModal()">
+          <i class="fa-solid fa-plus"></i> New Intake
+        </button>
+      </div>
+
+      <!-- Quick KPI Stats -->
+      <div class="grid-3" style="margin-bottom: 24px;">
+        <div class="card" style="padding: 14px;">
+          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Total Registered</div>
+          <div style="font-size: 26px; font-weight: 800; color: var(--primary-light);" id="statTotal">3</div>
+        </div>
+        <div class="card" style="padding: 14px;">
+          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">In Rehabilitation</div>
+          <div style="font-size: 26px; font-weight: 800; color: #fdba74;" id="statRehab">1</div>
+        </div>
+        <div class="card" style="padding: 14px;">
+          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Post-Release Telemetry</div>
+          <div style="font-size: 26px; font-weight: 800; color: #93c5fd;" id="statReleased">1</div>
+        </div>
+      </div>
+
+      <!-- Specimen Cards List -->
+      <div class="grid-3" id="specimenGrid">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- TAB 2: INTERACTIVE SCUTE NOTCH PICKER -->
+    <div id="tab-notches" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-fingerprint" style="color: var(--primary-light);"></i> Cagle 1–12 Marginal Notch Coding</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin: 6px 0 16px 0;">
+            Tap individual marginal scutes (L1–L12, R1–R12) along the perimeter to encode permanent field file notches.
+          </p>
+
+          <div class="shell-container">
+            <div class="nuchal-scute">Nuchal</div>
+            <div class="scute-row">
+              <div class="scute-col" id="leftMarginals"></div>
+              <div class="shell-center">
+                <span>V1</span>
+                <span>V2</span>
+                <span>V3</span>
+                <span>V4</span>
+                <span>V5</span>
+              </div>
+              <div class="scute-col" id="rightMarginals"></div>
+            </div>
+            <div class="supracaudal-scute">Supracaudal</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-code" style="color: #ffd600;"></i> Computed Notch Code</div>
+          <div style="background: #090d16; padding: 18px; border-radius: 12px; margin: 16px 0; border: 1px solid var(--border-color);">
+            <div style="font-size: 12px; color: var(--text-muted);">Standardized ID Sequence:</div>
+            <div id="notchCodeDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 800; color: #ffd600; margin-top: 6px;">
+              No Notches
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-secondary" onclick="clearNotches()">
+              <i class="fa-solid fa-trash"></i> Clear All
+            </button>
+            <button class="btn" onclick="applyNotchToSearch()">
+              <i class="fa-solid fa-magnifying-glass"></i> Search Catalog by Code
+            </button>
+          </div>
+
+          <div style="margin-top: 24px; padding: 14px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; font-size: 12px; color: #93c5fd;">
+            <i class="fa-solid fa-info-circle"></i> <strong>Herpetological Standard:</strong> The Cagle system uses V-shaped marginal indentations. Notches on juveniles heal over within 3-4 years, while adult bone notches remain permanent.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: TELEMETRY MAP -->
+    <div id="tab-telemetry" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-map-location-dot" style="color: var(--primary-light);"></i> Geospatial Dispersal & Telemetry Monitor</div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 12px; color: var(--text-muted);">Anti-Poaching Protection (10km):</span>
+            <input type="checkbox" id="mapObfuscate" checked onchange="reloadMapSightings()" style="width: 20px; height: 20px; margin: 0; cursor: pointer;">
+          </div>
+        </div>
+        <div id="dashboardMap"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: HEALTH & JACKSON RATIO -->
+    <div id="tab-health" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-calculator" style="color: var(--primary-light);"></i> Jackson's Ratio & Body Condition Score</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin: 6px 0 16px 0;">
+            Standardized chelonian clinical index: \( \text{Ratio} = \frac{\text{Mass (g)}}{(\text{SCL in cm})^3} \).
+          </p>
+
+          <label style="font-size: 13px; font-weight: 600;">Mass in Grams: <span id="massVal" style="color: #4ade80;">1450</span>g</label>
+          <input type="range" id="massRange" min="200" max="10000" step="10" value="1450" oninput="calculateJacksons()">
+
+          <label style="font-size: 13px; font-weight: 600;">Straight Carapace Length (SCL max): <span id="sclVal" style="color: #4ade80;">215</span>mm</label>
+          <input type="range" id="sclRange" min="80" max="500" step="1" value="215" oninput="calculateJacksons()">
+
+          <div style="background: #090d16; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 10px;">
+            <div style="font-size: 12px; color: var(--text-muted);">Calculated Jackson's Ratio:</div>
+            <div id="ratioVal" style="font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 800; color: #4ade80;">0.1459</div>
+            <div id="ratioEvaluation" style="margin-top: 6px; font-weight: 700; font-size: 14px; color: #fdba74;">Evaluating...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-stethoscope" style="color: #38bdf8;"></i> Clinical Reference Guide</div>
+          <div style="font-size: 13px; color: #cbd5e1; line-height: 1.6; margin-top: 10px;">
+            <p>• <strong>Ratio &lt; 0.17 (Leopard / Testudo):</strong> Underweight / severe dehydration / post-hibernation wasting risk.</p>
+            <p style="margin-top: 8px;">• <strong>Ratio 0.17 – 0.22:</strong> Optimal healthy wild & post-rehabilitation release range.</p>
+            <p style="margin-top: 8px;">• <strong>Ratio &gt; 0.23:</strong> Overweight or potential fluid retention (coelomic ascites or egg retention).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: BREEDING & TSD -->
+    <div id="tab-breeding" class="tab-content">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-temperature-arrow-up" style="color: #fb923c;"></i> Temperature-Dependent Sex Determination (TSD)</div>
+          <p style="font-size: 13px; color: var(--text-muted); margin: 6px 0 16px 0;">
+            Adjust incubator temperature to control conservation captive-breeding sex ratios (Pattern Ia).
+          </p>
+
+          <label style="font-size: 13px; font-weight: 600;">Incubation Target: <span id="tempVal" style="color: #fb923c;">31.5</span>°C</label>
+          <input type="range" id="tempRange" min="28.0" max="33.5" step="0.1" value="31.5" oninput="updateTSD()">
+
+          <div style="background: #090d16; padding: 18px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 10px;">
+            <div style="font-size: 12px; color: var(--text-muted);">Predicted Hatchling Sex Ratio:</div>
+            <div id="tsdPrediction" style="font-size: 20px; font-weight: 800; color: #f472b6; margin-top: 6px;">Predominantly Female</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;" id="tsdNote">Temperatures &gt; 31.5°C produce 95%+ females.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-list-check" style="color: var(--primary-light);"></i> Active Clutches in Incubator</div>
+          <div style="background: #090d16; padding: 14px; border-radius: 12px; margin-top: 12px; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; font-weight: 700;">
+              <span>CLUTCH-2026-012</span>
+              <span class="badge badge-wild">Day 45 / 120</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Species: Stigmochelys pardalis • 11 Eggs</div>
+            <div style="margin-top: 8px; height: 6px; background: #334155; border-radius: 4px; overflow: hidden;">
+              <div style="width: 37%; height: 100%; background: #4ade80;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Specimen Detail Modal -->
+  <div class="modal-backdrop" id="detailModal">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+          <h2 id="modalId" style="font-size: 22px; font-weight: 800; color: var(--primary-light);">LEOP-2026-001</h2>
+          <p id="modalSpecies" style="font-style: italic; color: var(--text-muted);">Stigmochelys pardalis</p>
+        </div>
+        <button class="btn btn-secondary" onclick="closeModal('detailModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Before/After Healing Slider in Modal -->
+      <div class="card-title" style="margin-bottom: 10px;"><i class="fa-solid fa-timeline"></i> Longitudinal Carapace Recovery</div>
+      <div class="comparison-container" id="sliderContainer">
+        <div class="layer-after comparison-layer">
+          <i class="fa-solid fa-circle-check" style="font-size: 44px; color: #4ade80; margin-bottom: 8px;"></i>
+          <h4 style="font-size: 16px; font-weight: 700;">Day 45: Full Keratinization Bridge</h4>
+          <p style="font-size: 12px; color: #bbf7d0; max-width: 380px; margin-top: 4px;">
+            Cerclage wire removed. Stable bone ossification across vertebral scutes. Released into soft-release conditioning.
+          </p>
+        </div>
+        <div class="layer-before comparison-layer" id="beforeLayer">
+          <i class="fa-solid fa-triangle-exclamation" style="font-size: 44px; color: #ef4444; margin-bottom: 8px;"></i>
+          <h4 style="font-size: 16px; font-weight: 700;">Day 1: Acute Vehicle Fracture</h4>
+          <p style="font-size: 12px; color: #fca5a5; max-width: 380px; margin-top: 4px;">
+            Severe 4cm longitudinal carapace split. Emergency triage, dental acrylic stabilization applied.
+          </p>
+        </div>
+        <div class="slider-handle" id="sliderHandle">⬌</div>
+      </div>
+
+      <!-- Specimen Detail Metadata -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0;">
+        <div style="background: #090d16; padding: 12px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted);">15-Digit Microchip (PIT Tag):</div>
+          <div id="modalPit" style="font-family: 'JetBrains Mono', monospace; font-weight: bold; font-size: 13px;">--</div>
+        </div>
+        <div style="background: #090d16; padding: 12px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted);">Marginal Scute Notch Code:</div>
+          <div id="modalNotch" style="font-family: 'JetBrains Mono', monospace; font-weight: bold; font-size: 13px; color: #ffd600;">--</div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 12px; margin-top: 20px;">
+        <a id="modalPdfBtn" href="#" class="btn btn-gold" style="flex: 1; justify-content: center;">
+          <i class="fa-solid fa-file-pdf"></i> Download Official PDF Report
+        </a>
+        <button class="btn btn-secondary" onclick="closeModal('detailModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Intake Modal -->
+  <div class="modal-backdrop" id="intakeModal">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="font-size: 20px; font-weight: 800;">Register New Tortoise Intake</h2>
+        <button class="btn btn-secondary" onclick="closeModal('intakeModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="intakeForm" onsubmit="submitNewIntake(event)">
+        <label>Species Classification</label>
+        <select id="inSpecies">
+          <option value="Stigmochelys pardalis">Leopard Tortoise (Stigmochelys pardalis)</option>
+          <option value="Chersina angulata">Angulate Tortoise (Chersina angulata)</option>
+          <option value="Psammobates geometricus">Geometric Tortoise (Psammobates geometricus - CR)</option>
+          <option value="Psammobates tentorius">Tent Tortoise (Psammobates tentorius)</option>
+          <option value="Homopus areolatus">Parrot-beaked Padloper (Homopus areolatus)</option>
+        </select>
+
+        <label>Custom Identifier (Pattern: SPECIES-YEAR-SEQ)</label>
+        <input type="text" id="inCustomId" required value="LEOP-2026-005">
+
+        <label>15-Digit FDX-B RFID Microchip (PIT Tag)</label>
+        <input type="text" id="inPitTag" placeholder="e.g. 982000365829108">
+
+        <label>Marginal Scute Notch Code</label>
+        <input type="text" id="inNotchCode" placeholder="e.g. L1-R4">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label>Sex</label>
+            <select id="inSex">
+              <option value="Undetermined">Undetermined</option>
+              <option value="Female">Female</option>
+              <option value="Male">Male</option>
+              <option value="Juvenile">Juvenile</option>
+            </select>
+          </div>
+          <div>
+            <label>Initial Status</label>
+            <select id="inStatus">
+              <option value="InRehab">In Rehabilitation</option>
+              <option value="Wild">Wild Monitor</option>
+              <option value="Released">Released</option>
+              <option value="Breeding">Captive Breeding</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-gold" style="width: 100%; justify-content: center; margin-top: 10px;">
+          <i class="fa-solid fa-check"></i> Save Specimen Record
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let activeNotches = new Set(['L1', 'R4']);
+    let mapInstance = null;
+    let markersGroup = null;
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+
+      if (tabId === 'telemetry') {
+        setTimeout(initDashboardMap, 150);
+      }
+    }
+
+    // Scute Diagram Setup
+    function initScuteDiagram() {
+      const leftCol = document.getElementById('leftMarginals');
+      const rightCol = document.getElementById('rightMarginals');
+      leftCol.innerHTML = '';
+      rightCol.innerHTML = '';
+
+      for (let i = 1; i <= 12; i++) {
+        const lId = 'L' + i;
+        const rId = 'R' + i;
+
+        const lBtn = document.createElement('button');
+        lBtn.className = 'scute-btn' + (activeNotches.has(lId) ? ' notched' : '');
+        lBtn.innerText = lId;
+        lBtn.onclick = () => toggleNotch(lId, lBtn);
+        leftCol.appendChild(lBtn);
+
+        const rBtn = document.createElement('button');
+        rBtn.className = 'scute-btn' + (activeNotches.has(rId) ? ' notched' : '');
+        rBtn.innerText = rId;
+        rBtn.onclick = () => toggleNotch(rId, rBtn);
+        rightCol.appendChild(rBtn);
+      }
+      updateNotchDisplay();
+    }
+
+    function toggleNotch(id, btn) {
+      if (activeNotches.has(id)) {
+        activeNotches.delete(id);
+        btn.classList.remove('notched');
+      } else {
+        activeNotches.add(id);
+        btn.classList.add('notched');
+      }
+      updateNotchDisplay();
+    }
+
+    function clearNotches() {
+      activeNotches.clear();
+      document.querySelectorAll('.scute-btn').forEach(btn => btn.classList.remove('notched'));
+      updateNotchDisplay();
+    }
+
+    function updateNotchDisplay() {
+      const display = document.getElementById('notchCodeDisplay');
+      if (activeNotches.size === 0) {
+        display.innerText = 'No Notches';
+      } else {
+        const sorted = Array.from(activeNotches).sort((a, b) => {
+          if (a[0] !== b[0]) return a[0] === 'L' ? -1 : 1;
+          return parseInt(a.slice(1)) - parseInt(b.slice(1));
+        });
+        display.innerText = sorted.join('-');
+      }
+    }
+
+    // Load Specimens from API
+    async function loadSpecimens() {
+      try {
+        const res = await fetch('/api/v1/specimens');
+        const specimens = await res.json();
+        const grid = document.getElementById('specimenGrid');
+        grid.innerHTML = '';
+
+        document.getElementById('statTotal').innerText = specimens.length;
+
+        specimens.forEach(sp => {
+          const card = document.createElement('div');
+          card.className = 'specimen-card';
+          
+          let badgeClass = 'badge-wild';
+          if (sp.status === 'InRehab') badgeClass = 'badge-rehab';
+          if (sp.status === 'Released') badgeClass = 'badge-released';
+
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h3 style="font-size: 17px; font-weight: 800; color: var(--primary-light);">${sp.custom_identifier}</h3>
+                <p style="font-size: 13px; font-style: italic; color: var(--text-muted);">${sp.species_name || sp.species}</p>
+              </div>
+              <span class="badge ${badgeClass}">${sp.status}</span>
+            </div>
+            <div style="font-size: 12px; color: #cbd5e1;">
+              <div><strong>Notch Code:</strong> <span style="color: #ffd600; font-family: monospace;">${sp.notch_code || 'None'}</span></div>
+              <div><strong>PIT Tag:</strong> ${sp.pit_tag_number || 'Unchipped'}</div>
+              <div><strong>Sex:</strong> ${sp.sex}</div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; flex: 1;" onclick="openDetailModal('${sp.id}', '${sp.custom_identifier}', '${sp.species_name}', '${sp.pit_tag_number || 'None'}', '${sp.notch_code || 'None'}')">
+                <i class="fa-solid fa-eye"></i> View Dossier
+              </button>
+              <a href="/api/v1/reports/specimen/${sp.id}/pdf" class="btn btn-gold" style="font-size: 12px; padding: 6px 10px;" title="Download PDF">
+                <i class="fa-solid fa-file-pdf"></i>
+              </a>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        console.error('Failed to load specimens', err);
+      }
+    }
+
+    function openDetailModal(id, customId, species, pit, notch) {
+      document.getElementById('modalId').innerText = customId;
+      document.getElementById('modalSpecies').innerText = species;
+      document.getElementById('modalPit').innerText = pit;
+      document.getElementById('modalNotch').innerText = notch;
+      document.getElementById('modalPdfBtn').href = `/api/v1/reports/specimen/${id}/pdf`;
+      document.getElementById('detailModal').style.display = 'flex';
+      setupComparisonSlider();
+    }
+
+    function openIntakeModal() {
+      document.getElementById('intakeModal').style.display = 'flex';
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+
+    async function submitNewIntake(e) {
+      e.preventDefault();
+      const payload = {
+        custom_identifier: document.getElementById('inCustomId').value,
+        species_name: document.getElementById('inSpecies').value,
+        common_name: document.getElementById('inSpecies').selectedOptions[0].text.split('(')[0].trim(),
+        pit_tag_number: document.getElementById('inPitTag').value || null,
+        notch_code: document.getElementById('inNotchCode').value || null,
+        sex: document.getElementById('inSex').value,
+        status: document.getElementById('inStatus').value
+      };
+
+      try {
+        const res = await fetch('/api/v1/specimens', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          closeModal('intakeModal');
+          loadSpecimens();
+          alert('Specimen registered successfully!');
+        } else {
+          const err = await res.json();
+          alert('Error: ' + err.detail);
+        }
+      } catch (err) {
+        alert('Network error registering specimen');
+      }
+    }
+
+    // Comparison Slider Dragging
+    function setupComparisonSlider() {
+      const container = document.getElementById('sliderContainer');
+      const beforeLayer = document.getElementById('beforeLayer');
+      const handle = document.getElementById('sliderHandle');
+      let isDragging = false;
+
+      function updateSlider(x) {
+        const rect = container.getBoundingClientRect();
+        let pos = (x - rect.left) / rect.width;
+        pos = Math.max(0.05, Math.min(0.95, pos));
+        beforeLayer.style.width = (pos * 100) + '%';
+        handle.style.left = (pos * 100) + '%';
+      }
+
+      container.onmousedown = (e) => { isDragging = true; updateSlider(e.clientX); };
+      window.onmouseup = () => { isDragging = false; };
+      window.onmousemove = (e) => { if (isDragging) updateSlider(e.clientX); };
+
+      container.ontouchstart = (e) => { isDragging = true; updateSlider(e.touches[0].clientX); };
+      window.ontouchend = () => { isDragging = false; };
+      window.ontouchmove = (e) => { if (isDragging) updateSlider(e.touches[0].clientX); };
+    }
+
+    // Jackson's Ratio Calculator
+    function calculateJacksons() {
+      const mass = parseFloat(document.getElementById('massRange').value);
+      const sclMm = parseFloat(document.getElementById('sclRange').value);
+      document.getElementById('massVal').innerText = mass;
+      document.getElementById('sclVal').innerText = sclMm;
+
+      const sclCm = sclMm / 10.0;
+      const ratio = mass / Math.pow(sclCm, 3);
+      document.getElementById('ratioVal').innerText = ratio.toFixed(4);
+
+      const evalEl = document.getElementById('ratioEvaluation');
+      if (ratio < 0.17) {
+        evalEl.innerText = "Underweight (Dehydration / Wasting Risk)";
+        evalEl.style.color = "#ef4444";
+      } else if (ratio <= 0.22) {
+        evalEl.innerText = "Healthy / Optimal Body Condition";
+        evalEl.style.color = "#4ade80";
+      } else {
+        evalEl.innerText = "Overweight / Potential Egg Retention";
+        evalEl.style.color = "#fbbf24";
+      }
+    }
+
+    // TSD Calculator
+    function updateTSD() {
+      const temp = parseFloat(document.getElementById('tempRange').value);
+      document.getElementById('tempVal').innerText = temp.toFixed(1);
+      const predEl = document.getElementById('tsdPrediction');
+      const noteEl = document.getElementById('tsdNote');
+
+      if (temp >= 31.5) {
+        predEl.innerText = "Predominantly Female (100% at ≥32°C)";
+        predEl.style.color = "#f472b6";
+        noteEl.innerText = "Warm incubation activates aromatase enzyme producing female ovaries.";
+      } else if (temp <= 30.0) {
+        predEl.innerText = "Predominantly Male (100% at ≤29.5°C)";
+        predEl.style.color = "#60a5fa";
+        noteEl.innerText = "Lower incubation temperatures produce male testes.";
+      } else {
+        predEl.innerText = "Mixed Ratio (Pivotal Threshold ~30.8°C)";
+        predEl.style.color = "#a78bfa";
+        noteEl.innerText = "Intermediate pivotal zone producing approximately 1:1 balanced ratio.";
+      }
+    }
+
+    // Dashboard Telemetry Map
+    function initDashboardMap() {
+      if (mapInstance) {
+        mapInstance.invalidateSize();
+        return;
+      }
+      mapInstance = L.map('dashboardMap').setView([-33.83, 19.12], 11);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri'
+      }).addTo(mapInstance);
+
+      markersGroup = L.layerGroup().addTo(mapInstance);
+      reloadMapSightings();
+    }
+
+    async function reloadMapSightings() {
+      if (!markersGroup) return;
+      markersGroup.clearLayers();
+      const obfuscate = document.getElementById('mapObfuscate').checked;
+
+      try {
+        const res = await fetch(`/api/v1/sightings/geojson?obfuscate=${obfuscate}`);
+        const geojson = await res.json();
+
+        geojson.features.forEach(f => {
+          const coords = f.geometry.coordinates;
+          const latLng = [coords[1], coords[0]];
+          const props = f.properties;
+
+          const marker = L.circleMarker(latLng, {
+            radius: 8,
+            fillColor: props.status === 'InRehab' ? '#f97316' : '#22c55e',
+            color: '#ffffff',
+            weight: 2,
+            fillOpacity: 0.85
+          });
+
+          marker.bindPopup(`
+            <div style="color: black; font-family: sans-serif;">
+              <strong>${props.custom_identifier}</strong><br/>
+              <em>${props.species_name}</em><br/>
+              Notch: ${props.notch_code || 'None'}<br/>
+              Observed: ${new Date(props.recorded_at).toLocaleDateString()}
+            </div>
+          `);
+          markersGroup.addLayer(marker);
+        });
+      } catch (err) {
+        console.error('Failed to load map sightings', err);
+      }
+    }
+
+    window.onload = () => {
+      initScuteDiagram();
+      loadSpecimens();
+      calculateJacksons();
+      updateTSD();
+    };
+  </script>
+</body>
+</html>

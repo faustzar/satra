@@ -189,14 +189,23 @@ app.add_middleware(
 # Include API v1 router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-@app.get("/", tags=["Root"])
+@app.get("/", response_class=HTMLResponse, tags=["Application UI"])
 def root():
+    """Serves the primary SATRA Conservation Management Web Application."""
+    template_path = Path(__file__).parent / "templates" / "app.html"
+    if template_path.exists():
+        return HTMLResponse(content=template_path.read_text(encoding="utf-8"))
+    return HTMLResponse(content="<h1>SATRA Application UI</h1>", status_code=200)
+
+@app.get("/api", tags=["Root"])
+def api_root():
     return {
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "status": "online",
         "documentation": "/docs",
         "dashboard": "/dashboard",
+        "report_portal": "/report",
         "health_check": "/healthz"
     }
 

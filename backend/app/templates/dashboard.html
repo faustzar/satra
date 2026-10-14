@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SATRA - Geospatial Tortoise Monitoring & Telemetry Dashboard</title>
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Leaflet MarkerCluster -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <!-- Google Fonts & Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; display: flex; height: 100vh; overflow: hidden; }
+    
+    /* Sidebar */
+    #sidebar {
+      width: 380px;
+      background: #1e293b;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #334155;
+      z-index: 1000;
+    }
+    .header {
+      padding: 20px;
+      background: #0f172a;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header i { font-size: 28px; color: #4ade80; }
+    .header h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
+    .header p { font-size: 11px; color: #94a3b8; }
+
+    /* Anti-Poaching Security Banner */
+    .security-card {
+      margin: 16px;
+      padding: 12px 16px;
+      background: #182234;
+      border: 1px solid #3b82f6;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .security-title { font-size: 13px; font-weight: 600; color: #93c5fd; }
+    .security-desc { font-size: 11px; color: #64748b; }
+
+    /* Switch */
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #475569; transition: .3s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: #ef4444; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 0 16px 16px 16px;
+    }
+    .kpi-card {
+      background: #0f172a;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+    .kpi-num { font-size: 22px; font-weight: 700; color: #4ade80; }
+    .kpi-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Sightings Feed */
+    .feed-header {
+      padding: 12px 16px;
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #94a3b8;
+      background: #0f172a;
+      border-top: 1px solid #334155;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+    }
+    .sightings-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+    }
+    .sighting-item {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .sighting-item:hover {
+      border-color: #4ade80;
+      transform: translateX(4px);
+    }
+    .s-title { display: flex; justify-content: space-between; font-weight: 600; font-size: 14px; }
+    .s-species { font-size: 12px; color: #94a3b8; font-style: italic; margin-top: 2px; }
+    .s-meta { font-size: 11px; color: #64748b; margin-top: 6px; display: flex; justify-content: space-between; }
+    .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+    .badge-rehab { background: #7c2d12; color: #fdba74; }
+    .badge-wild { background: #064e3b; color: #6ee7b7; }
+    .badge-released { background: #1e3a8a; color: #93c5fd; }
+
+    /* Map View */
+    #map { flex: 1; height: 100%; position: relative; }
+
+    /* Map Legend */
+    .map-legend {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(8px);
+      padding: 14px 18px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      z-index: 1000;
+      font-size: 12px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+
+    /* Custom Leaflet Popup */
+    .leaflet-popup-content-wrapper {
+      background: #1e293b;
+      color: #f8fafc;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      border: 1px solid #334155;
+    }
+    .leaflet-popup-tip { background: #1e293b; }
+  </style>
+</head>
+<body>
+
+  <!-- Left Sidebar -->
+  <div id="sidebar">
+    <div class="header">
+      <i class="fa-solid fa-shield-halved"></i>
+      <div>
+        <h1>SATRA Geospatial Monitor</h1>
+        <p>Tortoise Telemetry & Dispersal Dashboard</p>
+      </div>
+    </div>
+
+    <!-- Anti-Poaching Security Mode Toggle -->
+    <div class="security-card">
+      <div>
+        <div class="security-title"><i class="fa-solid fa-lock"></i> Anti-Poaching Fuzzing</div>
+        <div class="security-desc" id="securityStatus">Active: 10km Grid Snapping</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="obfuscateToggle" checked onchange="toggleObfuscation()">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- KPI Summary Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-num" id="kpiSpecimens">--</div>
+        <div class="kpi-label">Registered Spec.</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num" id="kpiSightings">--</div>
+        <div class="kpi-label">Field Sightings</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num" id="kpiRehab">--</div>
+        <div class="kpi-label">In Clinical Rehab</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-num" id="kpiReleased">--</div>
+        <div class="kpi-label">Post-Release</div>
+      </div>
+    </div>
+
+    <div class="feed-header">
+      <span>Recent Sighting Tracks</span>
+      <span id="feedCount">-- points</span>
+    </div>
+
+    <!-- Sightings Feed -->
+    <div class="sightings-list" id="sightingsList">
+      <!-- Injected via JS -->
+    </div>
+  </div>
+
+  <!-- Interactive Map -->
+  <div id="map">
+    <!-- Map Legend Overlay -->
+    <div class="map-legend">
+      <div style="font-weight: 700; margin-bottom: 8px;">Specimen Status</div>
+      <div class="legend-item"><span class="dot" style="background: #22c55e;"></span> Wild Sighting</div>
+      <div class="legend-item"><span class="dot" style="background: #f97316;"></span> In Rehabilitation</div>
+      <div class="legend-item"><span class="dot" style="background: #3b82f6;"></span> Released Track</div>
+      <div class="legend-item"><span class="dot" style="background: #a855f7;"></span> Telemetry Dispersal Line</div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Leaflet Map (Default center: Western Cape / Karoo, South Africa)
+    const map = L.map('map').setView([-33.85, 19.1], 10);
+
+    // Satellite and Topographic Base Layers
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Conservation Telemetry'
+    }).addTo(map);
+
+    const terrainLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    });
+
+    L.control.layers({
+      "Satellite Imagery": satelliteLayer,
+      "Topographic Map": terrainLayer
+    }).addTo(map);
+
+    let markersLayer = L.markerClusterGroup();
+    map.addLayer(markersLayer);
+
+    let tracksPolyline = L.layerGroup().addTo(map);
+
+    let currentObfuscation = true;
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/v1/stats/summary');
+        const data = await res.json();
+        document.getElementById('kpiSpecimens').innerText = data.total_specimens;
+        document.getElementById('kpiSightings').innerText = data.total_sightings;
+        document.getElementById('kpiRehab').innerText = data.in_rehab;
+        document.getElementById('kpiReleased').innerText = data.released;
+      } catch (err) {
+        console.error('Failed to load stats', err);
+      }
+    }
+
+    function getStatusBadge(status) {
+      if (status === 'InRehab') return '<span class="badge badge-rehab">In Rehab</span>';
+      if (status === 'Released') return '<span class="badge badge-released">Released</span>';
+      return '<span class="badge badge-wild">Wild</span>';
+    }
+
+    function getMarkerColor(status) {
+      if (status === 'InRehab') return '#f97316';
+      if (status === 'Released') return '#3b82f6';
+      return '#22c55e';
+    }
+
+    async function loadSightings() {
+      markersLayer.clearLayers();
+      tracksPolyline.clearLayers();
+      const listEl = document.getElementById('sightingsList');
+      listEl.innerHTML = '';
+
+      try {
+        const url = `/api/v1/sightings/geojson?obfuscate=${currentObfuscation}`;
+        const res = await fetch(url);
+        const geojson = await res.json();
+
+        document.getElementById('feedCount').innerText = `${geojson.features.length} points`;
+
+        const coordinatesBySpecimen = {};
+
+        geojson.features.forEach((feat) => {
+          const coords = feat.geometry.coordinates; // [lon, lat]
+          const latLng = [coords[1], coords[0]];
+          const props = feat.properties;
+
+          // Track coordinates for dispersal path
+          if (props.specimen_id) {
+            if (!coordinatesBySpecimen[props.specimen_id]) {
+              coordinatesBySpecimen[props.specimen_id] = [];
+            }
+            coordinatesBySpecimen[props.specimen_id].push(latLng);
+          }
+
+          // Custom Marker Icon
+          const markerColor = getMarkerColor(props.status);
+          const customMarker = L.circleMarker(latLng, {
+            radius: 8,
+            fillColor: markerColor,
+            color: '#ffffff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.85
+          });
+
+          // Popup content
+          const popupContent = `
+            <div style="font-family: 'Inter', sans-serif;">
+              <div style="font-weight: 700; font-size: 15px; color: #4ade80;">${props.custom_identifier}</div>
+              <div style="font-style: italic; color: #94a3b8; font-size: 12px; margin-bottom: 6px;">${props.species_name}</div>
+              <div style="font-size: 12px; margin-bottom: 4px;"><strong>Notch Code:</strong> ${props.notch_code || 'None'}</div>
+              <div style="font-size: 12px; margin-bottom: 4px;"><strong>Habitat:</strong> ${props.habitat_type || 'Unknown'}</div>
+              <div style="font-size: 12px; margin-bottom: 4px;"><strong>Observed:</strong> ${new Date(props.recorded_at).toLocaleDateString()}</div>
+              ${props.obfuscated ? '<div style="color: #ef4444; font-size: 11px; margin-top: 6px;"><i class="fa-solid fa-shield"></i> Coordinate Obfuscated (~10km)</div>' : '<div style="color: #22c55e; font-size: 11px; margin-top: 6px;"><i class="fa-solid fa-location-crosshairs"></i> Exact Ranger Fix (±' + (props.horizontal_accuracy || 3) + 'm)</div>'}
+            </div>
+          `;
+          customMarker.bindPopup(popupContent);
+          markersLayer.addLayer(customMarker);
+
+          // Add to Feed in Sidebar
+          const item = document.createElement('div');
+          item.className = 'sighting-item';
+          item.innerHTML = `
+            <div class="s-title">
+              <span>${props.custom_identifier}</span>
+              ${getStatusBadge(props.status)}
+            </div>
+            <div class="s-species">${props.species_name}</div>
+            <div class="s-meta">
+              <span><i class="fa-solid fa-mountain-sun"></i> ${props.habitat_type || 'Field'}</span>
+              <span><i class="fa-regular fa-clock"></i> ${new Date(props.recorded_at).toLocaleDateString()}</span>
+            </div>
+          `;
+          item.onclick = () => {
+            map.flyTo(latLng, 14, { duration: 1.2 });
+            customMarker.openPopup();
+          };
+          listEl.appendChild(item);
+        });
+
+        // Draw dispersal track polylines for specimens with multiple points
+        Object.keys(coordinatesBySpecimen).forEach((specId) => {
+          const pts = coordinatesBySpecimen[specId];
+          if (pts.length > 1) {
+            const poly = L.polyline(pts, {
+              color: '#a855f7',
+              weight: 3,
+              dashArray: '6, 8',
+              opacity: 0.8
+            });
+            poly.bindTooltip("Dispersal & Movement Trail", { sticky: true });
+            tracksPolyline.addLayer(poly);
+          }
+        });
+
+        if (geojson.features.length > 0) {
+          const bounds = markersLayer.getBounds();
+          if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [50, 50] });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load sightings GeoJSON', err);
+      }
+    }
+
+    function toggleObfuscation() {
+      const toggle = document.getElementById('obfuscateToggle');
+      currentObfuscation = toggle.checked;
+      const statusEl = document.getElementById('securityStatus');
+      if (currentObfuscation) {
+        statusEl.innerText = "Active: 10km Grid Snapping (Public Mode)";
+        statusEl.style.color = "#64748b";
+      } else {
+        statusEl.innerText = "Disabled: Raw Ranger GPS Accuracy";
+        statusEl.style.color = "#4ade80";
+      }
+      loadSightings();
+    }
+
+    // Initial Load
+    loadStats();
+    loadSightings();
+  </script>
+</body>
+</html>

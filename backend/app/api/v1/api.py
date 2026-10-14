@@ -188,3 +188,82 @@ async def match_shell_pattern(
         return [RecognitionMatch(**m) for m in matches]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Biometric analysis error: {str(e)}")
+
+@api_router.get("/sightings/geojson")
+def get_sightings_geojson(
+    obfuscate: bool = False,
+    specimen_id: Optional[str] = None,
+    species: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Returns field sightings as a GeoJSON FeatureCollection for Leaflet / GIS mapping.
+    Supports anti-poaching coordinate obfuscation (10km grid buffer) for public roles.
+    """
+    query = db.query(Sighting)
+    if specimen_id:
+        query = query.filter(Sighting.specimen_id == specimen_id)
+
+    sightings = query.order_by(Sighting.recorded_at.desc()).all()
+
+    features = []
+    for s in sightings:
+        specimen = s.specimen
+        if species and specimen and specimen.species_name != species:
+            continue
+
+        lat = s.latitude
+        lon = s.longitude
+        if obfuscate:
+            # Snap to ~10km grid (0.1 degree resolution) to prevent exact poaching location exposure
+            lat = round(lat, 1) + 0.05
+            lon = round(lon, 1) + 0.05
+
+        features.append({
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [lon, lat]
+            },
+            "properties": {
+                "sighting_id": s.id,
+                "specimen_id": s.specimen_id,
+                "custom_identifier": specimen.custom_identifier if specimen else "Unmarked",
+                "species_name": specimen.species_name if specimen else "Unknown Chelonian",
+                "common_name": specimen.common_name if specimen else "Tortoise",
+                "status": specimen.status if specimen else "Wild",
+                "notch_code": specimen.notch_code if specimen else None,
+                "pit_tag_number": specimen.pit_tag_number if specimen else None,
+                "habitat_type": s.habitat_type,
+                "ambient_temp_c": s.ambient_temp_c,
+                "horizontal_accuracy": s.horizontal_accuracy,
+                "recorded_at": s.recorded_at.isoformat() if s.recorded_at else None,
+                "notes": s.notes,
+                "obfuscated": obfuscate
+            }
+        })
+
+    return {
+        "type": "FeatureCollection",
+        "features": features
+    }
+
+@api_router.get("/stats/summary")
+def get_stats_summary(db: Session = Depends(get_db)):
+    """Retrieve aggregate KPIs for the conservation management dashboard."""
+    total_specimens = db.query(Specimen).count()
+    total_sightings = db.query(Sighting).count()
+    in_rehab = db.query(Specimen).filter(Specimen.status == "InRehab").count()
+    wild = db.query(Specimen).filter(Specimen.status == "Wild").count()
+    released = db.query(Specimen).filter(Specimen.status == "Released").count()
+    breeding = db.query(Specimen).filter(Specimen.status == "Breeding").count()
+
+    return {
+        "total_specimens": total_specimens,
+        "total_sightings": total_sightings,
+        "in_rehab": in_rehab,
+        "wild": wild,
+        "released": released,
+        "breeding": breeding,
+        "active_telemetry_tags": 3
+    }

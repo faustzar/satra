@@ -47,11 +47,43 @@ class HealthInspectionCreate(BaseModel):
     inspection_type: str = "Scheduled"  # Intake | Scheduled | AdHoc | GravidCheck
     mass_grams: float = Field(..., example=1450.0)
     straight_carapace_length_mm: float = Field(..., example=215.0)
-    plastron_length_mm: Optional[float] = 190.0
+    shell_width_mm: Optional[float] = None
+    shell_height_mm: Optional[float] = None
+    plastron_length_mm: Optional[float] = None
+    plastron_width_mm: Optional[float] = None
+    anal_opening_mm: Optional[float] = None
+    anal_width_mm: Optional[float] = None
+    growth_rings: Optional[str] = None
     body_condition_score: int = Field(3, ge=1, le=5)
     eggs_palpated: bool = False
     estimated_egg_count: Optional[int] = 0
-    shell_condition_notes: Optional[str] = "Normal keratinization, slight old dog scrape on left marginal scute"
+    shell_condition_notes: Optional[str] = None
+    observation_notes: Optional[str] = None
+    inspected_at: Optional[datetime] = None
+
+class HealthInspectionResponse(BaseModel):
+    id: str
+    specimen_id: str
+    inspection_type: str
+    mass_grams: float
+    straight_carapace_length_mm: float
+    shell_width_mm: Optional[float] = None
+    shell_height_mm: Optional[float] = None
+    plastron_length_mm: Optional[float] = None
+    plastron_width_mm: Optional[float] = None
+    anal_opening_mm: Optional[float] = None
+    anal_width_mm: Optional[float] = None
+    growth_rings: Optional[str] = None
+    body_condition_score: int
+    jacksons_ratio: Optional[float] = None
+    eggs_palpated: bool
+    estimated_egg_count: Optional[int] = 0
+    shell_condition_notes: Optional[str] = None
+    observation_notes: Optional[str] = None
+    inspected_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class BreedingPairingCreate(BaseModel):
     dam_id: str
@@ -123,18 +155,29 @@ def record_sighting(sighting_in: SightingCreate, db: Session = Depends(get_db)):
         "longitude": sighting.longitude
     }
 
+@api_router.get("/health-inspections", response_model=List[HealthInspectionResponse])
+def get_health_inspections(specimen_id: Optional[str] = None, db: Session = Depends(get_db)):
+    """Retrieve observations / health assessments, optionally filtered by specimen."""
+    query = db.query(HealthInspection)
+    if specimen_id:
+        query = query.filter(HealthInspection.specimen_id == specimen_id)
+    return query.order_by(HealthInspection.inspected_at.desc()).all()
+
 @api_router.post("/health-inspections")
 def record_health_inspection(inspection_in: HealthInspectionCreate, db: Session = Depends(get_db)):
-    """Record clinical health assessment (mass, SCL, BCS, gravidity check)."""
+    """Record regular observation or clinical health assessment (mass, SCL, SW, SH, plastron, anal, growth rings)."""
     # Automatic Jackson's Ratio / Body Condition Metric: Weight(g) / [Carapace Length(cm)]^3
     scl_cm = inspection_in.straight_carapace_length_mm / 10.0
     jacksons_ratio = round(inspection_in.mass_grams / (scl_cm ** 3), 4) if scl_cm > 0 else None
 
+    dump_data = inspection_in.model_dump()
+    inspected_date = dump_data.pop("inspected_at", None) or datetime.utcnow()
+
     inspection = HealthInspection(
         id=str(uuid.uuid4()),
         jacksons_ratio=jacksons_ratio,
-        inspected_at=datetime.utcnow(),
-        **inspection_in.model_dump()
+        inspected_at=inspected_date,
+        **dump_data
     )
     db.add(inspection)
     db.commit()
@@ -142,6 +185,7 @@ def record_health_inspection(inspection_in: HealthInspectionCreate, db: Session 
     return {
         "status": "success",
         "inspection_id": inspection.id,
+        "specimen_id": inspection.specimen_id,
         "jacksons_ratio": jacksons_ratio,
         "inspected_at": inspection.inspected_at
     }

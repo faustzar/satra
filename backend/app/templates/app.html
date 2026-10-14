@@ -246,6 +246,80 @@
     .btn-gold { background: var(--accent-gold); color: #000; font-weight: 700; }
     .btn-gold:hover { filter: brightness(1.08); }
 
+    /* Number Stepper Input Widget */
+    .stepper-container {
+      display: flex;
+      align-items: center;
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 6px;
+      margin-bottom: 14px;
+    }
+    .stepper-container input {
+      border: none;
+      margin: 0;
+      text-align: center;
+      font-weight: 700;
+      font-size: 15px;
+      background: transparent;
+      padding: 10px 8px;
+    }
+    .stepper-btn {
+      background: var(--btn-secondary-bg);
+      border: none;
+      color: var(--text-main);
+      width: 44px;
+      height: 42px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 800;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .stepper-btn:hover {
+      background: var(--btn-secondary-hover);
+    }
+    .stepper-btn:active {
+      filter: brightness(0.9);
+    }
+
+    /* Observations Category Icons */
+    .obs-category-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .obs-category-card:hover {
+      border-color: var(--accent-gold);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+    .obs-category-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: var(--card-inner);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--accent-gold);
+      border: 1px solid var(--border-color);
+    }
+
     /* Interactive Scute Notch Diagram */
     .shell-container {
       background: var(--shell-bg);
@@ -439,6 +513,9 @@
         <button class="nav-btn active" onclick="switchTab('specimens')">
           <i class="fa-solid fa-shield"></i> Specimen Registry
         </button>
+        <button class="nav-btn" onclick="switchTab('observations')">
+          <i class="fa-solid fa-binoculars"></i> Observations
+        </button>
         <button class="nav-btn" onclick="switchTab('notches')">
           <i class="fa-solid fa-fingerprint"></i> Scute Notch Picker
         </button>
@@ -496,6 +573,73 @@
       <!-- Specimen Cards List -->
       <div class="grid-3" id="specimenGrid">
         <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- TAB: OBSERVATIONS & FIELD LOGGING -->
+    <div id="tab-observations" class="tab-content">
+      <div class="card-header">
+        <div>
+          <h2 style="font-size: 22px; font-weight: 800;">Observations & Telemetry Hub</h2>
+          <p style="color: var(--text-muted); font-size: 13px;">Capture complete physical measurements, biometric growth rings, clinical condition and sightings.</p>
+        </div>
+        <button class="btn btn-gold" onclick="openObservationModal()">
+          <i class="fa-solid fa-plus"></i> Complete Observation
+        </button>
+      </div>
+
+      <!-- AppSheet-Style Observation Category Tiles -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-bottom: 24px;">
+        <div class="obs-category-card" onclick="openObservationModal('Regular')">
+          <div class="obs-category-icon" style="color: #38bdf8;"><i class="fa-solid fa-clipboard-check"></i></div>
+          <div style="font-size: 12px; font-weight: 700;">Regular Observations</div>
+        </div>
+        <div class="obs-category-card" onclick="switchTab('breeding')">
+          <div class="obs-category-icon" style="color: #f472b6;"><i class="fa-solid fa-dna"></i></div>
+          <div style="font-size: 12px; font-weight: 700;">Reproduction</div>
+        </div>
+        <div class="obs-category-card" onclick="switchTab('health')">
+          <div class="obs-category-icon" style="color: #ef4444;"><i class="fa-solid fa-heart-pulse"></i></div>
+          <div style="font-size: 12px; font-weight: 700;">Medical</div>
+        </div>
+        <div class="obs-category-card" onclick="switchTab('telemetry')">
+          <div class="obs-category-icon" style="color: #22c55e;"><i class="fa-solid fa-location-dot"></i></div>
+          <div style="font-size: 12px; font-weight: 700;">Location</div>
+        </div>
+        <div class="obs-category-card" onclick="openObservationModal('Photo')">
+          <div class="obs-category-icon" style="color: #fb923c;"><i class="fa-solid fa-images"></i></div>
+          <div style="font-size: 12px; font-weight: 700;">Photos</div>
+        </div>
+        <div class="obs-category-card" onclick="openObservationModal('Incident')">
+          <div class="obs-category-icon" style="color: #eab308;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <div style="font-size: 12px; font-weight: 700;">Incidents</div>
+        </div>
+        <div class="obs-category-card" onclick="openObservationModal('Notes')">
+          <div class="obs-category-icon" style="color: #a855f7;"><i class="fa-solid fa-note-sticky"></i></div>
+          <div style="font-size: 12px; font-weight: 700;">Notes</div>
+        </div>
+        <div class="obs-category-card" onclick="switchTab('telemetry')">
+          <div class="obs-category-icon" style="color: #06b6d4;"><i class="fa-solid fa-satellite-dish"></i></div>
+          <div style="font-size: 12px; font-weight: 700;">Tracker</div>
+        </div>
+        <div class="obs-category-card" onclick="switchTab('health')">
+          <div class="obs-category-icon" style="color: #10b981;"><i class="fa-solid fa-chart-line"></i></div>
+          <div style="font-size: 12px; font-weight: 700;">Stats</div>
+        </div>
+      </div>
+
+      <!-- Recent Conservation Observations List -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-list-check" style="color: var(--primary-light);"></i>
+            Logged Conservationist Observations
+          </div>
+          <span style="font-size: 12px; color: var(--text-muted);" id="obsCountLabel">Loading...</span>
+        </div>
+        <div id="observationsList" style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Populated by JS -->
+        </div>
       </div>
     </div>
 
@@ -742,6 +886,119 @@
     </div>
   </div>
 
+  <!-- Complete Observation Modal (Matching Legacy AppSheet Spec) -->
+  <div class="modal-backdrop" id="observationModal">
+    <div class="modal-box" style="max-width: 620px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-xmark" style="font-size: 20px; cursor: pointer; color: var(--text-muted);" onclick="closeModal('observationModal')"></i>
+          <h2 style="font-size: 20px; font-weight: 800; margin: 0;">Complete Observation</h2>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-secondary" style="padding: 6px 14px; font-size: 13px;" onclick="closeModal('observationModal')">Cancel</button>
+          <button type="button" class="btn btn-gold" style="padding: 6px 16px; font-size: 13px;" onclick="submitObservationForm()">Save</button>
+        </div>
+      </div>
+
+      <form id="observationForm" onsubmit="event.preventDefault(); submitObservationForm();">
+        <!-- Observation Date -->
+        <label style="font-size: 13px; font-weight: 600;">Observation Date</label>
+        <input type="date" id="obsDate" required>
+
+        <!-- Tortoise Unique Number / Select Specimen -->
+        <label style="font-size: 13px; font-weight: 600;">TortoiseUniqueNumber</label>
+        <select id="obsSpecimenSelect" required>
+          <option value="">-- Select Tortoise Unique Number --</option>
+        </select>
+
+        <!-- Weight (g) with Stepper -->
+        <label style="font-size: 13px; font-weight: 600;">Weight (g)</label>
+        <div class="stepper-container">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsWeight', -10)">—</button>
+          <input type="number" step="0.1" id="obsWeight" value="0.0">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsWeight', 10)">+</button>
+        </div>
+
+        <!-- Length (SCL) with Stepper -->
+        <label style="font-size: 13px; font-weight: 600;">Length (SCL mm)</label>
+        <div class="stepper-container">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsScl', -1)">—</button>
+          <input type="number" step="0.1" id="obsScl" value="0.00">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsScl', 1)">+</button>
+        </div>
+
+        <!-- Width (SW) with Stepper -->
+        <label style="font-size: 13px; font-weight: 600;">Width (SW mm)</label>
+        <div class="stepper-container">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsSw', -1)">—</button>
+          <input type="number" step="0.1" id="obsSw" value="0.00">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsSw', 1)">+</button>
+        </div>
+
+        <!-- Height (SH) with Stepper -->
+        <label style="font-size: 13px; font-weight: 600;">Height (SH mm)</label>
+        <div class="stepper-container">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsSh', -1)">—</button>
+          <input type="number" step="0.1" id="obsSh" value="0.00">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsSh', 1)">+</button>
+        </div>
+
+        <!-- Plastron Length with Stepper -->
+        <label style="font-size: 13px; font-weight: 600;">Plastron Length (mm)</label>
+        <div class="stepper-container">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsPlastronLength', -1)">—</button>
+          <input type="number" step="0.1" id="obsPlastronLength" value="0.00">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsPlastronLength', 1)">+</button>
+        </div>
+
+        <!-- Plastron Width with Stepper -->
+        <label style="font-size: 13px; font-weight: 600;">Plastron Width (mm)</label>
+        <div class="stepper-container">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsPlastronWidth', -1)">—</button>
+          <input type="number" step="0.1" id="obsPlastronWidth" value="0.00">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsPlastronWidth', 1)">+</button>
+        </div>
+
+        <!-- Anal Opening with Stepper -->
+        <label style="font-size: 13px; font-weight: 600;">Anal Opening (mm)</label>
+        <div class="stepper-container">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsAnalOpening', -1)">—</button>
+          <input type="number" step="0.5" id="obsAnalOpening" value="0">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsAnalOpening', 1)">+</button>
+        </div>
+
+        <!-- Anal Width with Stepper -->
+        <label style="font-size: 13px; font-weight: 600;">Anal Width (mm)</label>
+        <div class="stepper-container">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsAnalWidth', -1)">—</button>
+          <input type="number" step="0.5" id="obsAnalWidth" value="0">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsAnalWidth', 1)">+</button>
+        </div>
+
+        <!-- Grow Rings -->
+        <label style="font-size: 13px; font-weight: 600;">Grow Rings</label>
+        <input type="text" id="obsGrowRings" placeholder="e.g. 14 rings (vertebral scute count)">
+
+        <!-- Observation Notes -->
+        <label style="font-size: 13px; font-weight: 600;">Observation Notes</label>
+        <textarea id="obsNotes" rows="3" placeholder="Condition details, activity, feeding, habitat, injuries..."></textarea>
+
+        <!-- Photos upload placeholder -->
+        <label style="font-size: 13px; font-weight: 600;">Photos</label>
+        <input type="file" id="obsPhotos" accept="image/*" multiple style="padding: 8px;">
+
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button type="submit" class="btn btn-gold" style="flex: 1; justify-content: center;">
+            <i class="fa-solid fa-check"></i> Save Observation Record
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal('observationModal')">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     let activeNotches = new Set(['L1', 'R4']);
     let mapInstance = null;
@@ -822,6 +1079,7 @@
         const grid = document.getElementById('specimenGrid');
         grid.innerHTML = '';
 
+        currentSpecimensCache = specimens;
         document.getElementById('statTotal').innerText = specimens.length;
 
         specimens.forEach(sp => {
@@ -840,16 +1098,19 @@
               </div>
               <span class="badge ${badgeClass}">${sp.status}</span>
             </div>
-            <div style="font-size: 12px; color: #cbd5e1;">
-              <div><strong>Notch Code:</strong> <span style="color: #ffd600; font-family: monospace;">${sp.notch_code || 'None'}</span></div>
+            <div style="font-size: 12px; color: var(--text-muted);">
+              <div><strong>Notch Code:</strong> <span style="color: var(--accent-gold); font-family: monospace;">${sp.notch_code || 'None'}</span></div>
               <div><strong>PIT Tag:</strong> ${sp.pit_tag_number || 'Unchipped'}</div>
               <div><strong>Sex:</strong> ${sp.sex}</div>
             </div>
             <div style="display: flex; gap: 8px; margin-top: 8px;">
               <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; flex: 1;" onclick="openDetailModal('${sp.id}', '${sp.custom_identifier}', '${sp.species_name}', '${sp.pit_tag_number || 'None'}', '${sp.notch_code || 'None'}')">
-                <i class="fa-solid fa-eye"></i> View Dossier
+                <i class="fa-solid fa-eye"></i> Dossier
               </button>
-              <a href="/api/v1/reports/specimen/${sp.id}/pdf" class="btn btn-gold" style="font-size: 12px; padding: 6px 10px;" title="Download PDF">
+              <button class="btn btn-gold" style="font-size: 12px; padding: 6px 12px; flex: 1;" onclick="openObservationModal('Regular', '${sp.id}')" title="Log Field Observation">
+                <i class="fa-solid fa-plus"></i> Observe
+              </button>
+              <a href="/api/v1/reports/specimen/${sp.id}/pdf" class="btn btn-secondary" style="font-size: 12px; padding: 6px 10px;" title="Download PDF">
                 <i class="fa-solid fa-file-pdf"></i>
               </a>
             </div>
@@ -1032,6 +1293,163 @@
       }
     }
 
+    // Observation Form & Stepper Handlers
+    let currentSpecimensCache = [];
+
+    function stepVal(inputId, delta) {
+      const el = document.getElementById(inputId);
+      if (!el) return;
+      let val = parseFloat(el.value) || 0;
+      val = Math.max(0, val + delta);
+      // Format decimals nicely
+      if (inputId === 'obsWeight' || inputId === 'obsScl' || inputId === 'obsSw' || inputId === 'obsSh' || inputId === 'obsPlastronLength' || inputId === 'obsPlastronWidth') {
+        el.value = val.toFixed(1);
+      } else {
+        el.value = val;
+      }
+    }
+
+    function openObservationModal(category = 'Regular', preselectedSpecimenId = null) {
+      const modal = document.getElementById('observationModal');
+      const dateEl = document.getElementById('obsDate');
+      if (dateEl && !dateEl.value) {
+        dateEl.value = new Date().toISOString().split('T')[0];
+      }
+
+      // Populate specimen dropdown
+      const select = document.getElementById('obsSpecimenSelect');
+      select.innerHTML = '<option value="">-- Select Tortoise Unique Number --</option>';
+      currentSpecimensCache.forEach(sp => {
+        const opt = document.createElement('option');
+        opt.value = sp.id;
+        opt.innerText = `${sp.custom_identifier} - ${sp.species_name || sp.common_name} (${sp.notch_code || 'No Notch'})`;
+        if (preselectedSpecimenId && sp.id === preselectedSpecimenId) {
+          opt.selected = true;
+        }
+        select.appendChild(opt);
+      });
+
+      if (category && category !== 'Regular') {
+        const notes = document.getElementById('obsNotes');
+        if (notes && !notes.value) {
+          notes.value = `[${category} Observation] `;
+        }
+      }
+
+      modal.style.display = 'flex';
+    }
+
+    async function submitObservationForm() {
+      const specimenId = document.getElementById('obsSpecimenSelect').value;
+      if (!specimenId) {
+        alert('Please select a tortoise unique identifier.');
+        return;
+      }
+
+      const weight = parseFloat(document.getElementById('obsWeight').value) || 0;
+      const scl = parseFloat(document.getElementById('obsScl').value) || 0;
+
+      if (weight <= 0 || scl <= 0) {
+        alert('Please enter a valid Mass (Weight) and SCL (Length) greater than 0.');
+        return;
+      }
+
+      const payload = {
+        specimen_id: specimenId,
+        inspection_type: "Scheduled",
+        mass_grams: weight,
+        straight_carapace_length_mm: scl,
+        shell_width_mm: parseFloat(document.getElementById('obsSw').value) || null,
+        shell_height_mm: parseFloat(document.getElementById('obsSh').value) || null,
+        plastron_length_mm: parseFloat(document.getElementById('obsPlastronLength').value) || null,
+        plastron_width_mm: parseFloat(document.getElementById('obsPlastronWidth').value) || null,
+        anal_opening_mm: parseFloat(document.getElementById('obsAnalOpening').value) || null,
+        anal_width_mm: parseFloat(document.getElementById('obsAnalWidth').value) || null,
+        growth_rings: document.getElementById('obsGrowRings').value || null,
+        observation_notes: document.getElementById('obsNotes').value || null,
+        body_condition_score: 3,
+        inspected_at: document.getElementById('obsDate').value ? new Date(document.getElementById('obsDate').value).toISOString() : new Date().toISOString()
+      };
+
+      try {
+        const res = await fetch('/api/v1/health-inspections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          closeModal('observationModal');
+          document.getElementById('observationForm').reset();
+          loadObservations();
+          alert(`Observation saved successfully!\nJackson's Ratio: ${data.jacksons_ratio || 'N/A'}`);
+        } else {
+          const err = await res.json();
+          alert('Error saving observation: ' + (err.detail || JSON.stringify(err)));
+        }
+      } catch (err) {
+        console.error('Failed to save observation', err);
+        alert('Network error while saving observation.');
+      }
+    }
+
+    async function loadObservations() {
+      const listEl = document.getElementById('observationsList');
+      const countEl = document.getElementById('obsCountLabel');
+      if (!listEl) return;
+
+      try {
+        const res = await fetch('/api/v1/health-inspections');
+        const inspections = await res.json();
+        if (countEl) countEl.innerText = `${inspections.length} recorded`;
+
+        listEl.innerHTML = '';
+        if (inspections.length === 0) {
+          listEl.innerHTML = `
+            <div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 14px;">
+              <i class="fa-solid fa-clipboard-list" style="font-size: 32px; margin-bottom: 8px; opacity: 0.5;"></i>
+              <p>No observations recorded yet. Click <strong>Complete Observation</strong> above to log your first field assessment.</p>
+            </div>
+          `;
+          return;
+        }
+
+        inspections.forEach(obs => {
+          const dateStr = obs.inspected_at ? new Date(obs.inspected_at).toLocaleDateString() : 'Recent';
+          const matchedSp = currentSpecimensCache.find(s => s.id === obs.specimen_id);
+          const specName = matchedSp ? `${matchedSp.custom_identifier} (${matchedSp.common_name || matchedSp.species_name})` : obs.specimen_id;
+
+          const item = document.createElement('div');
+          item.style = "background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;";
+          item.innerHTML = `
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 800; font-size: 15px; color: var(--primary-light);">${specName}</span>
+                <span class="badge badge-wild">${dateStr}</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; display: flex; gap: 14px; flex-wrap: wrap;">
+                <span><strong>Mass:</strong> ${obs.mass_grams}g</span>
+                <span><strong>SCL:</strong> ${obs.straight_carapace_length_mm}mm</span>
+                <span><strong>Plastron:</strong> ${obs.plastron_length_mm || '—'}mm</span>
+                <span><strong>Grow Rings:</strong> ${obs.growth_rings || '—'}</span>
+                <span><strong>Jackson's Ratio:</strong> <code style="color: var(--accent-clay); font-weight: bold;">${obs.jacksons_ratio || '—'}</code></span>
+              </div>
+              ${obs.observation_notes ? `<div style="font-size: 12px; color: var(--text-main); margin-top: 6px; font-style: italic;">"${obs.observation_notes}"</div>` : ''}
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px;" onclick="openObservationModal('Update', '${obs.specimen_id}')">
+                <i class="fa-solid fa-pen"></i> New Followup
+              </button>
+            </div>
+          `;
+          listEl.appendChild(item);
+        });
+      } catch (err) {
+        console.error('Failed to load observations', err);
+      }
+    }
+
     // Theme Handling (Safari Earth Day/Night)
     function updateThemeUI(theme) {
       const icon = document.getElementById('themeIcon');
@@ -1054,11 +1472,12 @@
       updateThemeUI(nextTheme);
     }
 
-    window.onload = () => {
+    window.onload = async () => {
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
       updateThemeUI(currentTheme);
       initScuteDiagram();
-      loadSpecimens();
+      await loadSpecimens();
+      await loadObservations();
       calculateJacksons();
       updateTSD();
     };

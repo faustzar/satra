@@ -75,19 +75,26 @@ class HealthInspection(Base):
     specimen_id = Column(String(36), ForeignKey("specimens.id"), nullable=False, index=True)
     inspection_type = Column(String(30), default="Scheduled")  # Intake | Scheduled | AdHoc | GravidCheck
     
-    # Morphometrics
+    # Morphometrics (Matching Legacy AppSheet Spec)
     mass_grams = Column(Float, nullable=False)
     straight_carapace_length_mm = Column(Float, nullable=False)
-    plastron_length_mm = Column(Float, nullable=True)
-    body_condition_score = Column(Integer, default=3)  # 1 to 5
+    shell_width_mm = Column(Float, nullable=True)             # Width (SW)
+    shell_height_mm = Column(Float, nullable=True)            # Height (SH)
+    plastron_length_mm = Column(Float, nullable=True)         # Plastron Length
+    plastron_width_mm = Column(Float, nullable=True)          # Plastron Width
+    anal_opening_mm = Column(Float, nullable=True)            # Anal Opening
+    anal_width_mm = Column(Float, nullable=True)              # Anal Width
+    growth_rings = Column(String(50), nullable=True)          # Grow Rings
+    body_condition_score = Column(Integer, default=3)         # 1 to 5
     jacksons_ratio = Column(Float, nullable=True)
 
     # Gravidity
     eggs_palpated = Column(Boolean, default=False)
     estimated_egg_count = Column(Integer, default=0)
 
-    # Clinical findings
+    # Clinical findings & notes
     shell_condition_notes = Column(Text, nullable=True)
+    observation_notes = Column(Text, nullable=True)
     symptoms_json = Column(JSON, nullable=True)
     inspected_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 

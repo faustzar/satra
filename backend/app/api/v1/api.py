@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Response
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -8,6 +8,7 @@ import uuid
 from app.db.session import get_db
 from app.models.models import Specimen, Sighting, HealthInspection, BreedingPairing, SpeciesTaxonomy
 from app.services.recognition_service import biometric_catalog_service
+from app.services.pdf_report_service import report_generator
 
 api_router = APIRouter()
 
@@ -267,3 +268,60 @@ def get_stats_summary(db: Session = Depends(get_db)):
         "breeding": breeding,
         "active_telemetry_tags": 3
     }
+
+@api_router.get("/reports/specimen/{specimen_id}/pdf")
+def get_specimen_pdf_report(specimen_id: str, db: Session = Depends(get_db)):
+    """
+    Generates and returns an official Conservation Health & Studbook PDF certificate
+    for the specified specimen, including morphometric growth and medical history.
+    """
+    # Find specimen by ID or by custom_identifier (e.g. LEOP-2026-001)
+    specimen = db.query(Specimen).filter(
+        (Specimen.id == specimen_id) | (Specimen.custom_identifier == specimen_id)
+    ).first()
+
+    if not specimen:
+        raise HTTPException(status_code=404, detail=f"Specimen '{specimen_id}' not found.")
+
+    # Fetch longitudinal health inspections
+    inspections = db.query(HealthInspection).filter(
+        HealthInspection.specimen_id == specimen.id
+    ).order_by(HealthInspection.inspected_at.asc()).all()
+
+    inspection_records = []
+    for insp in inspections:
+        inspection_records.append({
+            "date": insp.inspected_at.strftime("%Y-%m-%d") if insp.inspected_at else "--",
+            "type": insp.inspection_type,
+            "mass": f"{insp.mass_grams:,.0f} g",
+            "scl": f"{insp.straight_carapace_length_mm:.0f} mm",
+            "ratio": f"{insp.jacksons_ratio:.4f}" if insp.jacksons_ratio else "N/A",
+            "bcs": f"Score {insp.body_condition_score}/5",
+            "findings": insp.shell_condition_notes or "Normal clinical state; no acute trauma detected."
+        })
+
+    specimen_data = {
+        "custom_identifier": specimen.custom_identifier,
+        "species_name": specimen.species_name,
+        "common_name": specimen.common_name,
+        "iucn_status": specimen.taxonomy.iucn_status if specimen.taxonomy else "LC (Least Concern)",
+        "pit_tag_number": specimen.pit_tag_number,
+        "notch_code": specimen.notch_code,
+        "sex": specimen.sex,
+        "status": specimen.status,
+        "dam_id": specimen.dam_id,
+        "sire_id": specimen.sire_id,
+        "inspections": inspection_records
+    }
+
+    try:
+        pdf_bytes = report_generator.generate_specimen_report(specimen_data)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="SATRA_Report_{specimen.custom_identifier}.pdf"'
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to render PDF: {str(e)}")

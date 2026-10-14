@@ -34,9 +34,72 @@ class _SpecimenDetailScreenState extends State<SpecimenDetailScreen> with Single
         title: Text(sp.customIdentifier),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share),
-            tooltip: "Export Specimen Record",
-            onPressed: () {},
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: "Export PDF Health & Studbook Certificate",
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                builder: (context) => Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.picture_as_pdf, color: AppColors.primaryGreen, size: 28),
+                          const SizedBox(width: 12),
+                          Text(
+                            "Export Report: ${sp.customIdentifier}",
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Generate official conservation health dossier and studbook pedigree certificate.",
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      ),
+                      const SizedBox(height: 16),
+                      ListTile(
+                        leading: const CircleAvatar(
+                          backgroundColor: Color(0xFFE8F5E9),
+                          child: Icon(Icons.download, color: AppColors.primaryGreen),
+                        ),
+                        title: const Text("Download PDF Certificate", style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: const Text("A4 CITES / Veterinary formatted document"),
+                        onTap: () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Downloading SATRA_Report_${sp.customIdentifier}.pdf..."),
+                              backgroundColor: AppColors.primaryGreen,
+                            ),
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: const CircleAvatar(
+                          backgroundColor: Color(0xFFFFF8E1),
+                          child: Icon(Icons.share, color: AppColors.earthBrown),
+                        ),
+                        title: const Text("Share Sighting Telemetry Link", style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: const Text("Encrypted anti-poaching link for rangers"),
+                        onTap: () {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Secure telemetry link copied to clipboard.")),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.edit),

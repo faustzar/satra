@@ -10,3 +10,4 @@ opencv-python-headless>=4.10.0.84
 numpy>=1.26.0
 pillow>=10.4.0
 alembic>=1.13.3
+reportlab>=4.2.0

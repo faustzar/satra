@@ -999,6 +999,97 @@
     </div>
   </div>
 
+  <!-- Observation Detail Drill-Down Modal -->
+  <div class="modal-backdrop" id="observationDetailModal">
+    <div class="modal-box" style="max-width: 680px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h2 id="drillSpecimenId" style="font-size: 20px; font-weight: 800; color: var(--primary-light); margin: 0;">--</h2>
+            <span class="badge badge-wild" id="drillDate">--</span>
+          </div>
+          <p id="drillSpecies" style="font-style: italic; color: var(--text-muted); font-size: 13px; margin-top: 4px;">--</p>
+        </div>
+        <button class="btn btn-secondary" onclick="closeModal('observationDetailModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Quick KPI Strip -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px;">
+        <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Body Mass</div>
+          <div id="drillMass" style="font-size: 22px; font-weight: 800; color: var(--primary-light); margin-top: 2px;">--</div>
+        </div>
+        <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Carapace Length (SCL)</div>
+          <div id="drillScl" style="font-size: 22px; font-weight: 800; color: var(--accent-gold); margin-top: 2px;">--</div>
+        </div>
+        <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Jackson's Ratio</div>
+          <div id="drillJackson" style="font-size: 22px; font-weight: 800; color: var(--accent-clay); margin-top: 2px;">--</div>
+        </div>
+      </div>
+
+      <!-- Full Morphometrics Grid -->
+      <div class="card" style="margin-bottom: 16px; padding: 16px;">
+        <div class="card-title" style="font-size: 15px; margin-bottom: 12px;">
+          <i class="fa-solid fa-ruler-combined" style="color: var(--primary-light);"></i> Complete Morphometric Dimensions
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--text-muted);">Width (SW):</span>
+            <strong id="drillSw">--</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--text-muted);">Height (SH):</span>
+            <strong id="drillSh">--</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--text-muted);">Plastron Length:</span>
+            <strong id="drillPlastronLength">--</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--text-muted);">Plastron Width:</span>
+            <strong id="drillPlastronWidth">--</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--text-muted);">Anal Opening:</span>
+            <strong id="drillAnalOpening">--</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--text-muted);">Anal Width:</span>
+            <strong id="drillAnalWidth">--</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--text-muted);">Growth Rings:</span>
+            <strong id="drillGrowRings">--</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--text-muted);">Condition Score (BCS):</span>
+            <strong id="drillBcs">3 / 5 (Healthy)</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes & Observation Context -->
+      <div class="card" style="margin-bottom: 16px; padding: 16px;">
+        <div class="card-title" style="font-size: 15px; margin-bottom: 10px;">
+          <i class="fa-solid fa-notes-medical" style="color: #38bdf8;"></i> Field Notes & Clinical Observations
+        </div>
+        <p id="drillNotes" style="font-size: 13px; line-height: 1.6; color: var(--text-main); font-style: italic; background: var(--card-inner); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin: 0;">
+          No field notes recorded.
+        </p>
+      </div>
+
+      <!-- Modal Footer Actions -->
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <a id="drillPdfBtn" href="#" class="btn btn-gold" style="font-size: 13px;">
+          <i class="fa-solid fa-file-pdf"></i> Download Specimen PDF
+        </a>
+        <button class="btn btn-secondary" onclick="closeModal('observationDetailModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let activeNotches = new Set(['L1', 'R4']);
     let mapInstance = null;
@@ -1394,6 +1485,43 @@
       }
     }
 
+    let currentObservationsCache = [];
+
+    function openObservationDetail(obsId) {
+      const obs = currentObservationsCache.find(o => o.id === obsId);
+      if (!obs) return;
+
+      const matchedSp = currentSpecimensCache.find(s => s.id === obs.specimen_id);
+      const specId = matchedSp ? matchedSp.custom_identifier : obs.specimen_id;
+      const specSpecies = matchedSp ? `${matchedSp.common_name || ''} (${matchedSp.species_name || ''})` : '';
+
+      document.getElementById('drillSpecimenId').innerText = specId;
+      document.getElementById('drillSpecies').innerText = specSpecies;
+      document.getElementById('drillDate').innerText = obs.inspected_at ? new Date(obs.inspected_at).toLocaleDateString() : 'N/A';
+      document.getElementById('drillMass').innerText = `${obs.mass_grams}g`;
+      document.getElementById('drillScl').innerText = `${obs.straight_carapace_length_mm}mm`;
+      document.getElementById('drillJackson').innerText = obs.jacksons_ratio ? obs.jacksons_ratio.toFixed(4) : 'N/A';
+
+      document.getElementById('drillSw').innerText = obs.shell_width_mm ? `${obs.shell_width_mm} mm` : '—';
+      document.getElementById('drillSh').innerText = obs.shell_height_mm ? `${obs.shell_height_mm} mm` : '—';
+      document.getElementById('drillPlastronLength').innerText = obs.plastron_length_mm ? `${obs.plastron_length_mm} mm` : '—';
+      document.getElementById('drillPlastronWidth').innerText = obs.plastron_width_mm ? `${obs.plastron_width_mm} mm` : '—';
+      document.getElementById('drillAnalOpening').innerText = obs.anal_opening_mm ? `${obs.anal_opening_mm} mm` : '—';
+      document.getElementById('drillAnalWidth').innerText = obs.anal_width_mm ? `${obs.anal_width_mm} mm` : '—';
+      document.getElementById('drillGrowRings').innerText = obs.growth_rings || '—';
+      document.getElementById('drillNotes').innerText = obs.observation_notes || 'No field notes or clinical observations recorded.';
+      
+      const pdfBtn = document.getElementById('drillPdfBtn');
+      if (pdfBtn && matchedSp) {
+        pdfBtn.href = `/api/v1/reports/specimen/${matchedSp.id}/pdf`;
+        pdfBtn.style.display = 'inline-flex';
+      } else if (pdfBtn) {
+        pdfBtn.style.display = 'none';
+      }
+
+      document.getElementById('observationDetailModal').style.display = 'flex';
+    }
+
     async function loadObservations() {
       const listEl = document.getElementById('observationsList');
       const countEl = document.getElementById('obsCountLabel');
@@ -1402,6 +1530,7 @@
       try {
         const res = await fetch('/api/v1/health-inspections');
         const inspections = await res.json();
+        currentObservationsCache = inspections;
         if (countEl) countEl.innerText = `${inspections.length} recorded`;
 
         listEl.innerHTML = '';
@@ -1421,25 +1550,32 @@
           const specName = matchedSp ? `${matchedSp.custom_identifier} (${matchedSp.common_name || matchedSp.species_name})` : obs.specimen_id;
 
           const item = document.createElement('div');
-          item.style = "background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;";
+          item.style = "background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; cursor: pointer; transition: transform 0.15s, border-color 0.15s;";
+          item.onmouseover = () => { item.style.borderColor = 'var(--accent-gold)'; item.style.transform = 'translateY(-2px)'; };
+          item.onmouseout = () => { item.style.borderColor = 'var(--border-color)'; item.style.transform = 'translateY(0)'; };
+          
           item.innerHTML = `
-            <div>
+            <div style="flex: 1;" onclick="openObservationDetail('${obs.id}')">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-weight: 800; font-size: 15px; color: var(--primary-light);">${specName}</span>
                 <span class="badge badge-wild">${dateStr}</span>
+                <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-magnifying-glass"></i> Click to drill down</span>
               </div>
               <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; display: flex; gap: 14px; flex-wrap: wrap;">
                 <span><strong>Mass:</strong> ${obs.mass_grams}g</span>
                 <span><strong>SCL:</strong> ${obs.straight_carapace_length_mm}mm</span>
-                <span><strong>Plastron:</strong> ${obs.plastron_length_mm || '—'}mm</span>
+                <span><strong>Plastron:</strong> ${obs.plastron_length_mm ? obs.plastron_length_mm + 'mm' : '—'}</span>
                 <span><strong>Grow Rings:</strong> ${obs.growth_rings || '—'}</span>
-                <span><strong>Jackson's Ratio:</strong> <code style="color: var(--accent-clay); font-weight: bold;">${obs.jacksons_ratio || '—'}</code></span>
+                <span><strong>Jackson's:</strong> <code style="color: var(--accent-clay); font-weight: bold;">${obs.jacksons_ratio || '—'}</code></span>
               </div>
               ${obs.observation_notes ? `<div style="font-size: 12px; color: var(--text-main); margin-top: 6px; font-style: italic;">"${obs.observation_notes}"</div>` : ''}
             </div>
             <div style="display: flex; gap: 6px;">
-              <button class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px;" onclick="openObservationModal('Update', '${obs.specimen_id}')">
-                <i class="fa-solid fa-pen"></i> New Followup
+              <button class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px;" onclick="event.stopPropagation(); openObservationDetail('${obs.id}')" title="View Full Observation Drill-Down">
+                <i class="fa-solid fa-eye"></i> Details
+              </button>
+              <button class="btn btn-gold" style="font-size: 11px; padding: 6px 10px;" onclick="event.stopPropagation(); openObservationModal('Followup', '${obs.specimen_id}')" title="Log Followup Observation">
+                <i class="fa-solid fa-plus"></i> Followup
               </button>
             </div>
           `;

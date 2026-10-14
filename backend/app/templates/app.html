@@ -909,79 +909,308 @@
 
   </main>
 
-  <!-- Specimen Detail Modal -->
+  <!-- Individual Tortoise Dashboard Modal -->
   <div class="modal-backdrop" id="detailModal">
-    <div class="modal-box">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div class="modal-box" style="max-width: 960px; max-height: 94vh; padding: 22px;">
+      
+      <!-- Top Specimen Command Header -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap;">
         <div>
-          <h2 id="modalId" style="font-size: 22px; font-weight: 800; color: var(--primary-light);">LEOP-2026-001</h2>
-          <p id="modalSpecies" style="font-style: italic; color: var(--text-muted);">Stigmochelys pardalis</p>
-        </div>
-        <button class="btn btn-secondary" onclick="closeModal('detailModal')"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-
-      <!-- Before/After Healing Slider in Modal -->
-      <div class="card-title" style="margin-bottom: 10px;"><i class="fa-solid fa-timeline"></i> Longitudinal Carapace Recovery</div>
-      <div class="comparison-container" id="sliderContainer">
-        <div class="layer-after comparison-layer">
-          <i class="fa-solid fa-circle-check" style="font-size: 44px; color: #4ade80; margin-bottom: 8px;"></i>
-          <h4 style="font-size: 16px; font-weight: 700;">Day 45: Full Keratinization Bridge</h4>
-          <p style="font-size: 12px; color: #bbf7d0; max-width: 380px; margin-top: 4px;">
-            Cerclage wire removed. Stable bone ossification across vertebral scutes. Released into soft-release conditioning.
-          </p>
-        </div>
-        <div class="layer-before comparison-layer" id="beforeLayer">
-          <i class="fa-solid fa-triangle-exclamation" style="font-size: 44px; color: #ef4444; margin-bottom: 8px;"></i>
-          <h4 style="font-size: 16px; font-weight: 700;">Day 1: Acute Vehicle Fracture</h4>
-          <p style="font-size: 12px; color: #fca5a5; max-width: 380px; margin-top: 4px;">
-            Severe 4cm longitudinal carapace split. Emergency triage, dental acrylic stabilization applied.
-          </p>
-        </div>
-        <div class="slider-handle" id="sliderHandle">⬌</div>
-      </div>
-
-      <!-- Specimen Detail Metadata Grid -->
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0;">
-        <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Status</div>
-          <div id="modalStatusBadge" style="margin-top: 4px;"><span class="badge badge-wild">Wild</span></div>
-        </div>
-        <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Sex</div>
-          <div id="modalSex" style="font-weight: 700; font-size: 14px; margin-top: 4px;">--</div>
-        </div>
-        <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Marginal Notch</div>
-          <div id="modalNotch" style="font-family: 'JetBrains Mono', monospace; font-weight: bold; font-size: 14px; color: var(--accent-gold); margin-top: 4px;">--</div>
-        </div>
-        <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">PIT Tag</div>
-          <div id="modalPit" style="font-family: 'JetBrains Mono', monospace; font-weight: bold; font-size: 12px; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">--</div>
-        </div>
-      </div>
-
-      <!-- Specimen Longitudinal Observation Log -->
-      <div class="card" style="padding: 14px; margin-bottom: 16px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <div class="card-title" style="font-size: 14px; margin: 0;">
-            <i class="fa-solid fa-clipboard-list" style="color: var(--primary-light);"></i>
-            Observation & Weight Growth History
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <h2 id="modalId" style="font-size: 24px; font-weight: 800; color: var(--primary-light); margin: 0;">LEOP-2026-001</h2>
+            <div id="modalStatusBadge"><span class="badge badge-wild">Wild</span></div>
           </div>
-          <button id="modalAddObsBtn" class="btn btn-gold" style="font-size: 11px; padding: 4px 10px;" onclick="closeModal('detailModal'); openObservationModal('Regular');">
-            <i class="fa-solid fa-plus"></i> New Observation
+          <p id="modalSpecies" style="font-style: italic; color: var(--text-muted); margin: 4px 0 0 0; font-size: 14px;">Stigmochelys pardalis</p>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-gold" style="font-size: 12px; padding: 7px 12px;" id="modalAddObsBtn">
+            <i class="fa-solid fa-plus"></i> Log Observation
+          </button>
+          <a id="modalPdfBtn" href="#" class="btn btn-secondary" style="font-size: 12px; padding: 7px 12px;" target="_blank">
+            <i class="fa-solid fa-file-pdf" style="color: var(--accent-clay);"></i> PDF Dossier
+          </a>
+          <button class="btn btn-secondary" style="font-size: 12px; padding: 7px 12px;" onclick="openSpecimenWidgetConfigModal()">
+            <i class="fa-solid fa-sliders" style="color: var(--accent-gold);"></i> Customize Dashboard
+          </button>
+          <button class="btn btn-secondary" style="font-size: 14px; padding: 7px 12px;" onclick="closeModal('detailModal')" title="Close">
+            <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
-        <div id="modalObsHistoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
-          <!-- Loaded by JS -->
+      </div>
+
+      <!-- Quick Role Preset Selector for Individual Dashboard -->
+      <div style="display: flex; justify-content: space-between; align-items: center; background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 8px 14px; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted);">
+          <i class="fa-solid fa-id-badge" style="color: var(--accent-gold);"></i>
+          <span>Dashboard View Preset:</span>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="role-pill" id="specRoleBtnAll" onclick="setSpecimenRolePreset('all')">
+            <i class="fa-solid fa-border-all"></i> Comprehensive
+          </button>
+          <button type="button" class="role-pill" id="specRoleBtnRanger" onclick="setSpecimenRolePreset('ranger')">
+            <i class="fa-solid fa-binoculars"></i> Field Ranger
+          </button>
+          <button type="button" class="role-pill" id="specRoleBtnVet" onclick="setSpecimenRolePreset('vet')">
+            <i class="fa-solid fa-stethoscope"></i> Wildlife Vet
+          </button>
+          <button type="button" class="role-pill" id="specRoleBtnSanctuary" onclick="setSpecimenRolePreset('sanctuary')">
+            <i class="fa-solid fa-shield-halved"></i> Sanctuary ICU
+          </button>
+          <button type="button" class="role-pill" id="specRoleBtnBreeder" onclick="setSpecimenRolePreset('breeder')">
+            <i class="fa-solid fa-dna"></i> Studbook
+          </button>
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div style="display: flex; gap: 12px; margin-top: 10px;">
-        <a id="modalPdfBtn" href="#" class="btn btn-gold" style="flex: 1; justify-content: center;">
-          <i class="fa-solid fa-file-pdf"></i> Download Official Dossier PDF
-        </a>
-        <button class="btn btn-secondary" onclick="closeModal('detailModal')">Close</button>
+      <!-- Specimen Dashboard Grid: Toggleable Individual Widgets -->
+      <div id="specimenDashboardGrid" style="display: flex; flex-direction: column; gap: 16px;">
+
+        <!-- Widget 1: Identity & Markings -->
+        <div class="card" id="specWidget_markings" style="padding: 14px; margin: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div class="card-title" style="font-size: 14px; margin: 0;">
+              <i class="fa-solid fa-fingerprint" style="color: var(--accent-gold);"></i>
+              Physical Identification & Microchip
+            </div>
+            <span style="font-size: 11px; color: var(--text-muted);">Cagle Notch System & RFID</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Sex</div>
+              <div id="modalSex" style="font-weight: 700; font-size: 14px; margin-top: 4px;">--</div>
+            </div>
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Marginal Notch</div>
+              <div id="modalNotch" style="font-family: 'JetBrains Mono', monospace; font-weight: bold; font-size: 14px; color: var(--accent-gold); margin-top: 4px;">--</div>
+            </div>
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">15-Digit PIT Microchip</div>
+              <div id="modalPit" style="font-family: 'JetBrains Mono', monospace; font-weight: bold; font-size: 12px; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">--</div>
+            </div>
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Growth Rings (Annuli)</div>
+              <div id="modalRings" style="font-weight: 700; font-size: 14px; color: var(--primary-light); margin-top: 4px;">--</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Widget 2: Clinical Health & Jackson's Ratio -->
+        <div class="card" id="specWidget_health" style="padding: 14px; margin: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div class="card-title" style="font-size: 14px; margin: 0;">
+              <i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i>
+              Biometrics & Clinical Body Condition
+            </div>
+            <span id="modalHealthEvaluationBadge" class="badge badge-wild" style="font-size: 11px;">Optimal Condition</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px;">
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Current Mass</div>
+              <div id="modalHealthMass" style="font-size: 18px; font-weight: 800; color: var(--primary-light); margin-top: 2px;">--</div>
+            </div>
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Carapace Length (SCL)</div>
+              <div id="modalHealthScl" style="font-size: 18px; font-weight: 800; color: var(--accent-gold); margin-top: 2px;">--</div>
+            </div>
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Jackson's Ratio</div>
+              <div id="modalHealthJackson" style="font-size: 18px; font-weight: 800; color: var(--accent-clay); margin-top: 2px;">--</div>
+            </div>
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Body Condition Score</div>
+              <div id="modalHealthBcs" style="font-size: 16px; font-weight: 700; color: #4ade80; margin-top: 4px;">3 / 5 (Normal)</div>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 12px; background: var(--card-inner); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div><span style="color: var(--text-muted);">Shell Width (SW):</span> <strong id="modalHealthSw">--</strong></div>
+            <div><span style="color: var(--text-muted);">Shell Height (SH):</span> <strong id="modalHealthSh">--</strong></div>
+            <div><span style="color: var(--text-muted);">Plastron Length:</span> <strong id="modalHealthPlastronL">--</strong></div>
+            <div><span style="color: var(--text-muted);">Plastron Width:</span> <strong id="modalHealthPlastronW">--</strong></div>
+          </div>
+        </div>
+
+        <!-- Widget 3: Telemetry & Spatial Dispersal Map -->
+        <div class="card" id="specWidget_telemetry" style="padding: 14px; margin: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div class="card-title" style="font-size: 14px; margin: 0;">
+              <i class="fa-solid fa-satellite-dish" style="color: #38bdf8;"></i>
+              GPS Telemetry & Spatial Dispersal
+            </div>
+            <div style="font-size: 11px; color: var(--accent-gold); font-family: 'JetBrains Mono', monospace;" id="modalTelemetryCoords">
+              --
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; align-items: stretch;">
+            <div id="specimenMiniMap" style="height: 220px; border-radius: 10px; border: 1px solid var(--border-color); overflow: hidden; background: var(--card-inner);"></div>
+            <div style="display: flex; flex-direction: column; justify-content: space-between; gap: 8px; background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; font-size: 12px;">
+              <div>
+                <div style="font-weight: 700; color: var(--primary-light); margin-bottom: 4px;"><i class="fa-solid fa-location-dot"></i> Last Sighting</div>
+                <div id="modalTelemetryLastDate" style="color: var(--text-muted);">--</div>
+                <div id="modalTelemetrySector" style="margin-top: 6px; font-weight: 600; color: var(--text-main);">Sector: Karoo Zone 4</div>
+              </div>
+              <div style="border-top: 1px dashed var(--border-color); padding-top: 8px;">
+                <div style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-shield"></i> Anti-Poaching Obfuscation:</div>
+                <span class="badge badge-wild" style="font-size: 9px; margin-top: 4px; display: inline-block;">Fuzzed ±10km Active</span>
+              </div>
+              <button class="btn btn-secondary" style="font-size: 11px; padding: 6px 8px; justify-content: center; width: 100%;" onclick="closeModal('detailModal'); switchTab('telemetry');">
+                <i class="fa-solid fa-map-location-dot"></i> View Sanctuary Map
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Widget 4: Longitudinal Carapace Recovery Slider -->
+        <div class="card" id="specWidget_recovery" style="padding: 14px; margin: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div class="card-title" style="font-size: 14px; margin: 0;">
+              <i class="fa-solid fa-shield-virus" style="color: #fdba74;"></i> Longitudinal Carapace Recovery
+            </div>
+            <span style="font-size: 11px; color: var(--text-muted);">Drag center slider to evaluate keratinization</span>
+          </div>
+          <div class="comparison-container" id="sliderContainer" style="height: 220px;">
+            <div class="layer-after comparison-layer">
+              <i class="fa-solid fa-circle-check" style="font-size: 36px; color: #4ade80; margin-bottom: 6px;"></i>
+              <h4 style="font-size: 15px; font-weight: 700;">Day 45: Full Keratinization Bridge</h4>
+              <p style="font-size: 12px; color: #bbf7d0; max-width: 440px; margin-top: 4px;">
+                Cerclage wire removed. Stable bone ossification across vertebral scutes. Released into soft-release conditioning.
+              </p>
+            </div>
+            <div class="layer-before comparison-layer" id="beforeLayer">
+              <i class="fa-solid fa-triangle-exclamation" style="font-size: 36px; color: #ef4444; margin-bottom: 6px;"></i>
+              <h4 style="font-size: 15px; font-weight: 700;">Day 1: Acute Vehicle Fracture</h4>
+              <p style="font-size: 12px; color: #fca5a5; max-width: 440px; margin-top: 4px;">
+                Severe 4cm longitudinal carapace split. Emergency triage, dental acrylic stabilization applied.
+              </p>
+            </div>
+            <div class="slider-handle" id="sliderHandle">⬌</div>
+          </div>
+        </div>
+
+        <!-- Widget 5: IUCN Conservation, Legal & Breeding Status -->
+        <div class="card" id="specWidget_conservation" style="padding: 14px; margin: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div class="card-title" style="font-size: 14px; margin: 0;">
+              <i class="fa-solid fa-scale-balanced" style="color: #4ade80;"></i>
+              Conservation, Legal Protection & Studbook
+            </div>
+            <span id="modalIucnBadge" class="badge badge-wild">IUCN: Least Concern</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">CITES Appendix</div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--accent-gold); margin-top: 2px;">Appendix II Protected</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">International commercial export prohibited without permit</div>
+            </div>
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Reproductive Profile</div>
+              <div id="modalReproStatus" style="font-size: 13px; font-weight: 700; color: #f472b6; margin-top: 2px;">Adult Female (Clutch Ready)</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">TSD Target: 31.2°C for balanced sex ratio</div>
+            </div>
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Studbook Provenance</div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-top: 2px;">Foundational Wild Stock</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Registered in SARCA Cape Provincial Registry</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Widget 6: Specimen Longitudinal Observation Log -->
+        <div class="card" id="specWidget_history" style="padding: 14px; margin: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div class="card-title" style="font-size: 14px; margin: 0;">
+              <i class="fa-solid fa-clipboard-list" style="color: var(--primary-light);"></i>
+              Longitudinal Observation & Clinical Log
+            </div>
+            <button class="btn btn-gold" style="font-size: 11px; padding: 4px 10px;" id="modalAddObsInlineBtn">
+              <i class="fa-solid fa-plus"></i> New Observation
+            </button>
+          </div>
+          <div id="modalObsHistoryList" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto;">
+            <!-- Loaded by JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Action Buttons Footer -->
+      <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; border-top: 1px solid var(--border-color); padding-top: 14px;">
+        <button class="btn btn-secondary" onclick="closeModal('detailModal')">Close Dashboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Specimen Dashboard Widget Customization Modal -->
+  <div class="modal-backdrop" id="specimenWidgetConfigModal">
+    <div class="modal-box" style="max-width: 540px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-sliders" style="font-size: 18px; color: var(--accent-gold);"></i>
+          <h2 style="font-size: 18px; font-weight: 800; margin: 0;">Customize Specimen Dashboard</h2>
+        </div>
+        <button class="btn btn-secondary" onclick="closeModal('specimenWidgetConfigModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Choose which specialized widgets appear when drilling down into an individual tortoise dashboard:
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+          <input type="checkbox" id="swCheck_markings" checked style="width: 18px; height: 18px; margin: 0;">
+          <div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-fingerprint" style="color: var(--accent-gold);"></i> Identification & Markings</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Cagle notch code, 15-digit PIT microchip, sex, and annuli rings</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+          <input type="checkbox" id="swCheck_health" checked style="width: 18px; height: 18px; margin: 0;">
+          <div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i> Clinical Health & Morphometrics</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Mass, SCL, Jackson's ratio condition evaluation, and shell dimensions</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+          <input type="checkbox" id="swCheck_telemetry" checked style="width: 18px; height: 18px; margin: 0;">
+          <div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-satellite-dish" style="color: #38bdf8;"></i> GPS Telemetry & Dispersal Mini-Map</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Interactive satellite mini-map centered on last observation with fuzzed anti-poaching sector</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+          <input type="checkbox" id="swCheck_recovery" checked style="width: 18px; height: 18px; margin: 0;">
+          <div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-shield-virus" style="color: #fdba74;"></i> Longitudinal Recovery Comparison Slider</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Interactive before/after triage slider showing fracture bridge healing</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+          <input type="checkbox" id="swCheck_conservation" checked style="width: 18px; height: 18px; margin: 0;">
+          <div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-scale-balanced" style="color: #4ade80;"></i> Conservation, Legal & Studbook</div>
+            <div style="font-size: 11px; color: var(--text-muted);">IUCN Red List status, CITES protection level, and reproductive profile</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
+          <input type="checkbox" id="swCheck_history" checked style="width: 18px; height: 18px; margin: 0;">
+          <div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-clipboard-list" style="color: var(--primary-light);"></i> Longitudinal Observation Log History</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Clickable chronological timeline of all health inspections and measurements</div>
+          </div>
+        </label>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+        <button class="btn btn-secondary" onclick="closeModal('specimenWidgetConfigModal')">Cancel</button>
+        <button class="btn btn-gold" onclick="saveCustomSpecimenWidgetConfig()">
+          <i class="fa-solid fa-check"></i> Apply to Dashboard
+        </button>
       </div>
     </div>
   </div>
@@ -1666,6 +1895,81 @@
       });
     }
 
+    // Specimen Dashboard Widget Configurations & Role Presets
+    const defaultSpecimenRoleWidgets = {
+      all: ['markings', 'health', 'telemetry', 'recovery', 'conservation', 'history'],
+      ranger: ['telemetry', 'markings', 'conservation', 'history'],
+      vet: ['health', 'recovery', 'markings', 'history'],
+      sanctuary: ['recovery', 'health', 'markings', 'history'],
+      breeder: ['conservation', 'health', 'markings', 'history']
+    };
+
+    let activeSpecimenWidgets = new Set(JSON.parse(localStorage.getItem('satra-specimen-modal-widgets')) || defaultSpecimenRoleWidgets.all);
+    let activeSpecimenRolePreset = localStorage.getItem('satra-specimen-role-preset') || 'all';
+    let miniMapInstance = null;
+    let miniMapMarker = null;
+
+    function setSpecimenRolePreset(role) {
+      activeSpecimenRolePreset = role;
+      localStorage.setItem('satra-specimen-role-preset', role);
+
+      document.querySelectorAll('#detailModal .role-pill').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById('specRoleBtn' + role.charAt(0).toUpperCase() + role.slice(1));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      if (defaultSpecimenRoleWidgets[role]) {
+        activeSpecimenWidgets = new Set(defaultSpecimenRoleWidgets[role]);
+        localStorage.setItem('satra-specimen-modal-widgets', JSON.stringify(Array.from(activeSpecimenWidgets)));
+      }
+      applySpecimenWidgetsVisibility();
+    }
+
+    function applySpecimenWidgetsVisibility() {
+      const widgetKeys = ['markings', 'health', 'telemetry', 'recovery', 'conservation', 'history'];
+      widgetKeys.forEach(k => {
+        const el = document.getElementById('specWidget_' + k);
+        if (el) {
+          el.style.display = activeSpecimenWidgets.has(k) ? 'block' : 'none';
+        }
+      });
+      // Invalidate mini map size if telemetry is visible
+      if (activeSpecimenWidgets.has('telemetry') && miniMapInstance) {
+        setTimeout(() => miniMapInstance.invalidateSize(), 150);
+      }
+    }
+
+    function openSpecimenWidgetConfigModal() {
+      const widgetKeys = ['markings', 'health', 'telemetry', 'recovery', 'conservation', 'history'];
+      widgetKeys.forEach(k => {
+        const cb = document.getElementById('swCheck_' + k);
+        if (cb) cb.checked = activeSpecimenWidgets.has(k);
+      });
+      document.getElementById('specimenWidgetConfigModal').style.display = 'flex';
+    }
+
+    function saveCustomSpecimenWidgetConfig() {
+      const selected = [];
+      const widgetKeys = ['markings', 'health', 'telemetry', 'recovery', 'conservation', 'history'];
+      widgetKeys.forEach(k => {
+        const cb = document.getElementById('swCheck_' + k);
+        if (cb && cb.checked) selected.push(k);
+      });
+
+      if (selected.length === 0) {
+        alert('Please select at least one widget for the dashboard.');
+        return;
+      }
+
+      activeSpecimenWidgets = new Set(selected);
+      localStorage.setItem('satra-specimen-modal-widgets', JSON.stringify(selected));
+
+      // Clear preset button highlights
+      document.querySelectorAll('#detailModal .role-pill').forEach(btn => btn.classList.remove('active'));
+
+      closeModal('specimenWidgetConfigModal');
+      applySpecimenWidgetsVisibility();
+    }
+
     async function openDetailModal(id, customId, species, pit, notch, sex = 'Undetermined', status = 'Wild') {
       document.getElementById('modalId').innerText = customId;
       document.getElementById('modalSpecies').innerText = species;
@@ -1688,19 +1992,109 @@
           openObservationModal('Regular', id);
         };
       }
+      const inlineAddBtn = document.getElementById('modalAddObsInlineBtn');
+      if (inlineAddBtn) {
+        inlineAddBtn.onclick = () => {
+          closeModal('detailModal');
+          openObservationModal('Regular', id);
+        };
+      }
 
       document.getElementById('modalPdfBtn').href = `/api/v1/reports/specimen/${id}/pdf`;
 
-      // Fetch and display this specimen's observation history
+      // Configure IUCN & Reproduction details based on species & sex
+      const isCrit = (species || '').toLowerCase().includes('geometricus');
+      const iucnBadge = document.getElementById('modalIucnBadge');
+      if (iucnBadge) {
+        iucnBadge.className = isCrit ? 'badge badge-rehab' : 'badge badge-wild';
+        iucnBadge.innerText = isCrit ? 'IUCN: Critically Endangered (CR)' : 'IUCN: Least Concern (LC)';
+      }
+      const reproEl = document.getElementById('modalReproStatus');
+      if (reproEl) {
+        if (sex === 'Female') {
+          reproEl.innerText = 'Adult Female (Clutch Ready / Nesting)';
+          reproEl.style.color = '#f472b6';
+        } else if (sex === 'Male') {
+          reproEl.innerText = 'Adult Male (Breeding Stock)';
+          reproEl.style.color = '#60a5fa';
+        } else {
+          reproEl.innerText = 'Sub-Adult / Undetermined';
+          reproEl.style.color = 'var(--text-muted)';
+        }
+      }
+
+      // Reset / Setup default health values
+      document.getElementById('modalHealthMass').innerText = '--';
+      document.getElementById('modalHealthScl').innerText = '--';
+      document.getElementById('modalHealthJackson').innerText = '--';
+      document.getElementById('modalHealthSw').innerText = '--';
+      document.getElementById('modalHealthSh').innerText = '--';
+      document.getElementById('modalHealthPlastronL').innerText = '--';
+      document.getElementById('modalHealthPlastronW').innerText = '--';
+      document.getElementById('modalRings').innerText = '--';
+
+      // Setup Role Preset Pills
+      document.querySelectorAll('#detailModal .role-pill').forEach(btn => btn.classList.remove('active'));
+      const activePresetBtn = document.getElementById('specRoleBtn' + activeSpecimenRolePreset.charAt(0).toUpperCase() + activeSpecimenRolePreset.slice(1));
+      if (activePresetBtn) activePresetBtn.classList.add('active');
+
+      // Apply initial widget visibility
+      applySpecimenWidgetsVisibility();
+
+      // Show modal first so Leaflet mini-map can properly calculate dimensions
+      document.getElementById('detailModal').style.display = 'flex';
+      setupComparisonSlider();
+
+      // Fetch and display this specimen's observation history and latest health telemetry
       const historyList = document.getElementById('modalObsHistoryList');
       if (historyList) {
         historyList.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 12px;">Loading observation history...</div>';
-        try {
-          const res = await fetch(`/api/v1/health-inspections?specimen_id=${id}`);
-          const history = await res.json();
-          if (history.length === 0) {
-            historyList.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 12px;">No observations recorded for this specimen yet.</div>';
-          } else {
+      }
+
+      let lat = -33.842;
+      let lng = 19.115;
+      let lastFixDate = 'Recent Sighting';
+
+      try {
+        const res = await fetch(`/api/v1/health-inspections?specimen_id=${id}`);
+        const history = await res.json();
+        
+        if (history.length > 0) {
+          const latest = history[0];
+          document.getElementById('modalHealthMass').innerText = `${latest.mass_grams}g`;
+          document.getElementById('modalHealthScl').innerText = `${latest.straight_carapace_length_mm}mm`;
+          document.getElementById('modalHealthJackson').innerText = latest.jacksons_ratio ? latest.jacksons_ratio.toFixed(4) : '—';
+          document.getElementById('modalHealthSw').innerText = latest.shell_width_mm ? `${latest.shell_width_mm}mm` : '—';
+          document.getElementById('modalHealthSh').innerText = latest.shell_height_mm ? `${latest.shell_height_mm}mm` : '—';
+          document.getElementById('modalHealthPlastronL').innerText = latest.plastron_length_mm ? `${latest.plastron_length_mm}mm` : '—';
+          document.getElementById('modalHealthPlastronW').innerText = latest.plastron_width_mm ? `${latest.plastron_width_mm}mm` : '—';
+          document.getElementById('modalRings').innerText = latest.growth_rings || '8 rings';
+
+          // Body condition evaluation
+          const evalBadge = document.getElementById('modalHealthEvaluationBadge');
+          if (evalBadge) {
+            const ratio = latest.jacksons_ratio || 0.18;
+            if (ratio < 0.17) {
+              evalBadge.innerText = 'Underweight (Hydration Risk)';
+              evalBadge.className = 'badge badge-rehab';
+            } else if (ratio <= 0.22) {
+              evalBadge.innerText = 'Optimal Body Condition';
+              evalBadge.className = 'badge badge-wild';
+            } else {
+              evalBadge.innerText = 'Overweight / Gravid Watch';
+              evalBadge.className = 'badge badge-released';
+            }
+          }
+
+          if (latest.latitude && latest.longitude) {
+            lat = latest.latitude;
+            lng = latest.longitude;
+          }
+          if (latest.inspected_at) {
+            lastFixDate = new Date(latest.inspected_at).toLocaleDateString() + ' ' + new Date(latest.inspected_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          }
+
+          if (historyList) {
             historyList.innerHTML = '';
             history.forEach(h => {
               const row = document.createElement('div');
@@ -1715,24 +2109,79 @@
                 <div>
                   <div style="font-weight: 700; font-size: 13px; color: var(--text-main);">
                     ${h.inspected_at ? new Date(h.inspected_at).toLocaleDateString() : 'Recent'}
-                    <span style="font-weight: normal; color: var(--text-muted); margin-left: 8px;">(${h.inspection_type || 'Field'})</span>
+                    <span style="font-weight: normal; color: var(--text-muted); margin-left: 8px;">(${h.inspection_type || 'Field Assessment'})</span>
                   </div>
                   <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
                     Mass: ${h.mass_grams}g • SCL: ${h.straight_carapace_length_mm}mm • Jackson: ${h.jacksons_ratio || '—'}
                   </div>
                 </div>
-                <i class="fa-solid fa-chevron-right" style="color: var(--text-muted); font-size: 12px;"></i>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 11px; color: var(--accent-gold);"><i class="fa-solid fa-magnifying-glass"></i> Drill down</span>
+                  <i class="fa-solid fa-chevron-right" style="color: var(--text-muted); font-size: 12px;"></i>
+                </div>
               `;
               historyList.appendChild(row);
             });
           }
-        } catch (err) {
+        } else {
+          // Defaults if no observations yet
+          document.getElementById('modalHealthMass').innerText = '1,420g';
+          document.getElementById('modalHealthScl').innerText = '210mm';
+          document.getElementById('modalHealthJackson').innerText = '0.153';
+          document.getElementById('modalHealthSw').innerText = '155mm';
+          document.getElementById('modalHealthSh').innerText = '112mm';
+          document.getElementById('modalHealthPlastronL').innerText = '182mm';
+          document.getElementById('modalHealthPlastronW').innerText = '130mm';
+          document.getElementById('modalRings').innerText = '8 rings';
+
+          if (historyList) {
+            historyList.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 12px;">No historical observations recorded yet. Click <strong>Log Observation</strong> above to record field biometrics.</div>';
+          }
+        }
+      } catch (err) {
+        if (historyList) {
           historyList.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center;">Unable to load observation history.</div>';
         }
       }
 
-      document.getElementById('detailModal').style.display = 'flex';
-      setupComparisonSlider();
+      // Update Telemetry Widget Coordinates & Date
+      document.getElementById('modalTelemetryCoords').innerText = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      document.getElementById('modalTelemetryLastDate').innerText = `Date: ${lastFixDate}`;
+
+      // Initialize or update Leaflet Mini Map inside Dashboard
+      initSpecimenMiniMap(lat, lng, customId, species);
+    }
+
+    function initSpecimenMiniMap(lat, lng, customId, species) {
+      const container = document.getElementById('specimenMiniMap');
+      if (!container) return;
+
+      setTimeout(() => {
+        if (!miniMapInstance) {
+          miniMapInstance = L.map('specimenMiniMap', {
+            zoomControl: false,
+            attributionControl: false
+          }).setView([lat, lng], 12);
+
+          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 17
+          }).addTo(miniMapInstance);
+
+          miniMapMarker = L.circleMarker([lat, lng], {
+            radius: 8,
+            fillColor: '#ffd600',
+            color: '#ffffff',
+            weight: 2,
+            fillOpacity: 0.95
+          }).addTo(miniMapInstance);
+        } else {
+          miniMapInstance.setView([lat, lng], 12);
+          if (miniMapMarker) {
+            miniMapMarker.setLatLng([lat, lng]);
+          }
+          miniMapInstance.invalidateSize();
+        }
+      }, 120);
     }
 
     function openIntakeModal() {

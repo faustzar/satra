@@ -1490,7 +1490,7 @@
 
       <!-- Modal Footer Actions -->
       <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <a id="drillPdfBtn" href="#" class="btn btn-gold" style="font-size: 13px;">
+        <a id="drillPdfBtn" href="#" class="btn btn-gold" style="font-size: 13px;" target="_blank">
           <i class="fa-solid fa-file-pdf"></i> Download Specimen PDF
         </a>
         <button class="btn btn-secondary" onclick="closeModal('observationDetailModal')">Close</button>
@@ -1886,7 +1886,7 @@
             <button class="btn btn-gold" style="font-size: 12px; padding: 6px 10px; flex: 1;" onclick="event.stopPropagation(); openObservationModal('Regular', '${sp.id}')" title="Log Field Observation">
               <i class="fa-solid fa-plus"></i> Observe
             </button>
-            <a href="/api/v1/reports/specimen/${sp.id}/pdf" class="btn btn-secondary" style="font-size: 12px; padding: 6px 10px;" title="Download PDF" onclick="event.stopPropagation();">
+            <a href="/api/v1/reports/specimen/${sp.id}/pdf" class="btn btn-secondary" style="font-size: 12px; padding: 6px 10px;" title="Download PDF" target="_blank" onclick="event.stopPropagation();">
               <i class="fa-solid fa-file-pdf"></i>
             </a>
           </div>

@@ -4,11 +4,16 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 import uuid
+import re
+import logging
+from sqlalchemy import func
 
 from app.db.session import get_db
 from app.models.models import Specimen, Sighting, HealthInspection, BreedingPairing, SpeciesTaxonomy
 from app.services.recognition_service import biometric_catalog_service
 from app.services.pdf_report_service import report_generator
+
+logger = logging.getLogger(__name__)
 
 api_router = APIRouter()
 
@@ -344,40 +349,79 @@ def get_specimen_pdf_report(specimen_id: str, db: Session = Depends(get_db)):
     Generates and returns an official Conservation Health & Studbook PDF certificate
     for the specified specimen, including morphometric growth and medical history.
     """
-    # Find specimen by ID or by custom_identifier (e.g. LEOP-2026-001)
+    # Find specimen by ID or by custom_identifier (case-insensitive for convenience)
     specimen = db.query(Specimen).filter(
-        (Specimen.id == specimen_id) | (Specimen.custom_identifier == specimen_id)
+        (Specimen.id == specimen_id) |
+        (Specimen.custom_identifier == specimen_id) |
+        (func.lower(Specimen.custom_identifier) == specimen_id.lower())
     ).first()
 
     if not specimen:
         raise HTTPException(status_code=404, detail=f"Specimen '{specimen_id}' not found.")
 
-    # Fetch longitudinal health inspections
-    inspections = db.query(HealthInspection).filter(
-        HealthInspection.specimen_id == specimen.id
-    ).order_by(HealthInspection.inspected_at.asc()).all()
+    # Fetch longitudinal health inspections safely
+    inspections = []
+    try:
+        inspections = db.query(HealthInspection).filter(
+            HealthInspection.specimen_id == specimen.id
+        ).order_by(HealthInspection.inspected_at.asc()).all()
+    except Exception as db_err:
+        logger.warning(f"Could not load health inspections for specimen {specimen_id}: {db_err}")
+        # Table might be missing newer morphometric columns in legacy deployments
+        inspections = []
 
     inspection_records = []
     for insp in inspections:
+        # Safe numeric formatting
+        mass_val = getattr(insp, 'mass_grams', None)
+        mass_str = f"{mass_val:,.0f} g" if mass_val is not None else "--"
+
+        scl_val = getattr(insp, 'straight_carapace_length_mm', None)
+        scl_str = f"{scl_val:.0f} mm" if scl_val is not None else "--"
+
+        ratio_val = getattr(insp, 'jacksons_ratio', None)
+        ratio_str = f"{ratio_val:.4f}" if ratio_val is not None else "N/A"
+
+        bcs_val = getattr(insp, 'body_condition_score', None)
+        bcs_str = f"Score {bcs_val}/5" if bcs_val is not None else "--"
+
+        date_val = getattr(insp, 'inspected_at', None)
+        date_str = date_val.strftime("%Y-%m-%d") if date_val else "--"
+
+        # Check shell_condition_notes or observation_notes
+        findings_notes = (
+            getattr(insp, 'shell_condition_notes', None) or
+            getattr(insp, 'observation_notes', None) or
+            "Normal clinical state; no acute trauma detected."
+        )
+
         inspection_records.append({
-            "date": insp.inspected_at.strftime("%Y-%m-%d") if insp.inspected_at else "--",
-            "type": insp.inspection_type,
-            "mass": f"{insp.mass_grams:,.0f} g",
-            "scl": f"{insp.straight_carapace_length_mm:.0f} mm",
-            "ratio": f"{insp.jacksons_ratio:.4f}" if insp.jacksons_ratio else "N/A",
-            "bcs": f"Score {insp.body_condition_score}/5",
-            "findings": insp.shell_condition_notes or "Normal clinical state; no acute trauma detected."
+            "date": date_str,
+            "type": getattr(insp, 'inspection_type', None) or "Scheduled",
+            "mass": mass_str,
+            "scl": scl_str,
+            "ratio": ratio_str,
+            "bcs": bcs_str,
+            "findings": findings_notes
         })
 
+    # Safely retrieve taxonomy IUCN status
+    iucn_status = "LC (Least Concern)"
+    try:
+        if specimen.taxonomy and getattr(specimen.taxonomy, 'iucn_status', None):
+            iucn_status = specimen.taxonomy.iucn_status
+    except Exception:
+        pass
+
     specimen_data = {
-        "custom_identifier": specimen.custom_identifier,
-        "species_name": specimen.species_name,
-        "common_name": specimen.common_name,
-        "iucn_status": specimen.taxonomy.iucn_status if specimen.taxonomy else "LC (Least Concern)",
+        "custom_identifier": specimen.custom_identifier or "N/A",
+        "species_name": specimen.species_name or "N/A",
+        "common_name": specimen.common_name or "Chelonian",
+        "iucn_status": iucn_status,
         "pit_tag_number": specimen.pit_tag_number,
         "notch_code": specimen.notch_code,
-        "sex": specimen.sex,
-        "status": specimen.status,
+        "sex": specimen.sex or "Undetermined",
+        "status": specimen.status or "Wild",
         "dam_id": specimen.dam_id,
         "sire_id": specimen.sire_id,
         "inspections": inspection_records
@@ -385,12 +429,15 @@ def get_specimen_pdf_report(specimen_id: str, db: Session = Depends(get_db)):
 
     try:
         pdf_bytes = report_generator.generate_specimen_report(specimen_data)
+        safe_identifier = re.sub(r'[^a-zA-Z0-9_\-]', '_', specimen.custom_identifier or 'specimen')
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
             headers={
-                "Content-Disposition": f'attachment; filename="SATRA_Report_{specimen.custom_identifier}.pdf"'
+                "Content-Disposition": f'attachment; filename="SATRA_Report_{safe_identifier}.pdf"',
+                "Cache-Control": "no-cache, no-store, must-revalidate"
             }
         )
     except Exception as e:
+        logger.error(f"Failed to render specimen report PDF: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to render PDF: {str(e)}")

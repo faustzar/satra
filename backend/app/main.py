@@ -15,6 +15,41 @@ async def lifespan(app: FastAPI):
     # Create all tables on startup if they do not exist
     Base.metadata.create_all(bind=engine)
 
+    # Ensure all morphometric and GPS columns exist on health_inspections for legacy/existing databases
+    try:
+        import sqlalchemy as sa
+        with engine.begin() as conn:
+            dialect = engine.dialect.name
+            columns_to_ensure = [
+                ("shell_width_mm", "FLOAT"),
+                ("shell_height_mm", "FLOAT"),
+                ("plastron_width_mm", "FLOAT"),
+                ("anal_opening_mm", "FLOAT"),
+                ("anal_width_mm", "FLOAT"),
+                ("growth_rings", "VARCHAR(50)"),
+                ("observation_notes", "TEXT"),
+                ("latitude", "FLOAT"),
+                ("longitude", "FLOAT"),
+                ("gps_accuracy_m", "FLOAT")
+            ]
+            if dialect == "postgresql":
+                for col_name, col_type in columns_to_ensure:
+                    try:
+                        conn.execute(sa.text(f"ALTER TABLE health_inspections ADD COLUMN IF NOT EXISTS {col_name} {col_type};"))
+                    except Exception:
+                        pass
+            elif dialect == "sqlite":
+                try:
+                    res = conn.execute(sa.text("PRAGMA table_info(health_inspections);")).fetchall()
+                    existing_cols = {r[1] for r in res}
+                    for col_name, col_type in columns_to_ensure:
+                        if col_name not in existing_cols:
+                            conn.execute(sa.text(f"ALTER TABLE health_inspections ADD COLUMN {col_name} {col_type};"))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
     # Seed baseline species taxonomy & realistic field tracks
     db = SessionLocal()
     try:

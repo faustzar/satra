@@ -1,5 +1,6 @@
 import io
-from datetime import datetime
+from datetime import datetime, timezone
+from html import escape
 from typing import Optional, List, Dict, Any
 
 from reportlab.lib.pagesizes import A4
@@ -18,6 +19,12 @@ class ConservationReportGenerator:
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
 
+    def _add_style_safe(self, style: ParagraphStyle):
+        if style.name in self.styles:
+            self.styles[style.name] = style
+        else:
+            self.styles.add(style)
+
     def _setup_custom_styles(self):
         # Custom palette
         self.primary_color = colors.HexColor("#2D5A27") # Forest Green
@@ -26,7 +33,7 @@ class ConservationReportGenerator:
         self.dark_bg = colors.HexColor("#1E293B")       # Dark Slate
 
         # Typography Styles
-        self.styles.add(ParagraphStyle(
+        self._add_style_safe(ParagraphStyle(
             name='ReportTitle',
             fontName='Helvetica-Bold',
             fontSize=18,
@@ -35,7 +42,7 @@ class ConservationReportGenerator:
             spaceAfter=4
         ))
 
-        self.styles.add(ParagraphStyle(
+        self._add_style_safe(ParagraphStyle(
             name='ReportSubtitle',
             fontName='Helvetica',
             fontSize=10,
@@ -44,7 +51,7 @@ class ConservationReportGenerator:
             spaceAfter=12
         ))
 
-        self.styles.add(ParagraphStyle(
+        self._add_style_safe(ParagraphStyle(
             name='SectionHeading',
             fontName='Helvetica-Bold',
             fontSize=12,
@@ -54,7 +61,7 @@ class ConservationReportGenerator:
             spaceAfter=6
         ))
 
-        self.styles.add(ParagraphStyle(
+        self._add_style_safe(ParagraphStyle(
             name='TableCellText',
             fontName='Helvetica',
             fontSize=9,
@@ -62,7 +69,7 @@ class ConservationReportGenerator:
             textColor=colors.HexColor("#1E293B")
         ))
 
-        self.styles.add(ParagraphStyle(
+        self._add_style_safe(ParagraphStyle(
             name='TableCellHeader',
             fontName='Helvetica-Bold',
             fontSize=9,
@@ -70,7 +77,7 @@ class ConservationReportGenerator:
             textColor=colors.white
         ))
 
-        self.styles.add(ParagraphStyle(
+        self._add_style_safe(ParagraphStyle(
             name='SecurityNotice',
             fontName='Helvetica-Oblique',
             fontSize=8,
@@ -96,8 +103,9 @@ class ConservationReportGenerator:
 
         # 1. Document Header
         elements.append(Paragraph("SATRA CHELONIAN CONSERVATION REGISTRY", self.styles['ReportTitle']))
+        now_utc = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
         elements.append(Paragraph(
-            f"Official Health Certificate, Morphometrics & Studbook Record • Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
+            f"Official Health Certificate, Morphometrics & Studbook Record • Generated: {now_utc}",
             self.styles['ReportSubtitle']
         ))
         elements.append(HRFlowable(width="100%", thickness=1.5, color=self.primary_color, spaceAfter=10))
@@ -123,30 +131,39 @@ class ConservationReportGenerator:
         # 3. Specimen Identity & Taxonomy Grid
         elements.append(Paragraph("1. SPECIMEN IDENTITY & TAXONOMIC CLASSIFICATION", self.styles['SectionHeading']))
         
+        custom_id = escape(str(specimen_data.get('custom_identifier') or 'N/A'))
+        species_name = escape(str(specimen_data.get('species_name') or 'N/A'))
+        common_name = escape(str(specimen_data.get('common_name') or 'N/A'))
+        iucn_status = escape(str(specimen_data.get('iucn_status') or 'LC (Least Concern)'))
+        pit_tag = escape(str(specimen_data.get('pit_tag_number') or 'None / Unchipped'))
+        notch_code = escape(str(specimen_data.get('notch_code') or 'None'))
+        sex = escape(str(specimen_data.get('sex') or 'Undetermined'))
+        status = escape(str(specimen_data.get('status') or 'Wild'))
+
         identity_data = [
             [
                 Paragraph("<b>Custom Identifier:</b>", self.styles['TableCellText']),
-                Paragraph(f"<font color='#2D5A27'><b>{specimen_data.get('custom_identifier', 'N/A')}</b></font>", self.styles['TableCellText']),
+                Paragraph(f"<font color='#2D5A27'><b>{custom_id}</b></font>", self.styles['TableCellText']),
                 Paragraph("<b>Scientific Name:</b>", self.styles['TableCellText']),
-                Paragraph(f"<i>{specimen_data.get('species_name', 'N/A')}</i>", self.styles['TableCellText'])
+                Paragraph(f"<i>{species_name}</i>", self.styles['TableCellText'])
             ],
             [
                 Paragraph("<b>Common Name:</b>", self.styles['TableCellText']),
-                Paragraph(specimen_data.get('common_name', 'N/A'), self.styles['TableCellText']),
+                Paragraph(common_name, self.styles['TableCellText']),
                 Paragraph("<b>IUCN Red List Status:</b>", self.styles['TableCellText']),
-                Paragraph(f"<b>{specimen_data.get('iucn_status', 'LC (Least Concern)')}</b>", self.styles['TableCellText'])
+                Paragraph(f"<b>{iucn_status}</b>", self.styles['TableCellText'])
             ],
             [
                 Paragraph("<b>Microchip (PIT Tag):</b>", self.styles['TableCellText']),
-                Paragraph(specimen_data.get('pit_tag_number') or "None / Unchipped", self.styles['TableCellText']),
+                Paragraph(pit_tag, self.styles['TableCellText']),
                 Paragraph("<b>Marginal Scute Notch:</b>", self.styles['TableCellText']),
-                Paragraph(f"<font color='#583101'><b>{specimen_data.get('notch_code') or 'None'}</b></font>", self.styles['TableCellText'])
+                Paragraph(f"<font color='#583101'><b>{notch_code}</b></font>", self.styles['TableCellText'])
             ],
             [
                 Paragraph("<b>Sex:</b>", self.styles['TableCellText']),
-                Paragraph(specimen_data.get('sex', 'Undetermined'), self.styles['TableCellText']),
+                Paragraph(sex, self.styles['TableCellText']),
                 Paragraph("<b>Current Status:</b>", self.styles['TableCellText']),
-                Paragraph(f"<b>{specimen_data.get('status', 'Wild')}</b>", self.styles['TableCellText'])
+                Paragraph(f"<b>{status}</b>", self.styles['TableCellText'])
             ]
         ]
 
@@ -163,20 +180,22 @@ class ConservationReportGenerator:
 
         # 4. Studbook Pedigree & Lineage
         elements.append(Paragraph("2. STUDBOOK PEDIGREE & REPRODUCTIVE LINEAGE", self.styles['SectionHeading']))
-        dam_id = specimen_data.get('dam_id') or "Unknown Wild Founder (F0)"
-        sire_id = specimen_data.get('sire_id') or "Unknown Wild Founder (F0)"
+        dam_id = escape(str(specimen_data.get('dam_id') or "Unknown Wild Founder (F0)"))
+        sire_id = escape(str(specimen_data.get('sire_id') or "Unknown Wild Founder (F0)"))
+        clutch_count = specimen_data.get('clutch_count') or 0
+        gen_status = "F0 (Founder Stock)" if not specimen_data.get('dam_id') else "F1 (Captive Bred)"
         pedigree_data = [
             [
                 Paragraph("<b>Dam (Maternal Line):</b>", self.styles['TableCellText']),
-                Paragraph(str(dam_id), self.styles['TableCellText']),
+                Paragraph(dam_id, self.styles['TableCellText']),
                 Paragraph("<b>Sire (Paternal Line):</b>", self.styles['TableCellText']),
-                Paragraph(str(sire_id), self.styles['TableCellText'])
+                Paragraph(sire_id, self.styles['TableCellText'])
             ],
             [
                 Paragraph("<b>Generation Status:</b>", self.styles['TableCellText']),
-                Paragraph("F0 (Founder Stock)" if not specimen_data.get('dam_id') else "F1 (Captive Bred)", self.styles['TableCellText']),
+                Paragraph(gen_status, self.styles['TableCellText']),
                 Paragraph("<b>Active Clutches / Offspring:</b>", self.styles['TableCellText']),
-                Paragraph(str(specimen_data.get('clutch_count', 0)) + " recorded clutches", self.styles['TableCellText'])
+                Paragraph(f"{clutch_count} recorded clutches", self.styles['TableCellText'])
             ]
         ]
         pedigree_table = Table(pedigree_data, colWidths=[4.2 * cm, 4.8 * cm, 4.2 * cm, 4.8 * cm])
@@ -192,7 +211,7 @@ class ConservationReportGenerator:
         # 5. Longitudinal Morphometrics & Health History Table
         elements.append(Paragraph("3. CLINICAL HEALTH & LONGITUDINAL GROWTH ASSESSMENTS", self.styles['SectionHeading']))
         
-        inspections = specimen_data.get('inspections', [])
+        inspections = specimen_data.get('inspections') or []
         if not inspections:
             inspections = [
                 {
@@ -246,19 +265,28 @@ class ConservationReportGenerator:
         ]
 
         for insp in inspections:
+            date_str = escape(str(insp.get("date") or "--"))
+            type_str = escape(str(insp.get("type") or "--"))
+            mass_str = escape(str(insp.get("mass") or "--"))
+            scl_str = escape(str(insp.get("scl") or "--"))
+            ratio_str = escape(str(insp.get("ratio") or "--"))
+            bcs_str = escape(str(insp.get("bcs") or "--"))
+            findings_str = escape(str(insp.get("findings") or "--")).replace("\n", "<br/>")
+
             health_table_data.append([
-                Paragraph(insp.get("date", "--"), self.styles['TableCellText']),
-                Paragraph(insp.get("type", "--"), self.styles['TableCellText']),
-                Paragraph(insp.get("mass", "--"), self.styles['TableCellText']),
-                Paragraph(insp.get("scl", "--"), self.styles['TableCellText']),
-                Paragraph(insp.get("ratio", "--"), self.styles['TableCellText']),
-                Paragraph(insp.get("bcs", "--"), self.styles['TableCellText']),
-                Paragraph(insp.get("findings", "--"), self.styles['TableCellText']),
+                Paragraph(date_str, self.styles['TableCellText']),
+                Paragraph(type_str, self.styles['TableCellText']),
+                Paragraph(mass_str, self.styles['TableCellText']),
+                Paragraph(scl_str, self.styles['TableCellText']),
+                Paragraph(ratio_str, self.styles['TableCellText']),
+                Paragraph(bcs_str, self.styles['TableCellText']),
+                Paragraph(findings_str, self.styles['TableCellText']),
             ])
 
         health_table = Table(
             health_table_data,
-            colWidths=[2.2 * cm, 2.2 * cm, 1.8 * cm, 1.8 * cm, 2.2 * cm, 1.8 * cm, 6.0 * cm]
+            colWidths=[2.2 * cm, 2.2 * cm, 1.8 * cm, 1.8 * cm, 2.2 * cm, 1.8 * cm, 6.0 * cm],
+            repeatRows=1
         )
         health_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), self.primary_color),

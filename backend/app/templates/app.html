@@ -196,6 +196,28 @@
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 
+    /* Interactive KPI Cards */
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+      position: relative;
+    }
+    .kpi-card:hover {
+      border-color: var(--primary-light);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    }
+    .kpi-card.active {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 0 2px var(--accent-gold), 0 8px 20px rgba(0,0,0,0.22);
+      background: var(--card-inner);
+    }
+
     /* Specimen Card */
     .specimen-card {
       background: var(--card-bg);
@@ -554,28 +576,37 @@
         </button>
       </div>
 
-      <!-- Quick KPI Stats (Interactive Filters) -->
+      <!-- Quick KPI Stats (Interactive Filter Cards) -->
       <div class="grid-3" style="margin-bottom: 24px;">
-        <div class="card" style="padding: 14px; cursor: pointer; transition: transform 0.15s, border-color 0.15s;" onclick="filterSpecimens('All')" title="Click to show all specimens">
+        <div id="kpiCardAll" class="kpi-card active" onclick="filterSpecimens('All')" title="Click to filter: Show All Specimens">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Total Registered</div>
-            <i class="fa-solid fa-list" style="font-size: 14px; color: var(--primary-light);"></i>
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Total Registered</div>
+            <i class="fa-solid fa-layer-group" style="font-size: 16px; color: var(--primary-light);"></i>
           </div>
-          <div style="font-size: 26px; font-weight: 800; color: var(--primary-light);" id="statTotal">3</div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 6px;">
+            <div style="font-size: 28px; font-weight: 800; color: var(--primary-light);" id="statTotal">3</div>
+            <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-filter"></i> All Cohorts</span>
+          </div>
         </div>
-        <div class="card" style="padding: 14px; cursor: pointer; transition: transform 0.15s, border-color 0.15s;" onclick="filterSpecimens('InRehab')" title="Click to filter In Rehabilitation">
+        <div id="kpiCardInRehab" class="kpi-card" onclick="filterSpecimens('InRehab')" title="Click to filter: In Rehabilitation Only">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">In Rehabilitation</div>
-            <i class="fa-solid fa-truck-medical" style="font-size: 14px; color: #fdba74;"></i>
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">In Rehabilitation</div>
+            <i class="fa-solid fa-truck-medical" style="font-size: 16px; color: #fdba74;"></i>
           </div>
-          <div style="font-size: 26px; font-weight: 800; color: #fdba74;" id="statRehab">1</div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 6px;">
+            <div style="font-size: 28px; font-weight: 800; color: #fdba74;" id="statRehab">1</div>
+            <span style="font-size: 11px; color: #fdba74;"><i class="fa-solid fa-filter"></i> Clinical ICU</span>
+          </div>
         </div>
-        <div class="card" style="padding: 14px; cursor: pointer; transition: transform 0.15s, border-color 0.15s;" onclick="filterSpecimens('Released')" title="Click to filter Post-Release Telemetry">
+        <div id="kpiCardReleased" class="kpi-card" onclick="filterSpecimens('Released')" title="Click to filter: Post-Release Telemetry Only">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Post-Release Telemetry</div>
-            <i class="fa-solid fa-satellite-dish" style="font-size: 14px; color: #93c5fd;"></i>
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Post-Release Telemetry</div>
+            <i class="fa-solid fa-satellite-dish" style="font-size: 16px; color: #93c5fd;"></i>
           </div>
-          <div style="font-size: 26px; font-weight: 800; color: #93c5fd;" id="statReleased">1</div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 6px;">
+            <div style="font-size: 28px; font-weight: 800; color: #93c5fd;" id="statReleased">1</div>
+            <span style="font-size: 11px; color: #93c5fd;"><i class="fa-solid fa-filter"></i> Wild Dispersal</span>
+          </div>
         </div>
       </div>
 
@@ -1217,8 +1248,21 @@
       document.getElementById('statReleased').innerText = specimens.filter(s => s.status === 'Released').length;
     }
 
+    let currentFilterStatus = 'All';
+
     function filterSpecimens(status) {
       if (!currentSpecimensCache) return;
+      currentFilterStatus = status;
+
+      // Update active styling on the 3 KPI cards
+      const cardAll = document.getElementById('kpiCardAll');
+      const cardRehab = document.getElementById('kpiCardInRehab');
+      const cardReleased = document.getElementById('kpiCardReleased');
+
+      if (cardAll) cardAll.classList.toggle('active', status === 'All');
+      if (cardRehab) cardRehab.classList.toggle('active', status === 'InRehab');
+      if (cardReleased) cardReleased.classList.toggle('active', status === 'Released');
+
       if (status === 'All') {
         renderSpecimenCards(currentSpecimensCache);
       } else {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/colors.dart';
 import '../models/specimen.dart';
+import 'intake_screen.dart';
 
 class SpecimenListScreen extends StatefulWidget {
   const SpecimenListScreen({super.key});
@@ -166,8 +167,9 @@ class _SpecimenListScreenState extends State<SpecimenListScreen> {
         backgroundColor: AppColors.primaryGreen,
         foregroundColor: Colors.white,
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Open Intake & ID Pattern Form")),
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const IntakeScreen()),
           );
         },
         icon: const Icon(Icons.add),

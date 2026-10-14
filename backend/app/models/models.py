@@ -1,0 +1,161 @@
+import uuid
+from datetime import datetime
+from sqlalchemy import (
+    Column, String, Float, Integer, Boolean, DateTime, Text, ForeignKey, JSON
+)
+from sqlalchemy.orm import relationship
+from app.db.session import Base
+
+def generate_uuid() -> str:
+    return str(uuid.uuid4())
+
+class SpeciesTaxonomy(Base):
+    __tablename__ = "species_taxonomy"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    scientific_name = Column(String(100), unique=True, nullable=False, index=True)
+    common_name = Column(String(100), nullable=False)
+    family = Column(String(50), default="Testudinidae")
+    genus = Column(String(50), nullable=False)
+    iucn_status = Column(String(10), default="LC")  # CR, EN, VU, NT, LC
+    pivotal_temp_c = Column(Float, default=30.8)   # TSD Pivotal Temperature
+
+    specimens = relationship("Specimen", back_populates="taxonomy")
+
+
+class Specimen(Base):
+    __tablename__ = "specimens"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    custom_identifier = Column(String(50), unique=True, nullable=False, index=True)
+    species_id = Column(String(36), ForeignKey("species_taxonomy.id"), nullable=True)
+    species_name = Column(String(100), nullable=False)
+    common_name = Column(String(100), nullable=False)
+    pit_tag_number = Column(String(50), index=True, nullable=True)
+    notch_code = Column(String(50), nullable=True)
+    sex = Column(String(20), default="Undetermined")  # Male | Female | Juvenile | Undetermined
+    status = Column(String(30), default="Wild")       # Wild | Intake | InRehab | Breeding | Deceased | Released
+
+    # Studbook Pedigree
+    dam_id = Column(String(36), ForeignKey("specimens.id"), nullable=True)
+    sire_id = Column(String(36), ForeignKey("specimens.id"), nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    taxonomy = relationship("SpeciesTaxonomy", back_populates="specimens")
+    sightings = relationship("Sighting", back_populates="specimen", cascade="all, delete-orphan")
+    inspections = relationship("HealthInspection", back_populates="specimen", cascade="all, delete-orphan")
+    photos = relationship("PhotoRecord", back_populates="specimen", cascade="all, delete-orphan")
+
+
+class Sighting(Base):
+    __tablename__ = "sightings"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    specimen_id = Column(String(36), ForeignKey("specimens.id"), nullable=True, index=True)
+    
+    # Coordinates (WGS84)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    horizontal_accuracy = Column(Float, default=5.0)
+    
+    habitat_type = Column(String(100), nullable=True)
+    ambient_temp_c = Column(Float, nullable=True)
+    notes = Column(Text, nullable=True)
+    observer_id = Column(String(50), nullable=True)
+    recorded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    specimen = relationship("Specimen", back_populates="sightings")
+
+
+class HealthInspection(Base):
+    __tablename__ = "health_inspections"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    specimen_id = Column(String(36), ForeignKey("specimens.id"), nullable=False, index=True)
+    inspection_type = Column(String(30), default="Scheduled")  # Intake | Scheduled | AdHoc | GravidCheck
+    
+    # Morphometrics
+    mass_grams = Column(Float, nullable=False)
+    straight_carapace_length_mm = Column(Float, nullable=False)
+    plastron_length_mm = Column(Float, nullable=True)
+    body_condition_score = Column(Integer, default=3)  # 1 to 5
+    jacksons_ratio = Column(Float, nullable=True)
+
+    # Gravidity
+    eggs_palpated = Column(Boolean, default=False)
+    estimated_egg_count = Column(Integer, default=0)
+
+    # Clinical findings
+    shell_condition_notes = Column(Text, nullable=True)
+    symptoms_json = Column(JSON, nullable=True)
+    inspected_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    specimen = relationship("Specimen", back_populates="inspections")
+
+
+class BreedingPairing(Base):
+    __tablename__ = "breeding_pairings"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    dam_id = Column(String(36), ForeignKey("specimens.id"), nullable=False)
+    sire_id = Column(String(36), ForeignKey("specimens.id"), nullable=False)
+    pairing_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    enclosure_or_gps = Column(String(100), nullable=True)
+    courtship_behaviors = Column(Text, nullable=True)
+    copulation_confirmed = Column(Boolean, default=False)
+
+    clutches = relationship("Clutch", back_populates="pairing")
+
+
+class Clutch(Base):
+    __tablename__ = "clutches"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    pairing_id = Column(String(36), ForeignKey("breeding_pairings.id"), nullable=True)
+    dam_id = Column(String(36), ForeignKey("specimens.id"), nullable=False)
+    clutch_code = Column(String(50), unique=True, nullable=False, index=True)
+    oviposition_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    nest_latitude = Column(Float, nullable=True)
+    nest_longitude = Column(Float, nullable=True)
+    
+    total_eggs = Column(Integer, default=1)
+    viable_eggs = Column(Integer, default=1)
+    incubation_mode = Column(String(20), default="Artificial")  # Artificial | InSitu
+    target_incubation_temp_c = Column(Float, default=31.5)
+    predicted_sex = Column(String(50), nullable=True)
+
+    pairing = relationship("BreedingPairing", back_populates="clutches")
+    eggs = relationship("EggRecord", back_populates="clutch", cascade="all, delete-orphan")
+
+
+class EggRecord(Base):
+    __tablename__ = "egg_records"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    clutch_id = Column(String(36), ForeignKey("clutches.id"), nullable=False, index=True)
+    egg_code = Column(String(50), unique=True, nullable=False)
+    initial_mass_grams = Column(Float, nullable=True)
+    length_mm = Column(Float, nullable=True)
+    width_mm = Column(Float, nullable=True)
+    fertility_status = Column(String(30), default="Viable")  # Fertile | Infertile | EarlyDeath | Viable
+    
+    pipping_date = Column(DateTime, nullable=True)
+    emergence_date = Column(DateTime, nullable=True)
+    neonate_specimen_id = Column(String(36), ForeignKey("specimens.id"), nullable=True)
+
+    clutch = relationship("Clutch", back_populates="eggs")
+
+
+class PhotoRecord(Base):
+    __tablename__ = "photo_records"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    specimen_id = Column(String(36), ForeignKey("specimens.id"), nullable=True, index=True)
+    inspection_id = Column(String(36), ForeignKey("health_inspections.id"), nullable=True)
+    photo_type = Column(String(30), default="Carapace")  # Carapace | Plastron | Head | Injury | Radiograph | Candling
+    cloud_url = Column(String(500), nullable=False)
+    feature_descriptors = Column(Text, nullable=True)    # Serialized scute keypoint descriptors
+    captured_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    specimen = relationship("Specimen", back_populates="photos")

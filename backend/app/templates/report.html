@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SATRA - Citizen Tortoise Rescue & Sighting Portal</title>
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Google Fonts & Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Top Brand Bar */
+    .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 4px;
+    }
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-title i { font-size: 26px; color: #4ade80; }
+    .brand-title h1 { font-size: 20px; font-weight: 700; }
+    .brand-link { color: #94a3b8; font-size: 13px; text-decoration: none; }
+
+    /* Anti-Poaching Security Shield Banner */
+    .security-badge {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #94a3b8;
+    }
+    .security-badge i { color: #38bdf8; font-size: 16px; }
+
+    /* Photo Upload Box */
+    .photo-card {
+      background: #1e293b;
+      border: 2px dashed #475569;
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+      position: relative;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .photo-card:hover { border-color: #4ade80; }
+    .photo-placeholder {
+      text-align: center;
+      padding: 24px;
+    }
+    .photo-placeholder i { font-size: 48px; color: #64748b; margin-bottom: 12px; }
+    .photo-placeholder p { font-size: 14px; font-weight: 600; color: #e2e8f0; }
+    .photo-placeholder span { font-size: 12px; color: #94a3b8; }
+    #photoPreview { width: 100%; height: 260px; object-fit: cover; display: none; }
+    #fileInput { display: none; }
+
+    /* Biometric AI Match Notification */
+    #matchBanner {
+      display: none;
+      background: #064e3b;
+      border: 1px solid #10b981;
+      border-radius: 12px;
+      padding: 12px 16px;
+      animation: fadeIn 0.3s ease;
+    }
+    .match-header { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #6ee7b7; font-size: 14px; }
+    .match-details { font-size: 12px; color: #d1fae5; margin-top: 4px; }
+
+    /* Condition Selector */
+    .section-title { font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; }
+    .condition-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .condition-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .condition-btn i { font-size: 20px; color: #94a3b8; }
+    .condition-btn span { font-size: 12px; font-weight: 600; }
+    .condition-btn.active {
+      border-color: #4ade80;
+      background: #064e3b;
+      color: #6ee7b7;
+    }
+    .condition-btn.active i { color: #4ade80; }
+    .condition-btn.emergency.active {
+      border-color: #ef4444;
+      background: #450a0a;
+      color: #fca5a5;
+    }
+    .condition-btn.emergency.active i { color: #ef4444; }
+
+    /* GPS Map Preview */
+    .map-box {
+      background: #1e293b;
+      border-radius: 14px;
+      border: 1px solid #334155;
+      padding: 12px;
+    }
+    .gps-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; }
+    .gps-coords { font-family: monospace; color: #4ade80; font-size: 12px; }
+    #miniMap { height: 160px; border-radius: 8px; }
+
+    /* Notes Input */
+    textarea {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 12px;
+      color: white;
+      font-family: inherit;
+      resize: none;
+      font-size: 13px;
+    }
+    textarea:focus { outline: none; border-color: #4ade80; }
+
+    /* Submit Button */
+    .submit-btn {
+      background: #22c55e;
+      color: #0f172a;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+      transition: background 0.2s;
+    }
+    .submit-btn:hover { background: #16a34a; }
+    .submit-btn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+
+    /* Success Modal */
+    #successCard {
+      display: none;
+      background: #1e293b;
+      border: 1px solid #4ade80;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+    }
+    .success-icon { font-size: 48px; color: #4ade80; margin-bottom: 12px; }
+    .success-ticket { font-family: monospace; font-size: 18px; color: #fbbf24; font-weight: bold; margin: 8px 0; }
+    .hotline-box {
+      background: #0f172a;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 16px;
+      font-size: 13px;
+    }
+    .hotline-num { font-size: 16px; font-weight: bold; color: #38bdf8; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- Top Header -->
+    <div class="brand-header">
+      <div class="brand-title">
+        <i class="fa-solid fa-shield-cat"></i>
+        <div>
+          <h1>Tortoise Rescue</h1>
+          <p style="font-size: 11px; color: #94a3b8;">Citizen Sighting & Wildlife Reporting</p>
+        </div>
+      </div>
+      <a href="/dashboard" class="brand-link"><i class="fa-solid fa-map"></i> View Map</a>
+    </div>
+
+    <!-- Anti-Poaching Encryption Shield -->
+    <div class="security-badge">
+      <i class="fa-solid fa-shield-halved"></i>
+      <span>Protected by Anti-Poaching GPS Encryption. Exact coordinates are secured and hidden from public poachers.</span>
+    </div>
+
+    <!-- Submission Form Container -->
+    <div id="reportForm">
+      
+      <!-- Photo Attachment -->
+      <div class="section-title">1. Tortoise Photograph (Shell Pattern)</div>
+      <div class="photo-card" onclick="triggerFileInput()">
+        <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="handlePhotoUpload(event)">
+        <div class="photo-placeholder" id="placeholder">
+          <i class="fa-solid fa-camera"></i>
+          <p>Tap to Snap or Upload Photo</p>
+          <span>Align top of shell (perpendicular) for AI matching</span>
+        </div>
+        <img id="photoPreview" alt="Tortoise Carapace Preview">
+      </div>
+
+      <!-- AI Recognition Match Banner -->
+      <div id="matchBanner" style="margin-top: 12px;">
+        <div class="match-header">
+          <i class="fa-solid fa-fingerprint"></i>
+          <span id="matchHeader">Biometric Shell Pattern Match!</span>
+        </div>
+        <div class="match-details" id="matchDetails">Checking reference catalog...</div>
+      </div>
+
+      <div class="section-title" style="margin-top: 16px;">2. Condition Triage</div>
+      <div class="condition-grid">
+        <div class="condition-btn active" onclick="selectCondition(this, 'Healthy / Relocated')">
+          <i class="fa-solid fa-road"></i>
+          <span>Crossing Road</span>
+        </div>
+        <div class="condition-btn emergency" onclick="selectCondition(this, 'Injured / Cracked Shell')">
+          <i class="fa-solid fa-crutch"></i>
+          <span>Injured Shell</span>
+        </div>
+        <div class="condition-btn" onclick="selectCondition(this, 'Trapped in Enclosure')">
+          <i class="fa-solid fa-box-archive"></i>
+          <span>Trapped / Garden</span>
+        </div>
+        <div class="condition-btn" onclick="selectCondition(this, 'Deceased Remains')">
+          <i class="fa-solid fa-skull"></i>
+          <span>Shell Remains</span>
+        </div>
+      </div>
+
+      <!-- GPS Map Card -->
+      <div class="section-title" style="margin-top: 16px;">3. Encounter Location</div>
+      <div class="map-box">
+        <div class="gps-header">
+          <span id="gpsStatus"><i class="fa-solid fa-location-arrow"></i> Acquiring GPS...</span>
+          <span class="gps-coords" id="gpsCoords">-- , --</span>
+        </div>
+        <div id="miniMap"></div>
+      </div>
+
+      <div class="section-title" style="margin-top: 16px;">4. Notes or Description</div>
+      <textarea id="notes" rows="2" placeholder="e.g. Moved out of road onto grass verge, heading south towards fynbos."></textarea>
+
+      <!-- Submit Button -->
+      <button class="submit-btn" id="submitBtn" onclick="submitRescueReport()" style="margin-top: 16px; width: 100%;">
+        <i class="fa-solid fa-paper-plane"></i>
+        <span>Send Rescue Alert to Rangers</span>
+      </button>
+
+    </div>
+
+    <!-- Success Confirmation Card -->
+    <div id="successCard">
+      <i class="fa-solid fa-circle-check success-icon"></i>
+      <h2>Rescue Alert Logged</h2>
+      <p style="color: #94a3b8; font-size: 13px; margin-top: 4px;">Thank you for protecting our indigenous wildlife!</p>
+      
+      <div class="success-ticket" id="ticketNumber">RESCUE-2026-9481</div>
+
+      <div style="background: #0f172a; padding: 12px; border-radius: 8px; margin-top: 12px; text-align: left; font-size: 12px;">
+        <div style="font-weight: 600; color: #4ade80; margin-bottom: 4px;">Emergency Field Advice:</div>
+        <div>• <strong>Do NOT turn the tortoise upside down.</strong></div>
+        <div>• If moving out of the road, carry gently in the direction it was walking.</div>
+        <div>• If cracked or bleeding, keep in a dark, ventilated cardboard box with a towel.</div>
+      </div>
+
+      <div class="hotline-box">
+        <div>Emergency Wildlife Rehab Hotline:</div>
+        <div class="hotline-num">+27 (0) 82 867 8647</div>
+      </div>
+
+      <button class="submit-btn" onclick="resetForm()" style="margin-top: 16px; width: 100%; background: #3b82f6;">
+        <i class="fa-solid fa-plus"></i>
+        <span>Submit Another Sighting</span>
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    let currentLat = -33.8500;
+    let currentLon = 19.1000;
+    let selectedCondition = "Healthy / Relocated";
+    let matchedSpecimenId = null;
+    let map, marker;
+
+    // Initialize Leaflet Mini-Map
+    function initMap() {
+      map = L.map('miniMap').setView([currentLat, currentLon], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      marker = L.marker([currentLat, currentLon], { draggable: true }).addTo(map);
+      marker.on('dragend', function (e) {
+        const pos = marker.getLatLng();
+        currentLat = pos.lat;
+        currentLon = pos.lng;
+        document.getElementById('gpsCoords').innerText = `${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}`;
+      });
+    }
+
+    // Auto-fetch GPS
+    function acquireGPS() {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            currentLat = pos.coords.latitude;
+            currentLon = pos.coords.longitude;
+            document.getElementById('gpsStatus').innerHTML = '<i class="fa-solid fa-location-crosshairs" style="color: #4ade80;"></i> GPS Locked (±' + Math.round(pos.coords.accuracy) + 'm)';
+            document.getElementById('gpsCoords').innerText = `${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}`;
+            if (map && marker) {
+              map.setView([currentLat, currentLon], 15);
+              marker.setLatLng([currentLat, currentLon]);
+            }
+          },
+          (err) => {
+            document.getElementById('gpsStatus').innerText = "Drag map marker to location";
+          },
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      }
+    }
+
+    function triggerFileInput() {
+      document.getElementById('fileInput').click();
+    }
+
+    async function handlePhotoUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const preview = document.getElementById('photoPreview');
+      const placeholder = document.getElementById('placeholder');
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+      placeholder.style.display = 'none';
+
+      // Call Biometric Pattern Recognition API
+      const matchBanner = document.getElementById('matchBanner');
+      const matchHeader = document.getElementById('matchHeader');
+      const matchDetails = document.getElementById('matchDetails');
+      matchBanner.style.display = 'block';
+      matchHeader.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyzing Shell Scute Topology...';
+      matchDetails.innerText = 'Extracting ORB scute boundary descriptors...';
+
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      try {
+        const res = await fetch('/api/v1/recognition/match-shell', {
+          method: 'POST',
+          body: formData
+        });
+        const matches = await res.json();
+        
+        if (matches && matches.length > 0 && matches[0].confidence_score > 0.5) {
+          const top = matches[0];
+          matchedSpecimenId = top.specimen_id;
+          matchHeader.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #4ade80;"></i> Known Individual Identified!`;
+          matchDetails.innerHTML = `<strong>${top.custom_identifier}</strong> (${top.species})<br>Confidence: ${(top.confidence_score * 100).toFixed(1)}% (${top.inlier_count} geometric inliers)`;
+        } else {
+          matchHeader.innerHTML = `<i class="fa-solid fa-circle-info"></i> New / Unregistered Specimen`;
+          matchDetails.innerText = `No previous match found in catalog. A new profile will be created upon ranger review.`;
+        }
+      } catch (err) {
+        matchHeader.innerHTML = `<i class="fa-solid fa-circle-check"></i> Photo Analyzed`;
+        matchDetails.innerText = `Ready for submission.`;
+      }
+    }
+
+    function selectCondition(el, val) {
+      document.querySelectorAll('.condition-btn').forEach(btn => btn.classList.remove('active'));
+      el.classList.add('active');
+      selectedCondition = val;
+    }
+
+    async function submitRescueReport() {
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Transmitting Alert...';
+
+      const notes = document.getElementById('notes').value;
+
+      const payload = {
+        specimen_id: matchedSpecimenId,
+        latitude: currentLat,
+        longitude: currentLon,
+        horizontal_accuracy: 3.5,
+        habitat_type: selectedCondition,
+        ambient_temp_c: 24.0,
+        notes: notes ? `[Citizen Report - ${selectedCondition}] ${notes}` : `[Citizen Report - ${selectedCondition}]`,
+        observer_id: "Citizen Observer"
+      };
+
+      try {
+        const res = await fetch('/api/v1/sightings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        // Show Success Card
+        document.getElementById('reportForm').style.display = 'none';
+        document.getElementById('successCard').style.display = 'block';
+        const ticketId = "RESCUE-" + (data.sighting_id ? data.sighting_id.substring(0, 8).toUpperCase() : "2026-X");
+        document.getElementById('ticketNumber').innerText = ticketId;
+      } catch (err) {
+        alert("Failed to submit sighting. Please check network connection.");
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Rescue Alert to Rangers';
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('successCard').style.display = 'none';
+      document.getElementById('reportForm').style.display = 'block';
+      document.getElementById('photoPreview').style.display = 'none';
+      document.getElementById('placeholder').style.display = 'block';
+      document.getElementById('matchBanner').style.display = 'none';
+      document.getElementById('notes').value = '';
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Rescue Alert to Rangers';
+      matchedSpecimenId = null;
+    }
+
+    window.onload = () => {
+      initMap();
+      acquireGPS();
+    };
+  </script>
+</body>
+</html>

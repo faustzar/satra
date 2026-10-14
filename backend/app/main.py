@@ -208,6 +208,15 @@ def get_dashboard():
         return HTMLResponse(content=template_path.read_text(encoding="utf-8"))
     return HTMLResponse(content="<h1>Dashboard template not found</h1>", status_code=404)
 
+@app.get("/report", response_class=HTMLResponse, tags=["Citizen Reporting"])
+@app.get("/rescue", response_class=HTMLResponse, tags=["Citizen Reporting"])
+def get_report():
+    """Serves the citizen science quick-rescue photo upload and GPS sighting portal."""
+    template_path = Path(__file__).parent / "templates" / "report.html"
+    if template_path.exists():
+        return HTMLResponse(content=template_path.read_text(encoding="utf-8"))
+    return HTMLResponse(content="<h1>Report template not found</h1>", status_code=404)
+
 @app.get("/healthz", tags=["Health"])
 def health_check():
     """Health check endpoint used by Render to verify service uptime."""

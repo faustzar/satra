@@ -53,10 +53,14 @@ class RecognitionMatch(BaseModel):
     specimen_id: str
     custom_identifier: str
     species: str
+    common_name: Optional[str] = None
     confidence_score: float
-    matched_scute_region: str
+    inlier_count: int = 0
+    is_match: bool = False
+    matched_scute_region: str = "Vertebral & Costal Scute Junctions"
+    visualization_base64: Optional[str] = None
 
-# In-memory mock stores for fast bootstrapping
+from app.services.recognition_service import biometric_catalog_service
 MOCK_SPECIMENS = [
     {
         "id": "e4f5a3b2-1c2d-4e5f-9a8b-0c1d2e3f4a5b",
@@ -149,23 +153,12 @@ async def match_shell_pattern(
     if not photo.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Uploaded file must be an image.")
     
-    # Read image bytes for verification
-    _ = await photo.read()
-    
-    # Return matched candidates
-    return [
-        RecognitionMatch(
-            specimen_id="e4f5a3b2-1c2d-4e5f-9a8b-0c1d2e3f4a5b",
-            custom_identifier="LEOP-2026-001",
-            species="Stigmochelys pardalis",
-            confidence_score=0.942,
-            matched_scute_region="Vertebral & Costal Scute Junctions"
-        ),
-        RecognitionMatch(
-            specimen_id="b1c2d3e4-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
-            custom_identifier="ANGU-2026-014",
-            species="Chersina angulata",
-            confidence_score=0.628,
-            matched_scute_region="Carapace Marginal Ring"
-        )
-    ]
+    image_bytes = await photo.read()
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded image is empty.")
+
+    try:
+        matches = biometric_catalog_service.match_against_catalog(image_bytes, top_k=5)
+        return [RecognitionMatch(**m) for m in matches]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Biometric analysis error: {str(e)}")

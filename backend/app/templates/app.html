@@ -143,6 +143,26 @@
     }
     .nav-btn:hover { color: var(--text-main); background: rgba(0,0,0,0.06); }
     .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+    .nav-btn-citizen {
+      background: var(--card-inner);
+      color: var(--primary-light);
+      border: 1.5px solid var(--primary);
+      font-weight: 700;
+    }
+    [data-theme="light"] .nav-btn-citizen {
+      background: #E8F0E4;
+      color: #2D5028;
+      border: 1.5px solid #385E38;
+    }
+    [data-theme="dark"] .nav-btn-citizen {
+      background: #1B2B18;
+      color: #86EFAC;
+      border: 1.5px solid #4F772D;
+    }
+    .nav-btn-citizen:hover {
+      background: var(--primary) !important;
+      color: #ffffff !important;
+    }
 
     /* Main Content Container */
     main {
@@ -431,7 +451,7 @@
         <button class="nav-btn" onclick="switchTab('breeding')">
           <i class="fa-solid fa-egg"></i> Breeding & TSD
         </button>
-        <a href="/report" class="nav-btn" style="color: #6ee7b7; border: 1px solid #166534;">
+        <a href="/report" class="nav-btn nav-btn-citizen">
           <i class="fa-solid fa-plus"></i> Citizen Rescue
         </a>
       </nav>

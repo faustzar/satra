@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SATRA - Tortoise Conservation, Rescue & Telemetry Platform</title>
 
+  <!-- Prevent Theme Flash -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('satra-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -14,31 +22,81 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
   <style>
-    :root {
-      --primary: #2D5A27;
-      --primary-light: #4ade80;
-      --accent-gold: #D4A373;
-      --earth-brown: #583101;
-      --bg-dark: #0f172a;
-      --card-bg: #1e293b;
-      --border-color: #334155;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
+    /* Safari Earth Theme Palette */
+    [data-theme="dark"] {
+      --bg-page: #171513;        /* Deep night veld */
+      --header-bg: #0F0E0C;      /* Obsidian earth */
+      --nav-bg: #1F1B17;         /* Dark acacia bark */
+      --card-bg: #24201B;        /* Earthy charcoal */
+      --card-inner: #181512;     /* Shadow earth */
+      --border-color: #3E352C;   /* Worn saddle seam */
+      --primary: #4F772D;        /* Bushveld acacia green */
+      --primary-light: #70A045;  /* Sunlit thornveld leaf */
+      --accent-gold: #DDA15E;    /* Savannah golden grass */
+      --accent-clay: #BC6C25;    /* Kalahari red terracotta */
+      --earth-brown: #8C5E39;    /* Aged teak / leather */
+      --text-main: #F5EBE0;      /* Desert bone linen */
+      --text-muted: #A89E90;     /* Weathered granite */
+      --input-bg: #151310;
+      --shell-bg: #1A1713;
+      --shell-btn-bg: #302A24;
+      --shell-btn-border: #463E35;
+      --shell-center-bg: #3B281A;
+      --btn-secondary-bg: #363029;
+      --btn-secondary-hover: #484037;
+      --modal-bg: rgba(0,0,0,0.8);
+      --badge-wild-bg: #1B3820;
+      --badge-wild-color: #86EFAC;
+      --badge-rehab-bg: #451A03;
+      --badge-rehab-color: #FDBA74;
+      --badge-released-bg: #1E293B;
+      --badge-released-color: #93C5FD;
+    }
+
+    [data-theme="light"] {
+      --bg-page: #F5EFE6;        /* Warm safari canvas / parchment */
+      --header-bg: #EAE1D2;      /* Sun-bleached linen */
+      --nav-bg: #DFD4C2;         /* Safari sand */
+      --card-bg: #FFFFFF;        /* Crisp white canvas */
+      --card-inner: #F6F1EA;     /* Soft dune sand */
+      --border-color: #D6CABA;   /* Warm sand border */
+      --primary: #385E38;        /* Acacia thornveld olive */
+      --primary-light: #2D4D2D;  /* Deep bush green */
+      --accent-gold: #C28B47;    /* Warm African sun gold */
+      --accent-clay: #A65622;    /* Red Kalahari clay */
+      --earth-brown: #5E3B21;    /* Warm saddle leather */
+      --text-main: #231B15;      /* Deep espresso bark */
+      --text-muted: #6B5E52;     /* Safari khaki text */
+      --input-bg: #FFFFFF;
+      --shell-bg: #EFE7DA;
+      --shell-btn-bg: #DFD5C4;
+      --shell-btn-border: #C8BCAB;
+      --shell-center-bg: #8D6E54;
+      --btn-secondary-bg: #E4D9C8;
+      --btn-secondary-hover: #D4C6B1;
+      --modal-bg: rgba(35, 27, 21, 0.6);
+      --badge-wild-bg: #DCFCE7;
+      --badge-wild-color: #166534;
+      --badge-rehab-bg: #FFEDD5;
+      --badge-rehab-color: #9A3412;
+      --badge-released-bg: #DBEAFE;
+      --badge-released-color: #1E40AF;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Inter', sans-serif;
-      background-color: var(--bg-dark);
+      background-color: var(--bg-page);
       color: var(--text-main);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      transition: background-color 0.25s ease, color 0.25s ease;
     }
 
     /* Top Navigation Bar */
     header {
-      background: #090d16;
+      background: var(--header-bg);
       border-bottom: 1px solid var(--border-color);
       padding: 12px 20px;
       display: flex;
@@ -47,6 +105,7 @@
       position: sticky;
       top: 0;
       z-index: 1000;
+      transition: background 0.25s ease;
     }
     .brand {
       display: flex;
@@ -63,7 +122,7 @@
     nav {
       display: flex;
       gap: 6px;
-      background: #151f30;
+      background: var(--nav-bg);
       padding: 4px;
       border-radius: 12px;
       border: 1px solid var(--border-color);
@@ -82,8 +141,8 @@
       gap: 8px;
       transition: all 0.2s;
     }
-    .nav-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.05); }
-    .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(45,90,39,0.4); }
+    .nav-btn:hover { color: var(--text-main); background: rgba(0,0,0,0.06); }
+    .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
 
     /* Main Content Container */
     main {
@@ -141,9 +200,9 @@
       font-weight: 700;
       text-transform: uppercase;
     }
-    .badge-wild { background: #064e3b; color: #6ee7b7; }
-    .badge-rehab { background: #7c2d12; color: #fdba74; }
-    .badge-released { background: #1e3a8a; color: #93c5fd; }
+    .badge-wild { background: var(--badge-wild-bg); color: var(--badge-wild-color); }
+    .badge-rehab { background: var(--badge-rehab-bg); color: var(--badge-rehab-color); }
+    .badge-released { background: var(--badge-released-bg); color: var(--badge-released-color); }
 
     /* Buttons */
     .btn {
@@ -161,21 +220,22 @@
       transition: all 0.2s;
       text-decoration: none;
     }
-    .btn:hover { background: #23481e; }
-    .btn-secondary { background: #334155; color: var(--text-main); }
-    .btn-secondary:hover { background: #475569; }
+    .btn:hover { filter: brightness(1.1); }
+    .btn-secondary { background: var(--btn-secondary-bg); color: var(--text-main); border: 1px solid var(--border-color); }
+    .btn-secondary:hover { background: var(--btn-secondary-hover); }
     .btn-gold { background: var(--accent-gold); color: #000; font-weight: 700; }
-    .btn-gold:hover { background: #c59364; }
+    .btn-gold:hover { filter: brightness(1.08); }
 
     /* Interactive Scute Notch Diagram */
     .shell-container {
-      background: #172033;
+      background: var(--shell-bg);
       border-radius: 16px;
       padding: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
       border: 1px solid var(--border-color);
+      transition: background 0.25s ease;
     }
     .scute-row {
       display: flex;
@@ -188,9 +248,9 @@
     .scute-btn {
       width: 48px;
       height: 26px;
-      background: #334155;
-      border: 1px solid #475569;
-      color: #e2e8f0;
+      background: var(--shell-btn-bg);
+      border: 1px solid var(--shell-btn-border);
+      color: var(--text-main);
       border-radius: 4px;
       font-size: 11px;
       font-weight: 700;
@@ -200,7 +260,7 @@
       justify-content: center;
       transition: all 0.15s;
     }
-    .scute-btn:hover { border-color: #ffd600; }
+    .scute-btn:hover { border-color: var(--accent-gold); }
     .scute-btn.notched {
       background: #ffd600;
       color: #000;
@@ -210,38 +270,40 @@
     .shell-center {
       width: 140px;
       height: 380px;
-      background: #452a16;
+      background: var(--shell-center-bg);
       border-radius: 70px / 190px;
-      border: 2px solid #78350f;
+      border: 2px solid var(--shell-center-border);
       display: flex;
       flex-direction: column;
       justify-content: space-around;
       align-items: center;
-      color: rgba(255,255,255,0.7);
+      color: rgba(255,255,255,0.85);
       font-size: 12px;
       font-weight: bold;
     }
     .nuchal-scute {
       width: 50px;
       height: 22px;
-      background: #78350f;
+      background: var(--shell-center-border);
       border-radius: 8px 8px 0 0;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 10px;
       font-weight: bold;
+      color: white;
     }
     .supracaudal-scute {
       width: 60px;
       height: 24px;
-      background: #78350f;
+      background: var(--shell-center-border);
       border-radius: 0 0 8px 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 10px;
       font-weight: bold;
+      color: white;
     }
 
     /* Healing Comparison Slider */
@@ -290,7 +352,7 @@
       display: none;
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.75);
+      background: var(--modal-bg);
       backdrop-filter: blur(4px);
       z-index: 2000;
       align-items: center;
@@ -306,16 +368,17 @@
       max-height: 90vh;
       overflow-y: auto;
       padding: 24px;
+      color: var(--text-main);
     }
 
     /* Form Inputs */
     input, select, textarea {
       width: 100%;
-      background: #0f172a;
+      background: var(--input-bg);
       border: 1px solid var(--border-color);
       border-radius: 10px;
       padding: 10px 14px;
-      color: white;
+      color: var(--text-main);
       font-family: inherit;
       font-size: 14px;
       margin-top: 6px;
@@ -351,26 +414,33 @@
       </div>
     </a>
 
-    <nav>
-      <button class="nav-btn active" onclick="switchTab('specimens')">
-        <i class="fa-solid fa-shield"></i> Specimen Registry
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <nav>
+        <button class="nav-btn active" onclick="switchTab('specimens')">
+          <i class="fa-solid fa-shield"></i> Specimen Registry
+        </button>
+        <button class="nav-btn" onclick="switchTab('notches')">
+          <i class="fa-solid fa-fingerprint"></i> Scute Notch Picker
+        </button>
+        <button class="nav-btn" onclick="switchTab('telemetry')">
+          <i class="fa-solid fa-map-location-dot"></i> Telemetry Map
+        </button>
+        <button class="nav-btn" onclick="switchTab('health')">
+          <i class="fa-solid fa-heart-pulse"></i> Health & Jackson Ratio
+        </button>
+        <button class="nav-btn" onclick="switchTab('breeding')">
+          <i class="fa-solid fa-egg"></i> Breeding & TSD
+        </button>
+        <a href="/report" class="nav-btn" style="color: #6ee7b7; border: 1px solid #166534;">
+          <i class="fa-solid fa-plus"></i> Citizen Rescue
+        </a>
+      </nav>
+
+      <button id="themeToggleBtn" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 8px 12px; font-size: 12px; cursor: pointer;" title="Toggle Safari Light / Dark Theme">
+        <i class="fa-solid fa-sun" id="themeIcon"></i>
+        <span id="themeLabel">Safari Day</span>
       </button>
-      <button class="nav-btn" onclick="switchTab('notches')">
-        <i class="fa-solid fa-fingerprint"></i> Scute Notch Picker
-      </button>
-      <button class="nav-btn" onclick="switchTab('telemetry')">
-        <i class="fa-solid fa-map-location-dot"></i> Telemetry Map
-      </button>
-      <button class="nav-btn" onclick="switchTab('health')">
-        <i class="fa-solid fa-heart-pulse"></i> Health & Jackson Ratio
-      </button>
-      <button class="nav-btn" onclick="switchTab('breeding')">
-        <i class="fa-solid fa-egg"></i> Breeding & TSD
-      </button>
-      <a href="/report" class="nav-btn" style="color: #6ee7b7; border: 1px solid #166534;">
-        <i class="fa-solid fa-plus"></i> Citizen Rescue
-      </a>
-    </nav>
+    </div>
   </header>
 
   <main>
@@ -489,16 +559,16 @@
           <label style="font-size: 13px; font-weight: 600;">Straight Carapace Length (SCL max): <span id="sclVal" style="color: #4ade80;">215</span>mm</label>
           <input type="range" id="sclRange" min="80" max="500" step="1" value="215" oninput="calculateJacksons()">
 
-          <div style="background: #090d16; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 10px;">
+          <div style="background: var(--card-inner); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 10px;">
             <div style="font-size: 12px; color: var(--text-muted);">Calculated Jackson's Ratio:</div>
-            <div id="ratioVal" style="font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 800; color: #4ade80;">0.1459</div>
-            <div id="ratioEvaluation" style="margin-top: 6px; font-weight: 700; font-size: 14px; color: #fdba74;">Evaluating...</div>
+            <div id="ratioVal" style="font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 800; color: var(--primary-light);">0.1459</div>
+            <div id="ratioEvaluation" style="margin-top: 6px; font-weight: 700; font-size: 14px; color: var(--accent-clay);">Evaluating...</div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title"><i class="fa-solid fa-stethoscope" style="color: #38bdf8;"></i> Clinical Reference Guide</div>
-          <div style="font-size: 13px; color: #cbd5e1; line-height: 1.6; margin-top: 10px;">
+          <div class="card-title"><i class="fa-solid fa-stethoscope" style="color: var(--primary-light);"></i> Clinical Reference Guide</div>
+          <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-top: 10px;">
             <p>• <strong>Ratio &lt; 0.17 (Leopard / Testudo):</strong> Underweight / severe dehydration / post-hibernation wasting risk.</p>
             <p style="margin-top: 8px;">• <strong>Ratio 0.17 – 0.22:</strong> Optimal healthy wild & post-rehabilitation release range.</p>
             <p style="margin-top: 8px;">• <strong>Ratio &gt; 0.23:</strong> Overweight or potential fluid retention (coelomic ascites or egg retention).</p>
@@ -519,9 +589,9 @@
           <label style="font-size: 13px; font-weight: 600;">Incubation Target: <span id="tempVal" style="color: #fb923c;">31.5</span>°C</label>
           <input type="range" id="tempRange" min="28.0" max="33.5" step="0.1" value="31.5" oninput="updateTSD()">
 
-          <div style="background: #090d16; padding: 18px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 10px;">
+          <div style="background: var(--card-inner); padding: 18px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 10px;">
             <div style="font-size: 12px; color: var(--text-muted);">Predicted Hatchling Sex Ratio:</div>
-            <div id="tsdPrediction" style="font-size: 20px; font-weight: 800; color: #f472b6; margin-top: 6px;">Predominantly Female</div>
+            <div id="tsdPrediction" style="font-size: 20px; font-weight: 800; color: var(--accent-clay); margin-top: 6px;">Predominantly Female</div>
             <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;" id="tsdNote">Temperatures &gt; 31.5°C produce 95%+ females.</div>
           </div>
         </div>
@@ -942,7 +1012,31 @@
       }
     }
 
+    // Theme Handling (Safari Earth Day/Night)
+    function updateThemeUI(theme) {
+      const icon = document.getElementById('themeIcon');
+      const label = document.getElementById('themeLabel');
+      if (!icon || !label) return;
+      if (theme === 'light') {
+        icon.className = 'fa-solid fa-moon';
+        label.innerText = 'Safari Night';
+      } else {
+        icon.className = 'fa-solid fa-sun';
+        label.innerText = 'Safari Day';
+      }
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const nextTheme = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', nextTheme);
+      localStorage.setItem('satra-theme', nextTheme);
+      updateThemeUI(nextTheme);
+    }
+
     window.onload = () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      updateThemeUI(currentTheme);
       initScuteDiagram();
       loadSpecimens();
       calculateJacksons();

@@ -96,6 +96,12 @@ class HealthInspection(Base):
     shell_condition_notes = Column(Text, nullable=True)
     observation_notes = Column(Text, nullable=True)
     symptoms_json = Column(JSON, nullable=True)
+    
+    # Geospatial Coordinates (Automatic GPS Fix)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    gps_accuracy_m = Column(Float, nullable=True)
+
     inspected_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     specimen = relationship("Specimen", back_populates="inspections")

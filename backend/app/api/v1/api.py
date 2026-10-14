@@ -59,6 +59,9 @@ class HealthInspectionCreate(BaseModel):
     estimated_egg_count: Optional[int] = 0
     shell_condition_notes: Optional[str] = None
     observation_notes: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    gps_accuracy_m: Optional[float] = None
     inspected_at: Optional[datetime] = None
 
 class HealthInspectionResponse(BaseModel):
@@ -80,6 +83,9 @@ class HealthInspectionResponse(BaseModel):
     estimated_egg_count: Optional[int] = 0
     shell_condition_notes: Optional[str] = None
     observation_notes: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    gps_accuracy_m: Optional[float] = None
     inspected_at: datetime
 
     class Config:
@@ -180,6 +186,22 @@ def record_health_inspection(inspection_in: HealthInspectionCreate, db: Session 
         **dump_data
     )
     db.add(inspection)
+
+    # Automatically record geospatial Sighting on the telemetry map if GPS coordinates are captured
+    sighting_created = False
+    if inspection.latitude is not None and inspection.longitude is not None:
+        sighting = Sighting(
+            id=str(uuid.uuid4()),
+            specimen_id=inspection.specimen_id,
+            latitude=inspection.latitude,
+            longitude=inspection.longitude,
+            horizontal_accuracy=inspection.gps_accuracy_m or 5.0,
+            notes=f"Automatic GPS fix during observation: {inspection.observation_notes or 'Observation inspection'}",
+            recorded_at=inspected_date
+        )
+        db.add(sighting)
+        sighting_created = True
+
     db.commit()
     db.refresh(inspection)
     return {
@@ -187,7 +209,10 @@ def record_health_inspection(inspection_in: HealthInspectionCreate, db: Session 
         "inspection_id": inspection.id,
         "specimen_id": inspection.specimen_id,
         "jacksons_ratio": jacksons_ratio,
-        "inspected_at": inspection.inspected_at
+        "inspected_at": inspection.inspected_at,
+        "latitude": inspection.latitude,
+        "longitude": inspection.longitude,
+        "sighting_logged": sighting_created
     }
 
 @api_router.post("/breeding/pairings")

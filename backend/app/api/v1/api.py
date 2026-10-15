@@ -7,6 +7,7 @@ import uuid
 import re
 import logging
 from sqlalchemy import func
+import math
 
 from app.db.session import get_db
 from app.models.models import Specimen, Sighting, HealthInspection, BreedingPairing, SpeciesTaxonomy
@@ -50,18 +51,20 @@ class SightingCreate(BaseModel):
 class HealthInspectionCreate(BaseModel):
     specimen_id: str
     inspection_type: str = "Scheduled"  # Intake | Scheduled | AdHoc | GravidCheck
-    mass_grams: float = Field(..., example=1450.0)
-    straight_carapace_length_mm: float = Field(..., example=215.0)
-    shell_width_mm: Optional[float] = None
-    shell_height_mm: Optional[float] = None
-    plastron_length_mm: Optional[float] = None
+    mass_grams: float = Field(..., example=151.4)
+    straight_carapace_length_mm: float = Field(..., example=92.6)
+    shell_width_mm: Optional[float] = Field(None, example=68.8)
+    shell_height_mm: Optional[float] = Field(None, example=40.2)
+    plastron_length_mm: Optional[float] = Field(None, example=85.0)
     plastron_width_mm: Optional[float] = None
     anal_opening_mm: Optional[float] = None
     anal_width_mm: Optional[float] = None
-    growth_rings: Optional[str] = None
+    growth_rings: Optional[str] = Field(None, example="10 laminae")
     body_condition_score: int = Field(3, ge=1, le=5)
     eggs_palpated: bool = False
     estimated_egg_count: Optional[int] = 0
+    egg_length_mm: Optional[float] = None
+    egg_width_mm: Optional[float] = None
     shell_condition_notes: Optional[str] = None
     observation_notes: Optional[str] = None
     latitude: Optional[float] = None
@@ -83,9 +86,16 @@ class HealthInspectionResponse(BaseModel):
     anal_width_mm: Optional[float] = None
     growth_rings: Optional[str] = None
     body_condition_score: int
+    shell_volume_cm3: Optional[float] = None
+    body_condition_index: Optional[float] = None
+    mass_to_scl_ratio: Optional[float] = None
     jacksons_ratio: Optional[float] = None
     eggs_palpated: bool
     estimated_egg_count: Optional[int] = 0
+    egg_length_mm: Optional[float] = None
+    egg_width_mm: Optional[float] = None
+    egg_volume_cm3: Optional[float] = None
+    somatic_mass_grams: Optional[float] = None
     shell_condition_notes: Optional[str] = None
     observation_notes: Optional[str] = None
     latitude: Optional[float] = None
@@ -176,16 +186,54 @@ def get_health_inspections(specimen_id: Optional[str] = None, db: Session = Depe
 
 @api_router.post("/health-inspections")
 def record_health_inspection(inspection_in: HealthInspectionCreate, db: Session = Depends(get_db)):
-    """Record regular observation or clinical health assessment (mass, SCL, SW, SH, plastron, anal, growth rings)."""
-    # Automatic Jackson's Ratio / Body Condition Metric: Weight(g) / [Carapace Length(cm)]^3
-    scl_cm = inspection_in.straight_carapace_length_mm / 10.0
-    jacksons_ratio = round(inspection_in.mass_grams / (scl_cm ** 3), 4) if scl_cm > 0 else None
+    """
+    Record clinical health assessment and morphometrics evaluated under
+    Loehr, Henen & Hofmeyr (2004) Herpetologica 60(4):444-454.
+    """
+    mass = inspection_in.mass_grams
+    scl = inspection_in.straight_carapace_length_mm
+    sh = inspection_in.shell_height_mm
+    sw = inspection_in.shell_width_mm
+
+    # 1. Linear Mass-to-SCL ratio (Loehr et al. 2004 Table 1: Mean 1.62 g/mm)
+    mass_to_scl = round(mass / scl, 4) if scl and scl > 0 else None
+
+    # 2. Ellipsoid Shell Volume (Vfem = pi * SCL * SH * SW / 6000 in cm3)
+    shell_volume = None
+    bci = None
+    if scl and sh and sw and scl > 0 and sh > 0 and sw > 0:
+        shell_volume = round((math.pi * scl * sh * sw) / 6000.0, 2)
+        # Body Condition Index: Mass / Shell Volume (g/cm3) (Loehr et al. 2004 Table 1: Mean 1.12 g/cm3)
+        if shell_volume > 0:
+            bci = round(mass / shell_volume, 4)
+
+    # 3. Egg volume (Coleman 1991 formula: pi * L * W^2 / 6000 in cm3) & Somatic Mass
+    egg_volume = None
+    somatic_mass = None
+    el = inspection_in.egg_length_mm
+    ew = inspection_in.egg_width_mm
+    if el and ew and el > 0 and ew > 0:
+        egg_volume = round((math.pi * el * (ew ** 2)) / 6000.0, 2)
+        egg_mass_estimate = egg_volume * 1.0 * (inspection_in.estimated_egg_count or 1)
+        somatic_mass = round(max(0.0, mass - egg_mass_estimate), 1)
+    elif inspection_in.eggs_palpated and (inspection_in.estimated_egg_count or 0) > 0:
+        egg_mass_estimate = 12.0 * inspection_in.estimated_egg_count
+        somatic_mass = round(max(0.0, mass - egg_mass_estimate), 1)
+
+    # Legacy Jackson ratio for backwards compatibility
+    scl_cm = scl / 10.0 if scl and scl > 0 else 0
+    jacksons_ratio = round(mass / (scl_cm ** 3), 4) if scl_cm > 0 else None
 
     dump_data = inspection_in.model_dump()
     inspected_date = dump_data.pop("inspected_at", None) or datetime.utcnow()
 
     inspection = HealthInspection(
         id=str(uuid.uuid4()),
+        shell_volume_cm3=shell_volume,
+        body_condition_index=bci,
+        mass_to_scl_ratio=mass_to_scl,
+        egg_volume_cm3=egg_volume,
+        somatic_mass_grams=somatic_mass,
         jacksons_ratio=jacksons_ratio,
         inspected_at=inspected_date,
         **dump_data
@@ -213,6 +261,9 @@ def record_health_inspection(inspection_in: HealthInspectionCreate, db: Session 
         "status": "success",
         "inspection_id": inspection.id,
         "specimen_id": inspection.specimen_id,
+        "body_condition_index": bci,
+        "shell_volume_cm3": shell_volume,
+        "mass_to_scl_ratio": mass_to_scl,
         "jacksons_ratio": jacksons_ratio,
         "inspected_at": inspection.inspected_at,
         "latitude": inspection.latitude,
@@ -371,16 +422,53 @@ def get_specimen_pdf_report(specimen_id: str, db: Session = Depends(get_db)):
         inspections = []
 
     inspection_records = []
-    for insp in inspections:
-        # Safe numeric formatting
-        mass_val = getattr(insp, 'mass_grams', None)
-        mass_str = f"{mass_val:,.0f} g" if mass_val is not None else "--"
+    latest_insp = inspections[-1] if inspections else None
+    latest_shell_vol = None
+    latest_bci = None
+    latest_mass_to_scl = None
+    latest_egg_vol = None
+    latest_somatic_mass = None
 
+    for insp in inspections:
+        # Safe numeric formatting & fallback calculation for Loehr et al. (2004)
+        mass_val = getattr(insp, 'mass_grams', None)
         scl_val = getattr(insp, 'straight_carapace_length_mm', None)
-        scl_str = f"{scl_val:.0f} mm" if scl_val is not None else "--"
+        sh_val = getattr(insp, 'shell_height_mm', None)
+        sw_val = getattr(insp, 'shell_width_mm', None)
+
+        shell_vol = getattr(insp, 'shell_volume_cm3', None)
+        if shell_vol is None and scl_val and sh_val and sw_val and scl_val > 0 and sh_val > 0 and sw_val > 0:
+            shell_vol = round((math.pi * scl_val * sh_val * sw_val) / 6000.0, 2)
+
+        bci = getattr(insp, 'body_condition_index', None)
+        if bci is None and mass_val and shell_vol and shell_vol > 0:
+            bci = round(mass_val / shell_vol, 4)
+
+        mass_to_scl = getattr(insp, 'mass_to_scl_ratio', None)
+        if mass_to_scl is None and mass_val and scl_val and scl_val > 0:
+            mass_to_scl = round(mass_val / scl_val, 4)
+
+        egg_vol = getattr(insp, 'egg_volume_cm3', None)
+        el = getattr(insp, 'egg_length_mm', None)
+        ew = getattr(insp, 'egg_width_mm', None)
+        if egg_vol is None and el and ew and el > 0 and ew > 0:
+            egg_vol = round((math.pi * el * (ew ** 2)) / 6000.0, 2)
+
+        somatic_mass = getattr(insp, 'somatic_mass_grams', None)
+        if somatic_mass is None and mass_val is not None:
+            if egg_vol:
+                somatic_mass = round(max(0.0, mass_val - egg_vol * 1.0), 1)
+            elif getattr(insp, 'eggs_palpated', False):
+                somatic_mass = round(max(0.0, mass_val - 12.0), 1)
+
+        mass_str = f"{mass_val:.1f} g" if mass_val is not None else "--"
+        scl_str = f"{scl_val:.1f} mm" if scl_val is not None else "--"
+        vol_str = f"{shell_vol:.1f} cm³" if shell_vol is not None else "--"
+        bci_str = f"{bci:.3f}" if bci is not None else "--"
+        mass_to_scl_str = f"{mass_to_scl:.2f} g/mm" if mass_to_scl is not None else "--"
 
         ratio_val = getattr(insp, 'jacksons_ratio', None)
-        ratio_str = f"{ratio_val:.4f}" if ratio_val is not None else "N/A"
+        ratio_str = f"{ratio_val:.4f}" if ratio_val is not None else bci_str
 
         bcs_val = getattr(insp, 'body_condition_score', None)
         bcs_str = f"Score {bcs_val}/5" if bcs_val is not None else "--"
@@ -400,10 +488,50 @@ def get_specimen_pdf_report(specimen_id: str, db: Session = Depends(get_db)):
             "type": getattr(insp, 'inspection_type', None) or "Scheduled",
             "mass": mass_str,
             "scl": scl_str,
-            "ratio": ratio_str,
+            "shell_vol": vol_str,
+            "bci": bci_str,
+            "mass_to_scl": mass_to_scl_str,
+            "ratio": bci_str if bci is not None else ratio_str,
             "bcs": bcs_str,
-            "findings": findings_notes
+            "findings": findings_notes,
+            "shell_volume_cm3": shell_vol,
+            "body_condition_index": bci,
+            "mass_to_scl_ratio": mass_to_scl,
+            "growth_rings": getattr(insp, 'growth_rings', None)
         })
+
+    if latest_insp:
+        latest_mass = getattr(latest_insp, 'mass_grams', None)
+        latest_scl = getattr(latest_insp, 'straight_carapace_length_mm', None)
+        latest_sh = getattr(latest_insp, 'shell_height_mm', None)
+        latest_sw = getattr(latest_insp, 'shell_width_mm', None)
+        latest_rings = getattr(latest_insp, 'growth_rings', None)
+        latest_eggs = getattr(latest_insp, 'eggs_palpated', False)
+        latest_egg_count = getattr(latest_insp, 'estimated_egg_count', 0)
+        latest_el = getattr(latest_insp, 'egg_length_mm', None)
+        latest_ew = getattr(latest_insp, 'egg_width_mm', None)
+
+        if latest_scl and latest_sh and latest_sw and latest_scl > 0 and latest_sh > 0 and latest_sw > 0:
+            latest_shell_vol = round((math.pi * latest_scl * latest_sh * latest_sw) / 6000.0, 2)
+        if latest_mass and latest_shell_vol and latest_shell_vol > 0:
+            latest_bci = round(latest_mass / latest_shell_vol, 4)
+        if latest_mass and latest_scl and latest_scl > 0:
+            latest_mass_to_scl = round(latest_mass / latest_scl, 4)
+        if latest_el and latest_ew and latest_el > 0 and latest_ew > 0:
+            latest_egg_vol = round((math.pi * latest_el * (latest_ew ** 2)) / 6000.0, 2)
+            latest_somatic_mass = round(max(0.0, latest_mass - latest_egg_vol * 1.0), 1)
+        elif latest_eggs and latest_mass:
+            latest_somatic_mass = round(max(0.0, latest_mass - 12.0), 1)
+    else:
+        latest_mass = None
+        latest_scl = None
+        latest_sh = None
+        latest_sw = None
+        latest_rings = None
+        latest_eggs = False
+        latest_egg_count = 0
+        latest_el = None
+        latest_ew = None
 
     # Safely retrieve taxonomy IUCN status
     iucn_status = "LC (Least Concern)"
@@ -424,7 +552,22 @@ def get_specimen_pdf_report(specimen_id: str, db: Session = Depends(get_db)):
         "status": specimen.status or "Wild",
         "dam_id": specimen.dam_id,
         "sire_id": specimen.sire_id,
-        "inspections": inspection_records
+        "inspections": inspection_records,
+        "latest_mass": latest_mass,
+        "latest_scl": latest_scl,
+        "latest_sh": latest_sh,
+        "latest_sw": latest_sw,
+        "latest_shell_volume": latest_shell_vol,
+        "latest_bci": latest_bci,
+        "latest_mass_to_scl": latest_mass_to_scl,
+        "latest_growth_rings": latest_rings,
+        "eggs_palpated": latest_eggs,
+        "estimated_egg_count": latest_egg_count,
+        "egg_length_mm": latest_el,
+        "egg_width_mm": latest_ew,
+        "egg_volume_cm3": latest_egg_vol,
+        "somatic_mass_grams": latest_somatic_mass,
+        "is_adult_breeding_size": (latest_scl >= 84.1) if latest_scl is not None else None
     }
 
     try:

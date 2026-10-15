@@ -84,13 +84,24 @@ class HealthInspection(Base):
     plastron_width_mm = Column(Float, nullable=True)          # Plastron Width
     anal_opening_mm = Column(Float, nullable=True)            # Anal Opening
     anal_width_mm = Column(Float, nullable=True)              # Anal Width
-    growth_rings = Column(String(50), nullable=True)          # Grow Rings
+    growth_rings = Column(String(50), nullable=True)          # Scute Laminae / Grow Rings
     body_condition_score = Column(Integer, default=3)         # 1 to 5
-    jacksons_ratio = Column(Float, nullable=True)
-
-    # Gravidity
+    
+    # Loehr, Henen & Hofmeyr (2004) Condition & Biometric Metrics (Herpetologica 60:444-454)
+    shell_volume_cm3 = Column(Float, nullable=True)          # V_fem = pi * SCL * SH * SW / 6000 (cm3)
+    body_condition_index = Column(Float, nullable=True)      # BCI = Mass / V_fem (g/cm3, baseline 1.12)
+    mass_to_scl_ratio = Column(Float, nullable=True)         # Mass / SCL (g/mm, baseline 1.62)
+    
+    # Gravidity, Egg Biometrics (Coleman 1991) & Somatic Mass
     eggs_palpated = Column(Boolean, default=False)
     estimated_egg_count = Column(Integer, default=0)
+    egg_length_mm = Column(Float, nullable=True)             # Radiographic / Ultrasound egg length
+    egg_width_mm = Column(Float, nullable=True)              # Radiographic / Ultrasound egg width
+    egg_volume_cm3 = Column(Float, nullable=True)            # V_egg = pi * L * W^2 / 6000 (cm3)
+    somatic_mass_grams = Column(Float, nullable=True)        # Somatic Mass = Mass - Egg Mass
+
+    # Legacy Jackson ratio (kept for backward compatibility)
+    jacksons_ratio = Column(Float, nullable=True)
 
     # Clinical findings & notes
     shell_condition_notes = Column(Text, nullable=True)

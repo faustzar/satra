@@ -30,7 +30,14 @@ async def lifespan(app: FastAPI):
                 ("observation_notes", "TEXT"),
                 ("latitude", "FLOAT"),
                 ("longitude", "FLOAT"),
-                ("gps_accuracy_m", "FLOAT")
+                ("gps_accuracy_m", "FLOAT"),
+                ("shell_volume_cm3", "FLOAT"),
+                ("body_condition_index", "FLOAT"),
+                ("mass_to_scl_ratio", "FLOAT"),
+                ("egg_length_mm", "FLOAT"),
+                ("egg_width_mm", "FLOAT"),
+                ("egg_volume_cm3", "FLOAT"),
+                ("somatic_mass_grams", "FLOAT")
             ]
             if dialect == "postgresql":
                 for col_name, col_type in columns_to_ensure:

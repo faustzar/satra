@@ -608,7 +608,7 @@
           <i class="fa-solid fa-map-location-dot"></i> Telemetry Map
         </button>
         <button class="nav-btn" onclick="switchTab('health')">
-          <i class="fa-solid fa-heart-pulse"></i> Health & Jackson Ratio
+          <i class="fa-solid fa-heart-pulse"></i> Biometrics & Condition (Loehr)
         </button>
         <button class="nav-btn" onclick="switchTab('breeding')">
           <i class="fa-solid fa-egg"></i> Breeding & TSD
@@ -885,34 +885,75 @@
       </div>
     </div>
 
-    <!-- TAB 4: HEALTH & JACKSON RATIO -->
+    <!-- TAB 4: BIOMETRIC CONDITION & MORPHOMETRICS (LOEHR ET AL. 2004) -->
     <div id="tab-health" class="tab-content">
       <div class="grid-2">
         <div class="card">
-          <div class="card-title"><i class="fa-solid fa-calculator" style="color: var(--primary-light);"></i> Jackson's Ratio & Body Condition Score</div>
+          <div class="card-title"><i class="fa-solid fa-calculator" style="color: var(--primary-light);"></i> Biometric Condition Index (BCI) & 3D Shell Volume</div>
           <p style="font-size: 13px; color: var(--text-muted); margin: 6px 0 16px 0;">
-            Standardized chelonian clinical index: \( \text{Ratio} = \frac{\text{Mass (g)}}{(\text{SCL in cm})^3} \).
+            Empirical padloper model (Loehr, Henen & Hofmeyr, <em>Herpetologica</em> 2004): 
+            \( V_{\text{shell}} = \frac{\pi \times \text{SCL} \times \text{SH} \times \text{SW}}{6000}\text{ cm}^3 \), 
+            \( \text{BCI} = \frac{\text{Mass}}{V_{\text{shell}}}\text{ (g/cm}^3\text{)} \), and \( \frac{\text{Mass}}{\text{SCL}}\text{ (g/mm)} \).
           </p>
 
-          <label style="font-size: 13px; font-weight: 600;">Mass in Grams: <span id="massVal" style="color: #4ade80;">1450</span>g</label>
-          <input type="range" id="massRange" min="200" max="10000" step="10" value="1450" oninput="calculateJacksons()">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="font-size: 12px; font-weight: 600;">Body Mass (g): <span id="massVal" style="color: #4ade80;">151</span>g</label>
+              <input type="range" id="massRange" min="30" max="4000" step="1" value="151" oninput="calculateBCI()">
+            </div>
+            <div>
+              <label style="font-size: 12px; font-weight: 600;">Carapace Length (SCL mm): <span id="sclVal" style="color: #4ade80;">93</span>mm</label>
+              <input type="range" id="sclRange" min="40" max="300" step="1" value="93" oninput="calculateBCI()">
+            </div>
+          </div>
 
-          <label style="font-size: 13px; font-weight: 600;">Straight Carapace Length (SCL max): <span id="sclVal" style="color: #4ade80;">215</span>mm</label>
-          <input type="range" id="sclRange" min="80" max="500" step="1" value="215" oninput="calculateJacksons()">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;">
+            <div>
+              <label style="font-size: 12px; font-weight: 600;">Shell Height (SH mm): <span id="shVal" style="color: #4ade80;">40</span>mm</label>
+              <input type="range" id="shRange" min="15" max="150" step="1" value="40" oninput="calculateBCI()">
+            </div>
+            <div>
+              <label style="font-size: 12px; font-weight: 600;">Shell Width (SW mm): <span id="swVal" style="color: #4ade80;">69</span>mm</label>
+              <input type="range" id="swRange" min="30" max="250" step="1" value="69" oninput="calculateBCI()">
+            </div>
+          </div>
 
-          <div style="background: var(--card-inner); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 10px;">
-            <div style="font-size: 12px; color: var(--text-muted);">Calculated Jackson's Ratio:</div>
-            <div id="ratioVal" style="font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 800; color: var(--primary-light);">0.1459</div>
-            <div id="ratioEvaluation" style="margin-top: 6px; font-weight: 700; font-size: 14px; color: var(--accent-clay);">Evaluating...</div>
+          <div style="background: var(--card-inner); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 14px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+              <div>
+                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Body Condition Index</div>
+                <div id="bciVal" style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 800; color: #4ade80;">1.124</div>
+                <div style="font-size: 10px; color: var(--text-muted);">g/cm³ (Density)</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Shell Volume (V<sub>shell</sub>)</div>
+                <div id="volVal" style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 800; color: var(--accent-gold);">134.3</div>
+                <div style="font-size: 10px; color: var(--text-muted);">cm³ (Ellipsoid)</div>
+              </div>
+              <div>
+                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Mass / SCL Ratio</div>
+                <div id="massSclVal" style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 800; color: var(--accent-clay);">1.62</div>
+                <div style="font-size: 10px; color: var(--text-muted);">g/mm (Linear)</div>
+              </div>
+            </div>
+            <!-- Keep ratioVal hidden for backwards compatibility -->
+            <span id="ratioVal" style="display: none;">0.1459</span>
+            <div id="bciEvaluation" style="margin-top: 12px; font-weight: 700; font-size: 13px; color: #4ade80; text-align: center; border-top: 1px solid var(--border-color); padding-top: 8px;">
+              Optimal Density & Prime Condition (Loehr Mean: 1.12 ± 0.08 g/cm³)
+            </div>
+            <div id="ratioEvaluation" style="display: none;"></div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title"><i class="fa-solid fa-stethoscope" style="color: var(--primary-light);"></i> Clinical Reference Guide</div>
+          <div class="card-title"><i class="fa-solid fa-book-bookmark" style="color: var(--primary-light);"></i> Empirical Biometric Reference (Loehr et al. 2004)</div>
           <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-top: 10px;">
-            <p>• <strong>Ratio &lt; 0.17 (Leopard / Testudo):</strong> Underweight / severe dehydration / post-hibernation wasting risk.</p>
-            <p style="margin-top: 8px;">• <strong>Ratio 0.17 – 0.22:</strong> Optimal healthy wild & post-rehabilitation release range.</p>
-            <p style="margin-top: 8px;">• <strong>Ratio &gt; 0.23:</strong> Overweight or potential fluid retention (coelomic ascites or egg retention).</p>
+            <p>• <strong>BCI Benchmark (Table 1):</strong> Mean \( 1.12 \pm 0.08\text{ g/cm}^3 \) (Range: \( 0.910 - 1.280\text{ g/cm}^3 \)). Replaces Jackson's Mediterranean ratio (\( W/L^3 \)) for depressed chelonian morphologies.</p>
+            <p style="margin-top: 8px;">• <strong>BCI ≥ 1.25 g/cm³:</strong> High density / Gravid female or maximal hydration reserves.</p>
+            <p style="margin-top: 8px;">• <strong>BCI 1.05 – 1.25 g/cm³:</strong> Optimal wild physiological density & post-release benchmark.</p>
+            <p style="margin-top: 8px;">• <strong>BCI &lt; 0.95 g/cm³:</strong> Underweight / dehydration / summer nutritional wasting risk.</p>
+            <p style="margin-top: 8px;">• <strong>Linear Scaling:</strong> Mass/SCL mean \( 1.62 \pm 0.22\text{ g/mm} \) (Gravid: \( 1.68\text{ g/mm} \); Nongravid: \( 1.43 - 1.56\text{ g/mm} \)).</p>
+            <p style="margin-top: 8px;">• <strong>Breeding Size & Clutch:</strong> Minimum adult female breeding size \( \text{SCL} \ge 84.1\text{ mm} \) (9+ costal laminae). Single-egg clutch mode; egg volume \( V_{\text{egg}} = \frac{\pi \cdot L \cdot W^2}{6000}\text{ cm}^3 \) (Coleman 1991; Mean \( 11.3\text{ cm}^3 \), mass \( \sim 11.3\text{ g} \)).</p>
           </div>
         </div>
       </div>
@@ -1042,12 +1083,12 @@
           </div>
         </div>
 
-        <!-- Widget 2: Clinical Health & Jackson's Ratio -->
+        <!-- Widget 2: Clinical Health & Biometric Condition (Loehr et al. 2004) -->
         <div class="card" id="specWidget_health" style="padding: 14px; margin: 0;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <div class="card-title" style="font-size: 14px; margin: 0;">
               <i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i>
-              Biometrics & Clinical Body Condition
+              Biometrics & Clinical Condition (Loehr et al. 2004)
             </div>
             <span id="modalHealthEvaluationBadge" class="badge badge-wild" style="font-size: 11px;">Optimal Condition</span>
           </div>
@@ -1061,8 +1102,9 @@
               <div id="modalHealthScl" style="font-size: 18px; font-weight: 800; color: var(--accent-gold); margin-top: 2px;">--</div>
             </div>
             <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
-              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Jackson's Ratio</div>
-              <div id="modalHealthJackson" style="font-size: 18px; font-weight: 800; color: var(--accent-clay); margin-top: 2px;">--</div>
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">BCI (g/cm³)</div>
+              <div id="modalHealthBci" style="font-size: 18px; font-weight: 800; color: var(--accent-clay); margin-top: 2px;">--</div>
+              <span id="modalHealthJackson" style="display:none;">--</span>
             </div>
             <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
               <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Body Condition Score</div>
@@ -1072,8 +1114,8 @@
           <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 12px; background: var(--card-inner); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
             <div><span style="color: var(--text-muted);">Shell Width (SW):</span> <strong id="modalHealthSw">--</strong></div>
             <div><span style="color: var(--text-muted);">Shell Height (SH):</span> <strong id="modalHealthSh">--</strong></div>
-            <div><span style="color: var(--text-muted);">Plastron Length:</span> <strong id="modalHealthPlastronL">--</strong></div>
-            <div><span style="color: var(--text-muted);">Plastron Width:</span> <strong id="modalHealthPlastronW">--</strong></div>
+            <div><span style="color: var(--text-muted);">Shell Volume (V<sub>shell</sub>):</span> <strong id="modalHealthVol">--</strong></div>
+            <div><span style="color: var(--text-muted);">Mass/SCL Scaling:</span> <strong id="modalHealthMassScl">--</strong></div>
           </div>
         </div>
 
@@ -1214,8 +1256,8 @@
         <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
           <input type="checkbox" id="swCheck_health" checked style="width: 18px; height: 18px; margin: 0;">
           <div>
-            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i> Clinical Health & Morphometrics</div>
-            <div style="font-size: 11px; color: var(--text-muted);">Mass, SCL, Jackson's ratio condition evaluation, and shell dimensions</div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i> Clinical Health & Biometrics</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Mass, SCL, 3D Shell Volume, BCI condition index (Loehr 2004), and egg geometry</div>
           </div>
         </label>
 
@@ -1425,9 +1467,31 @@
           <button type="button" class="stepper-btn" onclick="stepVal('obsAnalWidth', 1)">+</button>
         </div>
 
-        <!-- Grow Rings -->
-        <label style="font-size: 13px; font-weight: 600;">Grow Rings</label>
-        <input type="text" id="obsGrowRings" placeholder="e.g. 14 rings (vertebral scute count)">
+        <!-- Scute Laminae / Grow Rings -->
+        <label style="font-size: 13px; font-weight: 600;">Scute Laminae (Left Anterior Costal Scute)</label>
+        <input type="text" id="obsGrowRings" placeholder="e.g. 10 laminae (Loehr adult range: 8-13+)">
+
+        <!-- Gravidity / Oviposition Biometrics (Loehr 2004 / Coleman 1991) -->
+        <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin: 6px 0 10px 0;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 4px;">
+            <input type="checkbox" id="obsEggsPalpated" style="width: 16px; height: 16px; margin: 0;" onchange="document.getElementById('eggFieldsWrap').style.display = this.checked ? 'grid' : 'none'">
+            <span><i class="fa-solid fa-egg" style="color: #fb923c;"></i> Gravid / Palpated Egg (Coleman Non-Spherical Biometrics)</span>
+          </label>
+          <div id="eggFieldsWrap" style="display: none; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px;">
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted);">Egg Count</label>
+              <input type="number" id="obsEggCount" value="1" min="1" max="4" style="padding: 6px;">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted);">Egg Length (mm)</label>
+              <input type="number" step="0.1" id="obsEggLength" placeholder="34.6" style="padding: 6px;">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted);">Egg Width (mm)</label>
+              <input type="number" step="0.1" id="obsEggWidth" placeholder="24.9" style="padding: 6px;">
+            </div>
+          </div>
+        </div>
 
         <!-- Observation Notes -->
         <label style="font-size: 13px; font-weight: 600;">Observation Notes</label>
@@ -1474,15 +1538,16 @@
           <div id="drillScl" style="font-size: 22px; font-weight: 800; color: var(--accent-gold); margin-top: 2px;">--</div>
         </div>
         <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Jackson's Ratio</div>
-          <div id="drillJackson" style="font-size: 22px; font-weight: 800; color: var(--accent-clay); margin-top: 2px;">--</div>
+          <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">BCI (Loehr 2004)</div>
+          <div id="drillBci" style="font-size: 22px; font-weight: 800; color: #4ade80; margin-top: 2px;">--</div>
+          <span id="drillJackson" style="display: none;">--</span>
         </div>
       </div>
 
       <!-- Full Morphometrics Grid -->
       <div class="card" style="margin-bottom: 16px; padding: 16px;">
         <div class="card-title" style="font-size: 15px; margin-bottom: 12px;">
-          <i class="fa-solid fa-ruler-combined" style="color: var(--primary-light);"></i> Complete Morphometric Dimensions
+          <i class="fa-solid fa-ruler-combined" style="color: var(--primary-light);"></i> Complete Morphometric Dimensions & Biometrics
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
           <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
@@ -1492,6 +1557,14 @@
           <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
             <span style="color: var(--text-muted);">Height (SH):</span>
             <strong id="drillSh">--</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--text-muted);">Shell Volume (V<sub>shell</sub>):</span>
+            <strong id="drillShellVol">--</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--text-muted);">Mass/SCL Scaling:</span>
+            <strong id="drillMassScl">--</strong>
           </div>
           <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
             <span style="color: var(--text-muted);">Plastron Length:</span>
@@ -1510,12 +1583,20 @@
             <strong id="drillAnalWidth">--</strong>
           </div>
           <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
-            <span style="color: var(--text-muted);">Growth Rings:</span>
+            <span style="color: var(--text-muted);">Scute Laminae:</span>
             <strong id="drillGrowRings">--</strong>
           </div>
           <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
             <span style="color: var(--text-muted);">Condition Score (BCS):</span>
             <strong id="drillBcs">3 / 5 (Healthy)</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--text-muted);">Gravid / Clutch:</span>
+            <strong id="drillGravidStatus">--</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+            <span style="color: var(--text-muted);">Somatic Body Mass:</span>
+            <strong id="drillSomaticMass">--</strong>
           </div>
           <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--card-inner); border-radius: 8px; margin-top: 4px;">
             <span style="color: var(--text-muted); font-size: 12px;"><i class="fa-solid fa-location-dot" style="color: var(--primary-light);"></i> Captured GPS Coordinates:</span>
@@ -1560,8 +1641,8 @@
         <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
           <input type="checkbox" id="wCheck_health" checked style="width: 18px; height: 18px; margin: 0;">
           <div>
-            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i> Health & Jackson's Ratio (Vet)</div>
-            <div style="font-size: 11px; color: var(--text-muted);">Displays current mass (g), SCL (mm), calculated ratio, and hydration status</div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i> Health & Biometrics (Loehr 2004)</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Displays current mass (g), SCL (mm), BCI volumetric density, and physiological condition</div>
           </div>
         </label>
 
@@ -2222,17 +2303,17 @@
         let widgetsHtml = '';
 
         if (activeWidgets.has('health')) {
-          const massDisplay = lastObs ? `${lastObs.mass_grams}g` : '1,450g';
-          const sclDisplay = lastObs ? `${lastObs.straight_carapace_length_mm}mm` : '215mm';
-          const ratioDisplay = lastObs && lastObs.jacksons_ratio ? lastObs.jacksons_ratio.toFixed(3) : '0.146';
+          const massDisplay = lastObs ? `${lastObs.mass_grams}g` : '151g';
+          const sclDisplay = lastObs ? `${lastObs.straight_carapace_length_mm}mm` : '93mm';
+          const bciDisplay = lastObs && lastObs.body_condition_index ? `${lastObs.body_condition_index.toFixed(3)}` : (lastObs && lastObs.jacksons_ratio ? lastObs.jacksons_ratio.toFixed(3) : '1.124');
           widgetsHtml += `
             <div class="specimen-widget" onclick="event.stopPropagation(); switchTab('health');">
               <div class="widget-header">
-                <span><i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i> Health & Mass</span>
+                <span><i class="fa-solid fa-heart-pulse" style="color: #ef4444;"></i> Health & Biometrics</span>
                 <span style="color: #4ade80;">Normal</span>
               </div>
               <div class="widget-val">${massDisplay} <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">/ SCL ${sclDisplay}</span></div>
-              <div style="font-size: 10px; color: var(--text-muted);">Jackson's: <strong style="color: var(--accent-clay);">${ratioDisplay}</strong> (Hydrated)</div>
+              <div style="font-size: 10px; color: var(--text-muted);">BCI: <strong style="color: var(--primary-light);">${bciDisplay} g/cm³</strong> (Loehr)</div>
             </div>
           `;
         }
@@ -2472,11 +2553,14 @@
       // Reset / Setup default health values
       document.getElementById('modalHealthMass').innerText = '--';
       document.getElementById('modalHealthScl').innerText = '--';
-      document.getElementById('modalHealthJackson').innerText = '--';
+      if (document.getElementById('modalHealthBci')) document.getElementById('modalHealthBci').innerText = '--';
+      if (document.getElementById('modalHealthJackson')) document.getElementById('modalHealthJackson').innerText = '--';
       document.getElementById('modalHealthSw').innerText = '--';
       document.getElementById('modalHealthSh').innerText = '--';
-      document.getElementById('modalHealthPlastronL').innerText = '--';
-      document.getElementById('modalHealthPlastronW').innerText = '--';
+      if (document.getElementById('modalHealthVol')) document.getElementById('modalHealthVol').innerText = '--';
+      if (document.getElementById('modalHealthMassScl')) document.getElementById('modalHealthMassScl').innerText = '--';
+      if (document.getElementById('modalHealthPlastronL')) document.getElementById('modalHealthPlastronL').innerText = '--';
+      if (document.getElementById('modalHealthPlastronW')) document.getElementById('modalHealthPlastronW').innerText = '--';
       document.getElementById('modalRings').innerText = '--';
 
       // Setup Role Preset Pills
@@ -2509,26 +2593,64 @@
           const latest = history[0];
           document.getElementById('modalHealthMass').innerText = `${latest.mass_grams}g`;
           document.getElementById('modalHealthScl').innerText = `${latest.straight_carapace_length_mm}mm`;
-          document.getElementById('modalHealthJackson').innerText = latest.jacksons_ratio ? latest.jacksons_ratio.toFixed(4) : '—';
           document.getElementById('modalHealthSw').innerText = latest.shell_width_mm ? `${latest.shell_width_mm}mm` : '—';
           document.getElementById('modalHealthSh').innerText = latest.shell_height_mm ? `${latest.shell_height_mm}mm` : '—';
-          document.getElementById('modalHealthPlastronL').innerText = latest.plastron_length_mm ? `${latest.plastron_length_mm}mm` : '—';
-          document.getElementById('modalHealthPlastronW').innerText = latest.plastron_width_mm ? `${latest.plastron_width_mm}mm` : '—';
-          document.getElementById('modalRings').innerText = latest.growth_rings || '8 rings';
+          if (document.getElementById('modalHealthPlastronL')) {
+            document.getElementById('modalHealthPlastronL').innerText = latest.plastron_length_mm ? `${latest.plastron_length_mm}mm` : '—';
+          }
+          if (document.getElementById('modalHealthPlastronW')) {
+            document.getElementById('modalHealthPlastronW').innerText = latest.plastron_width_mm ? `${latest.plastron_width_mm}mm` : '—';
+          }
+          document.getElementById('modalRings').innerText = latest.growth_rings || '10 laminae (Costal-1)';
 
-          // Body condition evaluation
+          // 3D Shell Volume (V_shell = pi * SCL * SH * SW / 6000)
+          let shellVol = latest.shell_volume_cm3;
+          if (!shellVol && latest.straight_carapace_length_mm && latest.shell_height_mm && latest.shell_width_mm) {
+            shellVol = (Math.PI * latest.straight_carapace_length_mm * latest.shell_height_mm * latest.shell_width_mm / 6000).toFixed(1);
+          }
+          if (document.getElementById('modalHealthVol')) {
+            document.getElementById('modalHealthVol').innerText = shellVol ? `${Number(shellVol).toFixed(1)} cm³` : '—';
+          }
+
+          // Body Condition Index BCI = Mass / Shell Volume
+          let bci = latest.body_condition_index;
+          if (!bci && shellVol && latest.mass_grams) {
+            bci = (latest.mass_grams / Number(shellVol));
+          }
+          const bciDisplay = bci ? Number(bci).toFixed(3) : (latest.jacksons_ratio ? latest.jacksons_ratio.toFixed(3) : '—');
+          if (document.getElementById('modalHealthBci')) document.getElementById('modalHealthBci').innerText = bciDisplay;
+          if (document.getElementById('modalHealthJackson')) document.getElementById('modalHealthJackson').innerText = bciDisplay;
+
+          // Mass/SCL ratio
+          let massScl = latest.mass_to_scl_ratio;
+          if (!massScl && latest.mass_grams && latest.straight_carapace_length_mm) {
+            massScl = (latest.mass_grams / latest.straight_carapace_length_mm).toFixed(2);
+          }
+          if (document.getElementById('modalHealthMassScl')) {
+            document.getElementById('modalHealthMassScl').innerText = massScl ? `${massScl} g/mm` : '—';
+          }
+
+          // Loehr et al. (2004) condition classification
           const evalBadge = document.getElementById('modalHealthEvaluationBadge');
           if (evalBadge) {
-            const ratio = latest.jacksons_ratio || 0.18;
-            if (ratio < 0.17) {
-              evalBadge.innerText = 'Underweight (Hydration Risk)';
-              evalBadge.className = 'badge badge-rehab';
-            } else if (ratio <= 0.22) {
-              evalBadge.innerText = 'Optimal Body Condition';
-              evalBadge.className = 'badge badge-wild';
+            const bciNum = bci ? Number(bci) : null;
+            if (bciNum !== null) {
+              if (bciNum >= 1.25) {
+                evalBadge.innerText = 'High Density / Gravid (≥1.25)';
+                evalBadge.className = 'badge badge-released';
+              } else if (bciNum >= 1.05) {
+                evalBadge.innerText = 'Optimal Condition (1.12)';
+                evalBadge.className = 'badge badge-wild';
+              } else if (bciNum >= 0.95) {
+                evalBadge.innerText = 'Moderate Reserves (0.95-1.05)';
+                evalBadge.className = 'badge badge-rehab';
+              } else {
+                evalBadge.innerText = 'Underweight (<0.95 g/cm³)';
+                evalBadge.className = 'badge badge-rehab';
+              }
             } else {
-              evalBadge.innerText = 'Overweight / Gravid Watch';
-              evalBadge.className = 'badge badge-released';
+              evalBadge.innerText = 'Optimal Condition';
+              evalBadge.className = 'badge badge-wild';
             }
           }
 
@@ -2558,7 +2680,7 @@
                     <span style="font-weight: normal; color: var(--text-muted); margin-left: 8px;">(${h.inspection_type || 'Field Assessment'})</span>
                   </div>
                   <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                    Mass: ${h.mass_grams}g • SCL: ${h.straight_carapace_length_mm}mm • Jackson: ${h.jacksons_ratio || '—'}
+                    Mass: ${h.mass_grams}g • SCL: ${h.straight_carapace_length_mm}mm • BCI: ${h.body_condition_index ? h.body_condition_index.toFixed(3) + ' g/cm³' : (h.jacksons_ratio || '—')}
                   </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -2570,15 +2692,16 @@
             });
           }
         } else {
-          // Defaults if no observations yet
-          document.getElementById('modalHealthMass').innerText = '1,420g';
-          document.getElementById('modalHealthScl').innerText = '210mm';
-          document.getElementById('modalHealthJackson').innerText = '0.153';
-          document.getElementById('modalHealthSw').innerText = '155mm';
-          document.getElementById('modalHealthSh').innerText = '112mm';
-          document.getElementById('modalHealthPlastronL').innerText = '182mm';
-          document.getElementById('modalHealthPlastronW').innerText = '130mm';
-          document.getElementById('modalRings').innerText = '8 rings';
+          // Defaults if no observations yet (Empirical Padloper baseline)
+          document.getElementById('modalHealthMass').innerText = '151.4g';
+          document.getElementById('modalHealthScl').innerText = '92.6mm';
+          if (document.getElementById('modalHealthBci')) document.getElementById('modalHealthBci').innerText = '1.185';
+          if (document.getElementById('modalHealthJackson')) document.getElementById('modalHealthJackson').innerText = '1.185';
+          document.getElementById('modalHealthSw').innerText = '68.8mm';
+          document.getElementById('modalHealthSh').innerText = '40.2mm';
+          if (document.getElementById('modalHealthVol')) document.getElementById('modalHealthVol').innerText = '127.8 cm³';
+          if (document.getElementById('modalHealthMassScl')) document.getElementById('modalHealthMassScl').innerText = '1.63 g/mm';
+          document.getElementById('modalRings').innerText = '10 laminae (Costal-1)';
 
           if (historyList) {
             historyList.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 12px;">No historical observations recorded yet. Click <strong>Log Observation</strong> above to record field biometrics.</div>';
@@ -2693,28 +2816,64 @@
       window.ontouchmove = (e) => { if (isDragging) updateSlider(e.touches[0].clientX); };
     }
 
-    // Jackson's Ratio Calculator
-    function calculateJacksons() {
-      const mass = parseFloat(document.getElementById('massRange').value);
-      const sclMm = parseFloat(document.getElementById('sclRange').value);
+    // Loehr et al. (2004) Empirical Body Condition Index (BCI) Calculator
+    function calculateBCI() {
+      const mass = parseFloat(document.getElementById('massRange').value) || 0;
+      const scl = parseFloat(document.getElementById('sclRange').value) || 1;
+      const sh = parseFloat(document.getElementById('shRange') ? document.getElementById('shRange').value : 40) || 1;
+      const sw = parseFloat(document.getElementById('swRange') ? document.getElementById('swRange').value : 69) || 1;
+
       document.getElementById('massVal').innerText = mass;
-      document.getElementById('sclVal').innerText = sclMm;
+      document.getElementById('sclVal').innerText = scl;
+      if (document.getElementById('shVal')) document.getElementById('shVal').innerText = sh;
+      if (document.getElementById('swVal')) document.getElementById('swVal').innerText = sw;
 
-      const sclCm = sclMm / 10.0;
-      const ratio = mass / Math.pow(sclCm, 3);
-      document.getElementById('ratioVal').innerText = ratio.toFixed(4);
-
-      const evalEl = document.getElementById('ratioEvaluation');
-      if (ratio < 0.17) {
-        evalEl.innerText = "Underweight (Dehydration / Wasting Risk)";
-        evalEl.style.color = "#ef4444";
-      } else if (ratio <= 0.22) {
-        evalEl.innerText = "Healthy / Optimal Body Condition";
-        evalEl.style.color = "#4ade80";
-      } else {
-        evalEl.innerText = "Overweight / Potential Egg Retention";
-        evalEl.style.color = "#fbbf24";
+      // 3D Shell Volume (V_shell = pi * SCL * SH * SW / 6000)
+      const shellVol = (Math.PI * scl * sh * sw) / 6000.0;
+      if (document.getElementById('volVal')) {
+        document.getElementById('volVal').innerText = shellVol.toFixed(1);
       }
+
+      // BCI = Mass / Shell Volume (g/cm3)
+      const bci = shellVol > 0 ? (mass / shellVol) : 0;
+      if (document.getElementById('bciVal')) {
+        document.getElementById('bciVal').innerText = bci.toFixed(3);
+      }
+
+      // Mass / SCL (g/mm)
+      const massScl = scl > 0 ? (mass / scl) : 0;
+      if (document.getElementById('massSclVal')) {
+        document.getElementById('massSclVal').innerText = massScl.toFixed(2);
+      }
+
+      // Legacy fallback ratio
+      const sclCm = scl / 10.0;
+      const ratio = mass / Math.pow(sclCm, 3);
+      if (document.getElementById('ratioVal')) {
+        document.getElementById('ratioVal').innerText = ratio.toFixed(4);
+      }
+
+      const evalEl = document.getElementById('bciEvaluation');
+      if (evalEl) {
+        if (bci >= 1.25) {
+          evalEl.innerText = "High Density / Gravid (≥1.25 g/cm³; Peak Hydration / Egg Retention)";
+          evalEl.style.color = "#38bdf8";
+        } else if (bci >= 1.05) {
+          evalEl.innerText = "Optimal Density & Prime Condition (Loehr Mean: 1.12 ± 0.08 g/cm³)";
+          evalEl.style.color = "#4ade80";
+        } else if (bci >= 0.95) {
+          evalEl.innerText = "Moderate Condition / Sub-optimal Reserves (0.95 - 1.05 g/cm³)";
+          evalEl.style.color = "#fbbf24";
+        } else {
+          evalEl.innerText = "Underweight / Dehydration Risk (<0.95 g/cm³; Clinical Intervention Needed)";
+          evalEl.style.color = "#ef4444";
+        }
+      }
+    }
+
+    // Backwards compatibility alias
+    function calculateJacksons() {
+      calculateBCI();
     }
 
     // TSD Calculator
@@ -2911,6 +3070,10 @@
         anal_opening_mm: parseFloat(document.getElementById('obsAnalOpening').value) || null,
         anal_width_mm: parseFloat(document.getElementById('obsAnalWidth').value) || null,
         growth_rings: document.getElementById('obsGrowRings').value || null,
+        eggs_palpated: document.getElementById('obsEggsPalpated') ? document.getElementById('obsEggsPalpated').checked : false,
+        estimated_egg_count: document.getElementById('obsEggCount') ? parseInt(document.getElementById('obsEggCount').value, 10) || 0 : 0,
+        egg_length_mm: document.getElementById('obsEggLength') ? parseFloat(document.getElementById('obsEggLength').value) || null : null,
+        egg_width_mm: document.getElementById('obsEggWidth') ? parseFloat(document.getElementById('obsEggWidth').value) || null : null,
         observation_notes: document.getElementById('obsNotes').value || null,
         latitude: parseFloat(document.getElementById('obsLat').value) || (lastObsGpsCoords ? lastObsGpsCoords.latitude : null),
         longitude: parseFloat(document.getElementById('obsLon').value) || (lastObsGpsCoords ? lastObsGpsCoords.longitude : null),
@@ -2935,7 +3098,10 @@
           if (markersGroup) reloadMapSightings();
 
           const locationMsg = data.latitude && data.longitude ? `\nLocation Locked: [${data.latitude.toFixed(4)}, ${data.longitude.toFixed(4)}]` : '';
-          alert(`Observation saved successfully!\nJackson's Ratio: ${data.jacksons_ratio || 'N/A'}${locationMsg}`);
+          const bciMsg = data.body_condition_index ? `\nBCI (Loehr 2004): ${data.body_condition_index.toFixed(3)} g/cm³` : '';
+          const volMsg = data.shell_volume_cm3 ? `\nShell Volume: ${data.shell_volume_cm3.toFixed(1)} cm³` : '';
+          const ratioMsg = data.mass_to_scl_ratio ? `\nMass/SCL: ${data.mass_to_scl_ratio.toFixed(2)} g/mm` : '';
+          alert(`Observation saved successfully!${bciMsg}${volMsg}${ratioMsg}${locationMsg}`);
         } else {
           const err = await res.json();
           alert('Error saving observation: ' + (err.detail || JSON.stringify(err)));
@@ -2961,7 +3127,49 @@
       document.getElementById('drillDate').innerText = obs.inspected_at ? new Date(obs.inspected_at).toLocaleDateString() : 'N/A';
       document.getElementById('drillMass').innerText = `${obs.mass_grams}g`;
       document.getElementById('drillScl').innerText = `${obs.straight_carapace_length_mm}mm`;
-      document.getElementById('drillJackson').innerText = obs.jacksons_ratio ? obs.jacksons_ratio.toFixed(4) : 'N/A';
+
+      // 3D Shell Volume (V_shell = pi * SCL * SH * SW / 6000)
+      let vol = obs.shell_volume_cm3;
+      if (!vol && obs.straight_carapace_length_mm && obs.shell_height_mm && obs.shell_width_mm) {
+        vol = (Math.PI * obs.straight_carapace_length_mm * obs.shell_height_mm * obs.shell_width_mm / 6000).toFixed(1);
+      }
+      if (document.getElementById('drillShellVol')) {
+        document.getElementById('drillShellVol').innerText = vol ? `${Number(vol).toFixed(1)} cm³` : '—';
+      }
+
+      // BCI = Mass / Shell Volume (g/cm3)
+      let bci = obs.body_condition_index;
+      if (!bci && vol && obs.mass_grams) {
+        bci = (obs.mass_grams / Number(vol));
+      }
+      const bciDisplay = bci ? Number(bci).toFixed(3) : (obs.jacksons_ratio ? obs.jacksons_ratio.toFixed(4) : 'N/A');
+      if (document.getElementById('drillBci')) document.getElementById('drillBci').innerText = bciDisplay;
+      if (document.getElementById('drillJackson')) document.getElementById('drillJackson').innerText = bciDisplay;
+
+      // Linear Mass / SCL
+      let massScl = obs.mass_to_scl_ratio;
+      if (!massScl && obs.mass_grams && obs.straight_carapace_length_mm) {
+        massScl = (obs.mass_grams / obs.straight_carapace_length_mm).toFixed(2);
+      }
+      if (document.getElementById('drillMassScl')) {
+        document.getElementById('drillMassScl').innerText = massScl ? `${massScl} g/mm` : '—';
+      }
+
+      // Gravid status & somatic mass
+      if (document.getElementById('drillGravidStatus')) {
+        if (obs.eggs_palpated || obs.egg_volume_cm3 || (obs.estimated_egg_count && obs.estimated_egg_count > 0)) {
+          const eggVolStr = obs.egg_volume_cm3 ? ` (${obs.egg_volume_cm3.toFixed(1)} cm³)` : '';
+          document.getElementById('drillGravidStatus').innerText = `Gravid${eggVolStr}`;
+          document.getElementById('drillGravidStatus').style.color = '#38bdf8';
+        } else {
+          document.getElementById('drillGravidStatus').innerText = 'Non-Gravid / Quiescent';
+          document.getElementById('drillGravidStatus').style.color = 'var(--text-muted)';
+        }
+      }
+      if (document.getElementById('drillSomaticMass')) {
+        const somMass = obs.somatic_mass_grams ? `${obs.somatic_mass_grams} g` : `${obs.mass_grams} g`;
+        document.getElementById('drillSomaticMass').innerText = somMass;
+      }
 
       document.getElementById('drillSw').innerText = obs.shell_width_mm ? `${obs.shell_width_mm} mm` : '—';
       document.getElementById('drillSh').innerText = obs.shell_height_mm ? `${obs.shell_height_mm} mm` : '—';
@@ -3035,8 +3243,8 @@
                 <span><strong>Mass:</strong> ${obs.mass_grams}g</span>
                 <span><strong>SCL:</strong> ${obs.straight_carapace_length_mm}mm</span>
                 <span><strong>Plastron:</strong> ${obs.plastron_length_mm ? obs.plastron_length_mm + 'mm' : '—'}</span>
-                <span><strong>Grow Rings:</strong> ${obs.growth_rings || '—'}</span>
-                <span><strong>Jackson's:</strong> <code style="color: var(--accent-clay); font-weight: bold;">${obs.jacksons_ratio || '—'}</code></span>
+                <span><strong>Scute Laminae:</strong> ${obs.growth_rings || '—'}</span>
+                <span><strong>BCI:</strong> <code style="color: var(--primary-light); font-weight: bold;">${obs.body_condition_index ? obs.body_condition_index.toFixed(3) + ' g/cm³' : (obs.jacksons_ratio ? obs.jacksons_ratio.toFixed(4) : '—')}</code></span>
               </div>
               ${obs.observation_notes ? `<div style="font-size: 12px; color: var(--text-main); margin-top: 6px; font-style: italic;">"${obs.observation_notes}"</div>` : ''}
             </div>

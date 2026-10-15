@@ -127,7 +127,98 @@ class TestPDFReportGenerator(unittest.TestCase):
         }
         pdf_bytes = self.generator.generate_specimen_report(data)
         self.assertIsInstance(pdf_bytes, bytes)
+    def test_loehr_et_al_padloper_metrics(self):
+        """Test report generation with Loehr et al. (2004) padloper biometric metrics."""
+        data = {
+            "custom_identifier": "PADL-SPRING-042",
+            "species_name": "Homopus signatus signatus",
+            "common_name": "Namaqualand Speckled Padloper",
+            "iucn_status": "EN (Endangered)",
+            "pit_tag_number": "982000491028371",
+            "notch_code": "L2-R3",
+            "sex": "Female",
+            "status": "Wild",
+            "latest_mass": 151.4,
+            "latest_scl": 92.6,
+            "latest_sh": 40.2,
+            "latest_sw": 68.8,
+            "latest_shell_volume": 127.8,
+            "latest_bci": 1.185,
+            "latest_mass_to_scl": 1.63,
+            "latest_growth_rings": "10 laminae",
+            "is_adult_breeding_size": True,
+            "inspections": [
+                {
+                    "date": "2026-09-15",
+                    "type": "Spring Field Survey",
+                    "mass": "151.4 g",
+                    "scl": "92.6 mm",
+                    "shell_vol": "127.8 cm³",
+                    "bci": "1.185",
+                    "mass_to_scl": "1.63 g/mm",
+                    "bcs": "Score 4/5",
+                    "findings": "Optimal body condition index within Loehr et al. (2004) baseline (1.12 ± 0.08 g/cm³)."
+                }
+            ]
+        }
+        pdf_bytes = self.generator.generate_specimen_report(data)
+        self.assertIsInstance(pdf_bytes, bytes)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+        self.assertGreater(len(pdf_bytes), 2000)
+
+    def test_gravid_female_with_coleman_egg_volume(self):
+        """Test report generation with gravid female and Coleman (1991) non-spherical egg volume."""
+        data = {
+            "custom_identifier": "PADL-GRAVID-008",
+            "species_name": "Homopus signatus signatus",
+            "common_name": "Namaqualand Speckled Padloper",
+            "iucn_status": "EN (Endangered)",
+            "sex": "Female",
+            "status": "Wild",
+            "latest_mass": 165.0,
+            "latest_scl": 96.2,
+            "latest_sh": 42.1,
+            "latest_sw": 71.0,
+            "eggs_palpated": True,
+            "estimated_egg_count": 1,
+            "egg_length_mm": 34.6,
+            "egg_width_mm": 24.9,
+            "egg_volume_cm3": 11.24,
+            "somatic_mass_grams": 153.8,
+            "inspections": [
+                {
+                    "date": "2026-10-02",
+                    "type": "Oviposition Ultrasound",
+                    "mass": "165.0 g",
+                    "scl": "96.2 mm",
+                    "shell_vol": "135.2 cm³",
+                    "bci": "1.220",
+                    "mass_to_scl": "1.72 g/mm",
+                    "bcs": "Score 4/5",
+                    "findings": "Single calcified egg detected. Coleman egg volume: 11.2 cm³; Somatic mass: 153.8g."
+                }
+            ]
+        }
+        pdf_bytes = self.generator.generate_specimen_report(data)
+        self.assertIsInstance(pdf_bytes, bytes)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+
+    def test_subadult_threshold(self):
+        """Test subadult female below Loehr 84.1 mm threshold."""
+        data = {
+            "custom_identifier": "PADL-JUV-001",
+            "species_name": "Homopus signatus signatus",
+            "common_name": "Namaqualand Speckled Padloper",
+            "sex": "Female",
+            "latest_mass": 78.5,
+            "latest_scl": 72.0,
+            "latest_growth_rings": "6 laminae",
+            "inspections": []
+        }
+        pdf_bytes = self.generator.generate_specimen_report(data)
+        self.assertIsInstance(pdf_bytes, bytes)
         self.assertTrue(pdf_bytes.startswith(b"%PDF"))
 
 if __name__ == "__main__":
     unittest.main()
+

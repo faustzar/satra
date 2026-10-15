@@ -28,7 +28,23 @@ def upgrade() -> None:
     op.add_column('health_inspections', sa.Column('longitude', sa.Float(), nullable=True))
     op.add_column('health_inspections', sa.Column('gps_accuracy_m', sa.Float(), nullable=True))
 
+    # Add Loehr, Henen & Hofmeyr (2004) Condition & Reproduction columns
+    op.add_column('health_inspections', sa.Column('shell_volume_cm3', sa.Float(), nullable=True))
+    op.add_column('health_inspections', sa.Column('body_condition_index', sa.Float(), nullable=True))
+    op.add_column('health_inspections', sa.Column('mass_to_scl_ratio', sa.Float(), nullable=True))
+    op.add_column('health_inspections', sa.Column('egg_length_mm', sa.Float(), nullable=True))
+    op.add_column('health_inspections', sa.Column('egg_width_mm', sa.Float(), nullable=True))
+    op.add_column('health_inspections', sa.Column('egg_volume_cm3', sa.Float(), nullable=True))
+    op.add_column('health_inspections', sa.Column('somatic_mass_grams', sa.Float(), nullable=True))
+
 def downgrade() -> None:
+    op.drop_column('health_inspections', 'somatic_mass_grams')
+    op.drop_column('health_inspections', 'egg_volume_cm3')
+    op.drop_column('health_inspections', 'egg_width_mm')
+    op.drop_column('health_inspections', 'egg_length_mm')
+    op.drop_column('health_inspections', 'mass_to_scl_ratio')
+    op.drop_column('health_inspections', 'body_condition_index')
+    op.drop_column('health_inspections', 'shell_volume_cm3')
     op.drop_column('health_inspections', 'gps_accuracy_m')
     op.drop_column('health_inspections', 'longitude')
     op.drop_column('health_inspections', 'latitude')

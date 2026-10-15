@@ -622,6 +622,11 @@
         <i class="fa-solid fa-sun" id="themeIcon"></i>
         <span id="themeLabel">Safari Day</span>
       </button>
+
+      <button id="preferencesBtn" class="btn btn-secondary" onclick="openPreferencesModal()" style="padding: 8px 12px; font-size: 12px; cursor: pointer;" title="System Preferences: Marking System & Units">
+        <i class="fa-solid fa-gear" style="color: var(--accent-gold);"></i>
+        <span>Preferences</span>
+      </button>
     </div>
   </header>
 
@@ -776,15 +781,37 @@
 
     <!-- TAB 2: INTERACTIVE SCUTE NOTCH PICKER -->
     <div id="tab-notches" class="tab-content">
+      <!-- System Selector Bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 16px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-sliders" style="color: var(--accent-gold);"></i>
+          <span style="font-weight: 700; font-size: 13px;">Active Identification Standard:</span>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="role-pill active" id="notchSysPill_sa_standard" onclick="switchNotchSystem('sa_standard')">
+            <i class="fa-solid fa-certificate" style="color: var(--accent-gold);"></i> South African Standard (1-2-4-7 Additive)
+          </button>
+          <button type="button" class="role-pill" id="notchSysPill_cagle" onclick="switchNotchSystem('cagle')">
+            <i class="fa-solid fa-list-ol"></i> Cagle (L1–L12 / R1–R12)
+          </button>
+          <button type="button" class="role-pill" id="notchSysPill_binary" onclick="switchNotchSystem('binary')">
+            <i class="fa-solid fa-microchip"></i> Binary 1-2-4-8 Additive
+          </button>
+        </div>
+      </div>
+
       <div class="grid-2">
         <div class="card">
-          <div class="card-title"><i class="fa-solid fa-fingerprint" style="color: var(--primary-light);"></i> Cagle 1–12 Marginal Notch Coding</div>
-          <p style="font-size: 13px; color: var(--text-muted); margin: 6px 0 16px 0;">
-            Tap individual marginal scutes (L1–L12, R1–R12) along the perimeter to encode permanent field file notches.
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div class="card-title" id="notchPickerTitle"><i class="fa-solid fa-fingerprint" style="color: var(--primary-light);"></i> South African Standard (1-2-4-7 Additive)</div>
+            <span class="badge badge-wild" id="notchPickerBadge">Official SA Protocol</span>
+          </div>
+          <p id="notchPickerDesc" style="font-size: 13px; color: var(--text-muted); margin: 0 0 16px 0;">
+            Standard South African decimal additive scheme. Marginals hold place values (Units 1-2-4-7, Tens 10-20-40-70, Hundreds 100-200-400-700, Thousands 1000-2000-4000-7000). The sum of notched marginals gives the specimen's unique identification number.
           </p>
 
           <div class="shell-container">
-            <div class="nuchal-scute">Nuchal</div>
+            <div class="nuchal-scute" id="diagramNuchal">Nuchal</div>
             <div class="scute-row">
               <div class="scute-col" id="leftMarginals"></div>
               <div class="shell-center">
@@ -796,16 +823,32 @@
               </div>
               <div class="scute-col" id="rightMarginals"></div>
             </div>
-            <div class="supracaudal-scute">Supracaudal</div>
+            <div class="supracaudal-scute" id="diagramSupracaudal">Supracaudal (3000)</div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title"><i class="fa-solid fa-code" style="color: #ffd600;"></i> Computed Notch Code</div>
+          <div class="card-title"><i class="fa-solid fa-code" style="color: #ffd600;"></i> Computed Identification</div>
+          
           <div style="background: #090d16; padding: 18px; border-radius: 12px; margin: 16px 0; border: 1px solid var(--border-color);">
-            <div style="font-size: 12px; color: var(--text-muted);">Standardized ID Sequence:</div>
-            <div id="notchCodeDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 800; color: #ffd600; margin-top: 6px;">
-              No Notches
+            <div style="font-size: 12px; color: var(--text-muted);" id="notchCodeLabel">Computed Specimen Number (Sum):</div>
+            <div id="notchCodeDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 800; color: #ffd600; margin-top: 6px;">
+              No Notches (0)
+            </div>
+            <div id="notchBreakdownDisplay" style="font-size: 12px; color: var(--accent-clay); margin-top: 6px; font-family: 'JetBrains Mono', monospace;">
+              Formula: --
+            </div>
+          </div>
+
+          <!-- Formula & Calculation Guide Box -->
+          <div id="notchCalculationGuide" style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 16px; font-size: 12px; line-height: 1.5;">
+            <div style="font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">
+              <i class="fa-solid fa-calculator"></i> Decimal Additive Principle:
+            </div>
+            <div style="color: var(--text-muted);">
+              Any digit from 1 to 9 is formed by at most 2 notches:
+              <br/>• <strong>1</strong>=1, <strong>2</strong>=2, <strong>3</strong>=1+2, <strong>4</strong>=4, <strong>5</strong>=1+4, <strong>6</strong>=2+4, <strong>7</strong>=7, <strong>8</strong>=1+7, <strong>9</strong>=2+7
+              <br/>• Example from standard: Specimen <strong>56</strong> = (10+40) on left anterior + (2+4) on right anterior.
             </div>
           </div>
 
@@ -813,13 +856,16 @@
             <button class="btn btn-secondary" onclick="clearNotches()">
               <i class="fa-solid fa-trash"></i> Clear All
             </button>
-            <button class="btn" onclick="applyNotchToSearch()">
-              <i class="fa-solid fa-magnifying-glass"></i> Search Catalog by Code
+            <button class="btn btn-gold" onclick="applyNotchToSearch()">
+              <i class="fa-solid fa-magnifying-glass"></i> Search Catalog by ID
+            </button>
+            <button class="btn btn-secondary" onclick="openPreferencesModal()" title="Change default identification system">
+              <i class="fa-solid fa-gear"></i> Preferences
             </button>
           </div>
 
-          <div style="margin-top: 24px; padding: 14px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; font-size: 12px; color: #93c5fd;">
-            <i class="fa-solid fa-info-circle"></i> <strong>Herpetological Standard:</strong> The Cagle system uses V-shaped marginal indentations. Notches on juveniles heal over within 3-4 years, while adult bone notches remain permanent.
+          <div style="margin-top: 24px; padding: 14px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; font-size: 12px; color: #93c5fd;" id="notchInfoBox">
+            <i class="fa-solid fa-info-circle"></i> <strong>Official Cape Nature / SANBI Guidelines:</strong> Bridge marginals (bridge scutes) are preserved to prevent structural shell weakness. Triangular notches are filed into outer keratin.
           </div>
         </div>
       </div>
@@ -1569,6 +1615,109 @@
     </div>
   </div>
 
+  <!-- System Preferences Modal -->
+  <div class="modal-backdrop" id="preferencesModal">
+    <div class="modal-box" style="max-width: 620px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-gear" style="font-size: 20px; color: var(--accent-gold);"></i>
+          <h2 style="font-size: 20px; font-weight: 800; margin: 0;">System Preferences</h2>
+        </div>
+        <button class="btn btn-secondary" onclick="closeModal('preferencesModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        Configure your research and conservation field standards. Preferences are persisted across sessions.
+      </p>
+
+      <!-- Section 1: Identification Standard -->
+      <div style="margin-bottom: 20px;">
+        <label style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+          <i class="fa-solid fa-fingerprint" style="color: var(--accent-gold);"></i> Marginal Identification Coding Scheme
+        </label>
+        
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          
+          <!-- Option 1: South African Standard (1-2-4-7 Additive) -->
+          <label style="display: flex; align-items: flex-start; gap: 12px; background: var(--card-inner); padding: 14px; border-radius: 10px; cursor: pointer; border: 2px solid var(--primary); transition: all 0.2s;" id="prefCard_sa_standard">
+            <input type="radio" name="prefIdSystem" value="sa_standard" checked style="width: 18px; height: 18px; margin-top: 2px;" onchange="updatePrefCardsHighlight()">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 800; font-size: 14px; color: var(--primary-light);">South African Standard (1-2-4-7 Additive)</span>
+                <span class="badge badge-wild" style="font-size: 9px;">Official Standard</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                Decimal place-value scheme: Units (1, 2, 4, 7 on Right Anterior), Tens (10, 20, 40, 70 on Left Anterior), Hundreds (100, 200, 400, 700 on Right Posterior), Thousands (1000, 2000, 4000, 7000 on Left Posterior).
+              </div>
+              <div style="font-size: 11px; color: var(--accent-gold); margin-top: 4px; font-family: 'JetBrains Mono', monospace;">
+                Max number: 9,999+ • Additive calculation with at most 2 notches per digit.
+              </div>
+            </div>
+          </label>
+
+          <!-- Option 2: Cagle Positional Notation (L1-12 / R1-12) -->
+          <label style="display: flex; align-items: flex-start; gap: 12px; background: var(--card-inner); padding: 14px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color); transition: all 0.2s;" id="prefCard_cagle">
+            <input type="radio" name="prefIdSystem" value="cagle" style="width: 18px; height: 18px; margin-top: 2px;" onchange="updatePrefCardsHighlight()">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 800; font-size: 14px; color: var(--text-main);">Cagle Positional (L1–L12 / R1–R12)</span>
+                <span class="badge badge-released" style="font-size: 9px;">Direct Notch</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                Direct alphanumeric sequence listing each notched marginal plate (e.g. <code>L1-R4</code>, <code>L2-L7-R3</code>).
+              </div>
+            </div>
+          </label>
+
+          <!-- Option 3: Binary Additive (1-2-4-8) -->
+          <label style="display: flex; align-items: flex-start; gap: 12px; background: var(--card-inner); padding: 14px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color); transition: all 0.2s;" id="prefCard_binary">
+            <input type="radio" name="prefIdSystem" value="binary" style="width: 18px; height: 18px; margin-top: 2px;" onchange="updatePrefCardsHighlight()">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 800; font-size: 14px; color: var(--text-main);">Binary Powers of Two (1-2-4-8 Additive)</span>
+                <span class="badge" style="font-size: 9px; background: #3b82f6; color: white;">Global Academic</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                Binary weighted scheme used in North American & European chelonian studies.
+              </div>
+            </div>
+          </label>
+
+        </div>
+      </div>
+
+      <!-- Section 2: Display & Unit Preferences -->
+      <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 20px;">
+        <label style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+          <i class="fa-solid fa-ruler-combined" style="color: var(--primary-light);"></i> Measurement & Coordinate Defaults
+        </label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="font-size: 12px; color: var(--text-muted); margin: 0 0 4px 0;">Mass Unit</label>
+            <select id="prefMassUnit" style="margin-top: 4px; margin-bottom: 0;">
+              <option value="grams" selected>Grams (g) - Standard</option>
+              <option value="kilograms">Kilograms (kg)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 12px; color: var(--text-muted); margin: 0 0 4px 0;">Length & Caliper Unit</label>
+            <select id="prefLengthUnit" style="margin-top: 4px; margin-bottom: 0;">
+              <option value="mm" selected>Millimeters (mm) - Standard</option>
+              <option value="cm">Centimeters (cm)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('preferencesModal')">Cancel</button>
+        <button class="btn btn-gold" onclick="saveUserPreferences()">
+          <i class="fa-solid fa-check"></i> Save Preferences
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let activeNotches = new Set(['L1', 'R4']);
     let mapInstance = null;
@@ -1585,27 +1734,243 @@
       }
     }
 
+    // Identification Standards & Preferences System
+    const NOTCH_SYSTEMS = {
+      sa_standard: {
+        id: 'sa_standard',
+        name: 'South African Standard (1-2-4-7 Additive)',
+        badge: 'Official SA Standard',
+        desc: 'Official decimal place-value protocol (Units: 1, 2, 4, 7 on Right Anterior; Tens: 10, 20, 40, 70 on Left Anterior; Hundreds: 100, 200, 400, 700 on Right Posterior; Thousands: 1000, 2000, 4000, 7000 on Left Posterior; Supracaudal: 3000). Cumulative sum gives the tortoise ID number.',
+        isAdditive: true,
+        leftValues: {
+          1: { val: 10, label: '10' },
+          2: { val: 20, label: '20' },
+          3: { val: 40, label: '40' },
+          4: { val: 70, label: '70' },
+          5: { val: null, label: '—' },
+          6: { val: null, label: '—' },
+          7: { val: null, label: '—' },
+          8: { val: 7000, label: '7000' },
+          9: { val: 4000, label: '4000' },
+          10: { val: 2000, label: '2000' },
+          11: { val: 1000, label: '1000' }
+        },
+        rightValues: {
+          1: { val: 1, label: '1' },
+          2: { val: 2, label: '2' },
+          3: { val: 4, label: '4' },
+          4: { val: 7, label: '7' },
+          5: { val: null, label: '—' },
+          6: { val: null, label: '—' },
+          7: { val: null, label: '—' },
+          8: { val: 700, label: '700' },
+          9: { val: 400, label: '400' },
+          10: { val: 200, label: '200' },
+          11: { val: 100, label: '100' }
+        },
+        supracaudal: { val: 3000, label: 'Supracaudal (3000)' }
+      },
+      cagle: {
+        id: 'cagle',
+        name: 'Cagle Positional (L1–L12 / R1–R12)',
+        badge: 'Direct Notch',
+        desc: 'Sequential anatomical marginal notation. Each notch represents its physical scute position along the rim (Left marginals L1 to L12 and Right marginals R1 to R12).',
+        isAdditive: false,
+        leftValues: {
+          1: { val: 'L1', label: 'L1' }, 2: { val: 'L2', label: 'L2' }, 3: { val: 'L3', label: 'L3' },
+          4: { val: 'L4', label: 'L4' }, 5: { val: 'L5', label: 'L5' }, 6: { val: 'L6', label: 'L6' },
+          7: { val: 'L7', label: 'L7' }, 8: { val: 'L8', label: 'L8' }, 9: { val: 'L9', label: 'L9' },
+          10: { val: 'L10', label: 'L10' }, 11: { val: 'L11', label: 'L11' }, 12: { val: 'L12', label: 'L12' }
+        },
+        rightValues: {
+          1: { val: 'R1', label: 'R1' }, 2: { val: 'R2', label: 'R2' }, 3: { val: 'R3', label: 'R3' },
+          4: { val: 'R4', label: 'R4' }, 5: { val: 'R5', label: 'R5' }, 6: { val: 'R6', label: 'R6' },
+          7: { val: 'R7', label: 'R7' }, 8: { val: 'R8', label: 'R8' }, 9: { val: 'R9', label: 'R9' },
+          10: { val: 'R10', label: 'R10' }, 11: { val: 'R11', label: 'R11' }, 12: { val: 'R12', label: 'R12' }
+        },
+        supracaudal: { val: null, label: 'Supracaudal' }
+      },
+      binary: {
+        id: 'binary',
+        name: 'Binary Powers of Two (1-2-4-8 Additive)',
+        badge: 'Academic Binary',
+        desc: 'Binary additive system assigning power-of-two values (1, 2, 4, 8, 16, 32, 64, 128, etc.) along anterior and posterior marginals. The sum calculates the unique numerical catalog ID.',
+        isAdditive: true,
+        leftValues: {
+          1: { val: 16, label: '16' }, 2: { val: 32, label: '32' }, 3: { val: 64, label: '64' }, 4: { val: 128, label: '128' },
+          5: { val: null, label: '—' }, 6: { val: null, label: '—' }, 7: { val: null, label: '—' },
+          8: { val: 256, label: '256' }, 9: { val: 512, label: '512' }, 10: { val: 1024, label: '1024' }, 11: { val: 2048, label: '2048' }
+        },
+        rightValues: {
+          1: { val: 1, label: '1' }, 2: { val: 2, label: '2' }, 3: { val: 4, label: '4' }, 4: { val: 8, label: '8' },
+          5: { val: null, label: '—' }, 6: { val: null, label: '—' }, 7: { val: null, label: '—' },
+          8: { val: 4096, label: '4096' }, 9: { val: 8192, label: '8192' }, 10: { val: 16384, label: '16384' }, 11: { val: 32768, label: '32768' }
+        },
+        supracaudal: { val: null, label: 'Supracaudal' }
+      }
+    };
+
+    let userPreferences = {
+      idSystem: localStorage.getItem('satra-pref-id-system') || 'sa_standard',
+      massUnit: localStorage.getItem('satra-pref-mass-unit') || 'grams',
+      lengthUnit: localStorage.getItem('satra-pref-length-unit') || 'mm'
+    };
+
+    let currentNotchSystem = userPreferences.idSystem;
+
+    function openPreferencesModal() {
+      // Sync radio selection
+      const radios = document.getElementsByName('prefIdSystem');
+      radios.forEach(r => {
+        r.checked = (r.value === userPreferences.idSystem);
+      });
+      document.getElementById('prefMassUnit').value = userPreferences.massUnit;
+      document.getElementById('prefLengthUnit').value = userPreferences.lengthUnit;
+      updatePrefCardsHighlight();
+      document.getElementById('preferencesModal').style.display = 'flex';
+    }
+
+    function updatePrefCardsHighlight() {
+      const selected = document.querySelector('input[name="prefIdSystem"]:checked')?.value || 'sa_standard';
+      ['sa_standard', 'cagle', 'binary'].forEach(sys => {
+        const card = document.getElementById('prefCard_' + sys);
+        if (card) {
+          card.style.borderColor = (sys === selected) ? 'var(--primary)' : 'var(--border-color)';
+        }
+      });
+    }
+
+    function saveUserPreferences() {
+      const selectedRadio = document.querySelector('input[name="prefIdSystem"]:checked');
+      if (selectedRadio) {
+        userPreferences.idSystem = selectedRadio.value;
+        localStorage.setItem('satra-pref-id-system', selectedRadio.value);
+      }
+      userPreferences.massUnit = document.getElementById('prefMassUnit').value;
+      localStorage.setItem('satra-pref-mass-unit', userPreferences.massUnit);
+
+      userPreferences.lengthUnit = document.getElementById('prefLengthUnit').value;
+      localStorage.setItem('satra-pref-length-unit', userPreferences.lengthUnit);
+
+      closeModal('preferencesModal');
+      switchNotchSystem(userPreferences.idSystem);
+      alert('Preferences saved successfully!');
+    }
+
+    function switchNotchSystem(systemId) {
+      if (!NOTCH_SYSTEMS[systemId]) return;
+      currentNotchSystem = systemId;
+      userPreferences.idSystem = systemId;
+      localStorage.setItem('satra-pref-id-system', systemId);
+
+      // Update pills
+      document.querySelectorAll('#tab-notches .role-pill').forEach(btn => btn.classList.remove('active'));
+      const activePill = document.getElementById('notchSysPill_' + systemId);
+      if (activePill) activePill.classList.add('active');
+
+      const sys = NOTCH_SYSTEMS[systemId];
+      document.getElementById('notchPickerTitle').innerHTML = `<i class="fa-solid fa-fingerprint" style="color: var(--primary-light);"></i> ${sys.name}`;
+      document.getElementById('notchPickerBadge').innerText = sys.badge;
+      document.getElementById('notchPickerDesc').innerText = sys.desc;
+
+      const supraEl = document.getElementById('diagramSupracaudal');
+      if (supraEl) {
+        supraEl.innerText = sys.supracaudal?.label || 'Supracaudal';
+        supraEl.style.cursor = sys.supracaudal?.val ? 'pointer' : 'default';
+        supraEl.onclick = sys.supracaudal?.val ? () => toggleNotch('SUPRA', supraEl) : null;
+        if (activeNotches.has('SUPRA') && sys.supracaudal?.val) {
+          supraEl.classList.add('notched');
+        } else {
+          supraEl.classList.remove('notched');
+        }
+      }
+
+      const guideBox = document.getElementById('notchCalculationGuide');
+      if (guideBox) {
+        if (sys.isAdditive && systemId === 'sa_standard') {
+          guideBox.style.display = 'block';
+          guideBox.innerHTML = `
+            <div style="font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">
+              <i class="fa-solid fa-calculator"></i> Decimal Additive Principle (South African Standard):
+            </div>
+            <div style="color: var(--text-muted);">
+              Any digit from 1 to 9 is formed by at most 2 notches:
+              <br/>• <strong>1</strong>=1, <strong>2</strong>=2, <strong>3</strong>=1+2, <strong>4</strong>=4, <strong>5</strong>=1+4, <strong>6</strong>=2+4, <strong>7</strong>=7, <strong>8</strong>=1+7, <strong>9</strong>=2+7
+              <br/>• Standard Example: Specimen <strong>56</strong> = (10+40) on left anterior + (2+4) on right anterior.
+              <br/>• Supracaudal notch adds <strong>+3000</strong> to the total.
+            </div>
+          `;
+        } else if (sys.isAdditive && systemId === 'binary') {
+          guideBox.style.display = 'block';
+          guideBox.innerHTML = `
+            <div style="font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">
+              <i class="fa-solid fa-calculator"></i> Binary Powers of 2 Scheme:
+            </div>
+            <div style="color: var(--text-muted);">
+              Each marginal has a distinct power of 2 (1, 2, 4, 8, 16, 32, 64, 128...). Specimen number is the sum of all notched marginals.
+            </div>
+          `;
+        } else {
+          guideBox.style.display = 'block';
+          guideBox.innerHTML = `
+            <div style="font-weight: 700; color: var(--primary-light); margin-bottom: 4px;">
+              <i class="fa-solid fa-list-ol"></i> Cagle Positional Scheme:
+            </div>
+            <div style="color: var(--text-muted);">
+              Direct anatomical marginal codes listing each notched scute sequentially (e.g. <code>L1-R4</code>).
+            </div>
+          `;
+        }
+      }
+
+      initScuteDiagram();
+      updateSpecimensCardMarkings();
+    }
+
     // Scute Diagram Setup
     function initScuteDiagram() {
       const leftCol = document.getElementById('leftMarginals');
       const rightCol = document.getElementById('rightMarginals');
+      if (!leftCol || !rightCol) return;
       leftCol.innerHTML = '';
       rightCol.innerHTML = '';
 
-      for (let i = 1; i <= 12; i++) {
+      const sys = NOTCH_SYSTEMS[currentNotchSystem] || NOTCH_SYSTEMS.sa_standard;
+      const count = (currentNotchSystem === 'cagle') ? 12 : 11;
+
+      for (let i = 1; i <= count; i++) {
         const lId = 'L' + i;
         const rId = 'R' + i;
 
+        const lData = sys.leftValues[i] || { val: null, label: '—' };
+        const rData = sys.rightValues[i] || { val: null, label: '—' };
+
+        // Left button
         const lBtn = document.createElement('button');
         lBtn.className = 'scute-btn' + (activeNotches.has(lId) ? ' notched' : '');
-        lBtn.innerText = lId;
-        lBtn.onclick = () => toggleNotch(lId, lBtn);
+        lBtn.innerText = lData.label;
+        lBtn.title = `Left Marginal ${i} (${lData.label})`;
+        if (lData.val === null) {
+          lBtn.style.opacity = '0.35';
+          lBtn.style.cursor = 'not-allowed';
+          lBtn.onclick = () => alert(`Marginal L${i} is a bridge scute and protected from notching to preserve shell integrity.`);
+        } else {
+          lBtn.onclick = () => toggleNotch(lId, lBtn);
+        }
         leftCol.appendChild(lBtn);
 
+        // Right button
         const rBtn = document.createElement('button');
         rBtn.className = 'scute-btn' + (activeNotches.has(rId) ? ' notched' : '');
-        rBtn.innerText = rId;
-        rBtn.onclick = () => toggleNotch(rId, rBtn);
+        rBtn.innerText = rData.label;
+        rBtn.title = `Right Marginal ${i} (${rData.label})`;
+        if (rData.val === null) {
+          rBtn.style.opacity = '0.35';
+          rBtn.style.cursor = 'not-allowed';
+          rBtn.onclick = () => alert(`Marginal R${i} is a bridge scute and protected from notching to preserve shell integrity.`);
+        } else {
+          rBtn.onclick = () => toggleNotch(rId, rBtn);
+        }
         rightCol.appendChild(rBtn);
       }
       updateNotchDisplay();
@@ -1625,20 +1990,100 @@
     function clearNotches() {
       activeNotches.clear();
       document.querySelectorAll('.scute-btn').forEach(btn => btn.classList.remove('notched'));
+      const supraEl = document.getElementById('diagramSupracaudal');
+      if (supraEl) supraEl.classList.remove('notched');
       updateNotchDisplay();
+    }
+
+    function calculateIdentificationCode(notchesSet, systemId) {
+      const sys = NOTCH_SYSTEMS[systemId] || NOTCH_SYSTEMS.sa_standard;
+      if (!sys.isAdditive) {
+        if (!notchesSet || notchesSet.size === 0) return { code: 'No Notches', sum: 0, breakdown: '--' };
+        const sorted = Array.from(notchesSet).filter(n => n !== 'SUPRA').sort((a, b) => {
+          if (a[0] !== b[0]) return a[0] === 'L' ? -1 : 1;
+          return parseInt(a.slice(1)) - parseInt(b.slice(1));
+        });
+        const code = sorted.join('-');
+        return { code: code || 'No Notches', sum: null, breakdown: 'Positional sequence' };
+      }
+
+      // Additive calculation
+      let sum = 0;
+      const terms = [];
+
+      notchesSet.forEach(n => {
+        if (n === 'SUPRA' && sys.supracaudal?.val) {
+          sum += sys.supracaudal.val;
+          terms.push(`Supracaudal(+${sys.supracaudal.val})`);
+        } else if (n.startsWith('L')) {
+          const idx = parseInt(n.slice(1));
+          const val = sys.leftValues[idx]?.val;
+          if (typeof val === 'number') {
+            sum += val;
+            terms.push(`L${idx}(+${val})`);
+          }
+        } else if (n.startsWith('R')) {
+          const idx = parseInt(n.slice(1));
+          const val = sys.rightValues[idx]?.val;
+          if (typeof val === 'number') {
+            sum += val;
+            terms.push(`R${idx}(+${val})`);
+          }
+        }
+      });
+
+      return {
+        code: sum > 0 ? `#${sum}` : 'No Notches (0)',
+        sum: sum,
+        breakdown: terms.length > 0 ? terms.join(' + ') + ` = ${sum}` : '--'
+      };
     }
 
     function updateNotchDisplay() {
       const display = document.getElementById('notchCodeDisplay');
-      if (activeNotches.size === 0) {
-        display.innerText = 'No Notches';
+      const breakdownEl = document.getElementById('notchBreakdownDisplay');
+      const labelEl = document.getElementById('notchCodeLabel');
+
+      const sys = NOTCH_SYSTEMS[currentNotchSystem] || NOTCH_SYSTEMS.sa_standard;
+      const result = calculateIdentificationCode(activeNotches, currentNotchSystem);
+
+      if (sys.isAdditive) {
+        if (labelEl) labelEl.innerText = 'Computed Specimen Number (Additive Sum):';
+        if (display) display.innerText = result.code;
+        if (breakdownEl) breakdownEl.innerText = `Formula: ${result.breakdown}`;
       } else {
-        const sorted = Array.from(activeNotches).sort((a, b) => {
-          if (a[0] !== b[0]) return a[0] === 'L' ? -1 : 1;
-          return parseInt(a.slice(1)) - parseInt(b.slice(1));
-        });
-        display.innerText = sorted.join('-');
+        if (labelEl) labelEl.innerText = 'Computed Notch Sequence (Cagle):';
+        if (display) display.innerText = result.code;
+        if (breakdownEl) breakdownEl.innerText = `Anatomical: ${result.code}`;
       }
+    }
+
+    // Helper to format any notch code (e.g. 'L1-R4') into the active identification standard
+    function formatNotchForDisplay(notchCode, systemId) {
+      if (!notchCode || notchCode === 'None' || notchCode === 'Unnotched') return 'Unnotched';
+      const sys = NOTCH_SYSTEMS[systemId || currentNotchSystem] || NOTCH_SYSTEMS.sa_standard;
+      
+      // If system is Cagle, return direct code
+      if (!sys.isAdditive) return notchCode;
+
+      // Check if it's already a numerical ID like "#56"
+      if (notchCode.startsWith('#')) return notchCode;
+
+      // If it contains L/R parts, parse and compute additive value
+      const parts = notchCode.split(/[-,\s]+/);
+      const parsedSet = new Set();
+      parts.forEach(p => {
+        const clean = p.trim().toUpperCase();
+        if (clean === 'SUPRA' || clean.startsWith('L') || clean.startsWith('R')) {
+          parsedSet.add(clean);
+        }
+      });
+
+      if (parsedSet.size > 0) {
+        const res = calculateIdentificationCode(parsedSet, systemId || currentNotchSystem);
+        if (res.sum > 0) return `${res.code} (${notchCode})`;
+      }
+      return notchCode;
     }
 
     // Load Specimens from API
@@ -1808,13 +2253,14 @@
         }
 
         if (activeWidgets.has('notch')) {
+          const notchFormatted = formatNotchForDisplay(sp.notch_code, currentNotchSystem);
           widgetsHtml += `
             <div class="specimen-widget" onclick="event.stopPropagation(); switchTab('notches');">
               <div class="widget-header">
                 <span><i class="fa-solid fa-fingerprint" style="color: var(--accent-gold);"></i> Marking</span>
                 <span style="font-size: 9px; color: var(--text-muted);">${sp.sex}</span>
               </div>
-              <div class="widget-val" style="font-family: 'JetBrains Mono', monospace; color: var(--accent-gold); font-size: 13px;">${sp.notch_code || 'None'}</div>
+              <div class="widget-val" style="font-family: 'JetBrains Mono', monospace; color: var(--accent-gold); font-size: 13px;" title="Marginal ID">${notchFormatted}</div>
               <div style="font-size: 10px; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">PIT: ${sp.pit_tag_number || 'Unchipped'}</div>
             </div>
           `;
@@ -1974,7 +2420,7 @@
       document.getElementById('modalId').innerText = customId;
       document.getElementById('modalSpecies').innerText = species;
       document.getElementById('modalPit').innerText = pit || 'Unchipped';
-      document.getElementById('modalNotch').innerText = notch || 'None';
+      document.getElementById('modalNotch').innerText = formatNotchForDisplay(notch, currentNotchSystem);
       document.getElementById('modalSex').innerText = sex || 'Undetermined';
       
       const statusBadge = document.getElementById('modalStatusBadge');
@@ -2635,7 +3081,7 @@
     window.onload = async () => {
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
       updateThemeUI(currentTheme);
-      initScuteDiagram();
+      switchNotchSystem(currentNotchSystem);
       // Highlight saved role preset button
       document.querySelectorAll('.role-pill').forEach(btn => btn.classList.remove('active'));
       const activeBtn = document.getElementById('roleBtn' + activeRolePreset.charAt(0).toUpperCase() + activeRolePreset.slice(1));

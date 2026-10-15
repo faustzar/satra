@@ -1622,6 +1622,9 @@
         </a>
         <button class="btn btn-secondary" onclick="closeModal('observationDetailModal')">Close</button>
       </div>
+    </div>
+  </div>
+
   <!-- Mini-Dashboard Widget Customization Modal -->
   <div class="modal-backdrop" id="widgetConfigModal">
     <div class="modal-box" style="max-width: 550px;">
@@ -1902,13 +1905,18 @@
     function openPreferencesModal() {
       // Sync radio selection
       const radios = document.getElementsByName('prefIdSystem');
-      radios.forEach(r => {
-        r.checked = (r.value === userPreferences.idSystem);
-      });
-      document.getElementById('prefMassUnit').value = userPreferences.massUnit;
-      document.getElementById('prefLengthUnit').value = userPreferences.lengthUnit;
+      if (radios && radios.length) {
+        Array.from(radios).forEach(r => {
+          r.checked = (r.value === userPreferences.idSystem);
+        });
+      }
+      const massEl = document.getElementById('prefMassUnit');
+      if (massEl) massEl.value = userPreferences.massUnit || 'grams';
+      const lenEl = document.getElementById('prefLengthUnit');
+      if (lenEl) lenEl.value = userPreferences.lengthUnit || 'mm';
       updatePrefCardsHighlight();
-      document.getElementById('preferencesModal').style.display = 'flex';
+      const modal = document.getElementById('preferencesModal');
+      if (modal) modal.style.display = 'flex';
     }
 
     function updatePrefCardsHighlight() {
@@ -1927,11 +1935,17 @@
         userPreferences.idSystem = selectedRadio.value;
         localStorage.setItem('satra-pref-id-system', selectedRadio.value);
       }
-      userPreferences.massUnit = document.getElementById('prefMassUnit').value;
-      localStorage.setItem('satra-pref-mass-unit', userPreferences.massUnit);
+      const massEl = document.getElementById('prefMassUnit');
+      if (massEl) {
+        userPreferences.massUnit = massEl.value;
+        localStorage.setItem('satra-pref-mass-unit', userPreferences.massUnit);
+      }
 
-      userPreferences.lengthUnit = document.getElementById('prefLengthUnit').value;
-      localStorage.setItem('satra-pref-length-unit', userPreferences.lengthUnit);
+      const lenEl = document.getElementById('prefLengthUnit');
+      if (lenEl) {
+        userPreferences.lengthUnit = lenEl.value;
+        localStorage.setItem('satra-pref-length-unit', userPreferences.lengthUnit);
+      }
 
       closeModal('preferencesModal');
       switchNotchSystem(userPreferences.idSystem);
@@ -2758,7 +2772,8 @@
     }
 
     function closeModal(modalId) {
-      document.getElementById(modalId).style.display = 'none';
+      const el = document.getElementById(modalId);
+      if (el) el.style.display = 'none';
     }
 
     async function submitNewIntake(e) {

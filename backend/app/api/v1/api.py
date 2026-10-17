@@ -1073,3 +1073,228 @@ def get_specimen_pdf_report(
     except Exception as e:
         logger.error(f"Failed to render specimen report PDF: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to render PDF: {str(e)}")
+
+
+@api_router.get("/exports/specimens.csv")
+def export_specimens_csv(
+    notch_system: str = Query("sa_standard", description="sa_standard, cagle, or binary"),
+    mass_unit: str = Query("grams", description="grams or kilograms"),
+    length_unit: str = Query("mm", description="mm or cm"),
+    db: Session = Depends(get_db)
+):
+    """Export the full Specimen Registry with latest Loehr (2004) biometrics and active unit/notch preferences as CSV."""
+    import csv
+    import io
+
+    specimens = db.query(Specimen).order_by(Specimen.created_at.desc()).all()
+    all_insp = db.query(HealthInspection).order_by(HealthInspection.inspected_at.desc()).all()
+    latest_by_spec = {}
+    count_by_spec = {}
+    for ins in all_insp:
+        count_by_spec[ins.specimen_id] = count_by_spec.get(ins.specimen_id, 0) + 1
+        if ins.specimen_id not in latest_by_spec:
+            latest_by_spec[ins.specimen_id] = ins
+
+    is_kg = mass_unit.lower() in ("kilograms", "kg")
+    is_cm = length_unit.lower() in ("cm", "centimeters")
+    m_hdr = "kg" if is_kg else "g"
+    l_hdr = "cm" if is_cm else "mm"
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Specimen_UUID",
+        "Custom_Identifier",
+        "Scientific_Name",
+        "Common_Name",
+        "Sex",
+        "Status",
+        "Raw_Notch_Code",
+        f"Formatted_Notch_ID ({notch_system})",
+        "PIT_Microchip_15Digit",
+        "Inspection_Count",
+        f"Latest_Mass ({m_hdr})",
+        f"Latest_SCL ({l_hdr})",
+        f"Latest_SW ({l_hdr})",
+        f"Latest_SH ({l_hdr})",
+        "Latest_Shell_Volume_cm3",
+        "Latest_BCI_g_cm3",
+        f"Latest_Somatic_Mass ({m_hdr})",
+        f"Table2_Expected_Mass ({m_hdr})",
+        "Table2_Condition_Residual_g",
+        "Created_At_UTC"
+    ])
+
+    for sp in specimens:
+        formatted_notch, _ = report_generator._format_notch_code(sp.notch_code, notch_system)
+        lat = latest_by_spec.get(sp.id)
+        cnt = count_by_spec.get(sp.id, 0)
+
+        def conv_m(val):
+            if val is None:
+                return ""
+            return f"{val / 1000.0:.3f}" if is_kg else f"{val:.1f}"
+
+        def conv_l(val):
+            if val is None:
+                return ""
+            return f"{val / 10.0:.2f}" if is_cm else f"{val:.1f}"
+
+        writer.writerow([
+            sp.id,
+            sp.custom_identifier,
+            sp.species_name,
+            sp.common_name,
+            sp.sex,
+            sp.status,
+            sp.notch_code or "",
+            formatted_notch,
+            sp.pit_tag_number or "",
+            cnt,
+            conv_m(lat.mass_grams) if lat else "",
+            conv_l(lat.straight_carapace_length_mm) if lat else "",
+            conv_l(lat.shell_width_mm) if lat else "",
+            conv_l(lat.shell_height_mm) if lat else "",
+            f"{lat.shell_volume_cm3:.2f}" if (lat and lat.shell_volume_cm3 is not None) else "",
+            f"{lat.body_condition_index:.4f}" if (lat and lat.body_condition_index is not None) else "",
+            conv_m(lat.somatic_mass_grams) if lat else "",
+            conv_m(lat.predicted_mass_grams) if lat else "",
+            f"{lat.mass_condition_residual_g:+.1f}" if (lat and lat.mass_condition_residual_g is not None) else "",
+            sp.created_at.strftime("%Y-%m-%d %H:%M:%S") if sp.created_at else ""
+        ])
+
+    csv_bytes = output.getvalue().encode("utf-8-sig")
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="SATRA_Specimens_Registry.csv"',
+            "Cache-Control": "no-cache"
+        }
+    )
+
+
+@api_router.get("/exports/health-inspections.csv")
+def export_health_inspections_csv(
+    specimen_id: Optional[str] = None,
+    notch_system: str = Query("sa_standard", description="sa_standard, cagle, or binary"),
+    mass_unit: str = Query("grams", description="grams or kilograms"),
+    length_unit: str = Query("mm", description="mm or cm"),
+    db: Session = Depends(get_db)
+):
+    """Export longitudinal Health Inspections with all Loehr et al. (2004), Coleman (1991), and POS ultrasound metrics as CSV."""
+    import csv
+    import io
+
+    query = db.query(HealthInspection)
+    if specimen_id:
+        query = query.filter(HealthInspection.specimen_id == specimen_id)
+    inspections = query.order_by(HealthInspection.inspected_at.desc()).all()
+    spec_map = {s.id: s for s in db.query(Specimen).all()}
+
+    is_kg = mass_unit.lower() in ("kilograms", "kg")
+    is_cm = length_unit.lower() in ("cm", "centimeters")
+    m_hdr = "kg" if is_kg else "g"
+    l_hdr = "cm" if is_cm else "mm"
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Inspection_UUID",
+        "Inspected_At_UTC",
+        "Specimen_Identifier",
+        "Species_Name",
+        f"Formatted_Notch ({notch_system})",
+        "Inspection_Type",
+        "Weighed_Before_Excretion",
+        f"Body_Mass ({m_hdr})",
+        f"Somatic_Mass ({m_hdr})",
+        f"Table2_Expected_Mass ({m_hdr})",
+        "Table2_Condition_Residual_g",
+        f"SCL ({l_hdr})",
+        f"Shell_Width_SW ({l_hdr})",
+        f"Shell_Height_SH ({l_hdr})",
+        f"Plastron_Length_PL ({l_hdr})",
+        f"Plastron_Width_PW ({l_hdr})",
+        "Shell_Volume_Vshell_cm3",
+        "Volumetric_BCI_g_cm3",
+        "Linear_Mass_to_SCL_g_mm",
+        "Costal1_Growth_Rings",
+        "Scute_Wear_Class",
+        "Body_Condition_Score_1to5",
+        "Eggs_Palpated_or_Xray",
+        "Egg_Count",
+        f"Egg_Length ({l_hdr})",
+        f"Egg_Width ({l_hdr})",
+        "Coleman_Egg_Volume_cm3",
+        "Ultrasound_Follicle_Count",
+        f"Mean_Follicle_Diameter ({l_hdr})",
+        "Single_Follicle_Volume_cm3",
+        "POS_Fraction_vs_4.99cm3",
+        "GPS_Latitude",
+        "GPS_Longitude",
+        "GPS_Accuracy_m",
+        "Clinical_and_Field_Notes"
+    ])
+
+    def conv_m(val):
+        if val is None:
+            return ""
+        return f"{val / 1000.0:.3f}" if is_kg else f"{val:.1f}"
+
+    def conv_l(val):
+        if val is None:
+            return ""
+        return f"{val / 10.0:.2f}" if is_cm else f"{val:.1f}"
+
+    for ins in inspections:
+        sp = spec_map.get(ins.specimen_id)
+        formatted_notch, _ = report_generator._format_notch_code(sp.notch_code if sp else None, notch_system)
+        writer.writerow([
+            ins.id,
+            ins.inspected_at.strftime("%Y-%m-%d %H:%M:%S") if ins.inspected_at else "",
+            sp.custom_identifier if sp else ins.specimen_id,
+            sp.species_name if sp else "",
+            formatted_notch,
+            ins.inspection_type or "Scheduled",
+            "Yes" if getattr(ins, "weighed_before_excretion", True) is not False else "No",
+            conv_m(ins.mass_grams),
+            conv_m(ins.somatic_mass_grams),
+            conv_m(ins.predicted_mass_grams),
+            f"{ins.mass_condition_residual_g:+.1f}" if ins.mass_condition_residual_g is not None else "",
+            conv_l(ins.straight_carapace_length_mm),
+            conv_l(ins.shell_width_mm),
+            conv_l(ins.shell_height_mm),
+            conv_l(ins.plastron_length_mm),
+            conv_l(ins.plastron_width_mm),
+            f"{ins.shell_volume_cm3:.2f}" if ins.shell_volume_cm3 is not None else "",
+            f"{ins.body_condition_index:.4f}" if ins.body_condition_index is not None else "",
+            f"{ins.mass_to_scl_ratio:.3f}" if ins.mass_to_scl_ratio is not None else "",
+            ins.growth_rings or "",
+            getattr(ins, "scute_wear_status", "") or "",
+            ins.body_condition_score or 3,
+            "Yes" if ins.eggs_palpated else "No",
+            ins.estimated_egg_count or 0,
+            conv_l(ins.egg_length_mm),
+            conv_l(ins.egg_width_mm),
+            f"{ins.egg_volume_cm3:.2f}" if ins.egg_volume_cm3 is not None else "",
+            ins.follicle_count if ins.follicle_count is not None else "",
+            conv_l(ins.mean_follicle_diameter_mm),
+            f"{ins.follicle_volume_cm3:.3f}" if ins.follicle_volume_cm3 is not None else "",
+            f"{ins.pos_fraction:.2f}" if ins.pos_fraction is not None else "",
+            f"{ins.latitude:.5f}" if ins.latitude is not None else "",
+            f"{ins.longitude:.5f}" if ins.longitude is not None else "",
+            f"{ins.gps_accuracy_m:.1f}" if ins.gps_accuracy_m is not None else "",
+            ins.observation_notes or ins.shell_condition_notes or ""
+        ])
+
+    csv_bytes = output.getvalue().encode("utf-8-sig")
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="SATRA_Longitudinal_Biometrics_Loehr2004.csv"',
+            "Cache-Control": "no-cache"
+        }
+    )
+

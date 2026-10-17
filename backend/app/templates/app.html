@@ -618,6 +618,11 @@
         </a>
       </nav>
 
+      <button id="offlineQueueStatusBtn" class="btn btn-secondary" onclick="syncOfflineObservationQueue(true)" style="padding: 8px 12px; font-size: 12px; cursor: pointer; border-color: rgba(74, 222, 128, 0.35);" title="Offline-First Field Queue Status (Click to force sync)">
+        <i class="fa-solid fa-cloud-arrow-up" id="offlineQueueIcon" style="color: #4ade80;"></i>
+        <span id="offlineQueueLabel">Online • Synced</span>
+      </button>
+
       <button id="themeToggleBtn" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 8px 12px; font-size: 12px; cursor: pointer;" title="Toggle Safari Light / Dark Theme">
         <i class="fa-solid fa-sun" id="themeIcon"></i>
         <span id="themeLabel">Safari Day</span>
@@ -639,9 +644,14 @@
           <h2 style="font-size: 22px; font-weight: 800;">Registered Chelonian Specimens</h2>
           <p style="color: var(--text-muted); font-size: 13px;">Manage physical markings, clinical dossiers, and studbook lineage.</p>
         </div>
-        <button class="btn btn-gold" onclick="openIntakeModal()">
-          <i class="fa-solid fa-plus"></i> New Intake
-        </button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-secondary" onclick="exportSpecimensCsv()" title="Export Specimen Registry with Loehr (2004) Biometrics to CSV / Excel">
+            <i class="fa-solid fa-file-csv" style="color: #4ade80;"></i> Export Registry CSV
+          </button>
+          <button class="btn btn-gold" onclick="openIntakeModal()">
+            <i class="fa-solid fa-plus"></i> New Intake
+          </button>
+        </div>
       </div>
 
       <!-- Quick KPI Stats (Interactive Filter Cards) -->
@@ -731,9 +741,14 @@
           <h2 style="font-size: 22px; font-weight: 800;">Observations & Telemetry Hub</h2>
           <p style="color: var(--text-muted); font-size: 13px;">Capture complete physical measurements, biometric growth rings, clinical condition and sightings.</p>
         </div>
-        <button class="btn btn-gold" onclick="openObservationModal()">
-          <i class="fa-solid fa-plus"></i> Complete Observation
-        </button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-secondary" onclick="exportObservationsCsv()" title="Export all longitudinal Loehr (2004) biometrics, POS ultrasound, and GPS observations to CSV / Excel">
+            <i class="fa-solid fa-file-csv" style="color: #4ade80;"></i> Export Biometrics CSV
+          </button>
+          <button class="btn btn-gold" onclick="openObservationModal()">
+            <i class="fa-solid fa-plus"></i> Complete Observation
+          </button>
+        </div>
       </div>
 
       <!-- AppSheet-Style Observation Category Tiles -->
@@ -774,6 +789,16 @@
           <div class="obs-category-icon" style="color: #10b981;"><i class="fa-solid fa-chart-line"></i></div>
           <div style="font-size: 12px; font-weight: 700;">Stats</div>
         </div>
+      </div>
+
+      <!-- Offline Pending Queue Banner (Shown when observations are queued locally) -->
+      <div id="offlineQueueBanner" style="display: none; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div style="font-size: 13px; color: #fbbf24;">
+          <i class="fa-solid fa-tower-cell"></i> <strong id="offlineQueueBannerCount">0</strong> field observation(s) cached in offline storage waiting for connectivity.
+        </div>
+        <button class="btn btn-gold" style="font-size: 11px; padding: 6px 12px;" onclick="syncOfflineObservationQueue(true)">
+          <i class="fa-solid fa-rotate"></i> Sync Queued Records Now
+        </button>
       </div>
 
       <!-- Recent Conservation Observations List -->
@@ -1078,6 +1103,9 @@
           <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
             <label for="healthTrajectorySpecimenSelect" style="font-size: 12px; font-weight: 700; color: var(--accent-gold);">Specimen:</label>
             <select id="healthTrajectorySpecimenSelect" onchange="updateTabHealthTrajectoryChart()" style="margin: 0; padding: 6px 12px; font-size: 12px; min-width: 240px; width: auto;"></select>
+            <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px;" onclick="const sel=document.getElementById('healthTrajectorySpecimenSelect'); exportObservationsCsv(sel ? sel.value : null);" title="Export this specimen's longitudinal Loehr 2004 dataset as CSV">
+              <i class="fa-solid fa-file-csv" style="color: #4ade80;"></i> Export CSV
+            </button>
             <button type="button" class="btn btn-gold" style="font-size: 11px; padding: 6px 10px;" onclick="const sel=document.getElementById('healthTrajectorySpecimenSelect'); openObservationModal('Followup', sel ? sel.value : null);">
               <i class="fa-solid fa-plus"></i> Log Timepoint
             </button>
@@ -3995,8 +4023,11 @@
           alert('Error saving observation: ' + (err.detail || JSON.stringify(err)));
         }
       } catch (err) {
-        console.error('Failed to save observation', err);
-        alert('Network error while saving observation.');
+        console.warn('Network unreachable while saving observation; queuing locally:', err);
+        enqueueOfflineObservation(payload);
+        closeModal('observationModal');
+        document.getElementById('observationForm').reset();
+        alert('Offline Mode Active: Observation cached in local field queue and will automatically sync when connectivity returns.');
       }
     }
 
@@ -4768,6 +4799,139 @@
       }
     }
 
+    // Offline Field Observation Queue & One-Click CSV / Excel Exports
+    const OFFLINE_OBS_QUEUE_KEY = 'satra-offline-observation-queue';
+
+    function getOfflineObservationQueue() {
+      try {
+        return JSON.parse(localStorage.getItem(OFFLINE_OBS_QUEUE_KEY)) || [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveOfflineObservationQueue(queue) {
+      localStorage.setItem(OFFLINE_OBS_QUEUE_KEY, JSON.stringify(queue || []));
+      updateOfflineQueueUI();
+    }
+
+    function enqueueOfflineObservation(payload) {
+      const queue = getOfflineObservationQueue();
+      queue.push({
+        queued_at: new Date().toISOString(),
+        payload: payload
+      });
+      saveOfflineObservationQueue(queue);
+    }
+
+    function updateOfflineQueueUI() {
+      const queue = getOfflineObservationQueue();
+      const count = queue.length;
+      const isOnline = navigator.onLine !== false;
+
+      const btn = document.getElementById('offlineQueueStatusBtn');
+      const icon = document.getElementById('offlineQueueIcon');
+      const lbl = document.getElementById('offlineQueueLabel');
+      const banner = document.getElementById('offlineQueueBanner');
+      const bannerCount = document.getElementById('offlineQueueBannerCount');
+
+      if (banner && bannerCount) {
+        bannerCount.innerText = String(count);
+        banner.style.display = count > 0 ? 'flex' : 'none';
+      }
+
+      if (!btn || !icon || !lbl) return;
+
+      if (count > 0) {
+        icon.className = isOnline ? 'fa-solid fa-arrows-rotate' : 'fa-solid fa-cloud-Showers-heavy';
+        icon.style.color = '#fbbf24';
+        btn.style.borderColor = 'rgba(251, 191, 36, 0.5)';
+        lbl.innerText = `${ isOnline ? 'Pending Sync' : 'Offline' } • ${count} Queued`;
+      } else if (!isOnline) {
+        icon.className = 'fa-solid fa-plane';
+        icon.style.color = '#f97316';
+        btn.style.borderColor = 'rgba(249, 115, 22, 0.5)';
+        lbl.innerText = 'Offline Field Mode';
+      } else {
+        icon.className = 'fa-solid fa-cloud-arrow-up';
+        icon.style.color = '#4ade80';
+        btn.style.borderColor = 'rgba(74, 222, 128, 0.35)';
+        lbl.innerText = 'Online • Synced';
+      }
+    }
+
+    async function syncOfflineObservationQueue(manualTrigger = false) {
+      const queue = getOfflineObservationQueue();
+      if (queue.length === 0) {
+        updateOfflineQueueUI();
+        if (manualTrigger) {
+          alert('Offline Field Queue is empty — all observations are synced with the server.');
+        }
+        return;
+      }
+
+      const remaining = [];
+      let syncedCount = 0;
+
+      for (const item of queue) {
+        try {
+          const res = await fetch('/api/v1/health-inspections', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item.payload)
+          });
+          if (res.ok) {
+            syncedCount++;
+          } else {
+            remaining.push(item);
+          }
+        } catch (err) {
+          remaining.push(item);
+        }
+      }
+
+      saveOfflineObservationQueue(remaining);
+
+      if (syncedCount > 0) {
+        await loadObservations();
+        if (markersGroup) reloadMapSightings();
+        if (manualTrigger) {
+          alert(`Synced ${syncedCount} queued field observation(s) to the database!`);
+        }
+      } else if (manualTrigger && remaining.length > 0) {
+        alert(`Still offline or server unreachable. ${remaining.length} observation(s) remain safely cached in local storage.`);
+      }
+    }
+
+    window.addEventListener('online', () => {
+      updateOfflineQueueUI();
+      syncOfflineObservationQueue(false);
+    });
+    window.addEventListener('offline', () => {
+      updateOfflineQueueUI();
+    });
+
+    function exportSpecimensCsv() {
+      const params = new URLSearchParams({
+        notch_system: currentNotchSystem || 'sa_standard',
+        mass_unit: userPreferences.massUnit || 'grams',
+        length_unit: userPreferences.lengthUnit || 'mm'
+      });
+      window.open(`/api/v1/exports/specimens.csv?${params.toString()}`, '_blank');
+    }
+
+    function exportObservationsCsv(specimenId = null) {
+      const params = new URLSearchParams({
+        notch_system: currentNotchSystem || 'sa_standard',
+        mass_unit: userPreferences.massUnit || 'grams',
+        length_unit: userPreferences.lengthUnit || 'mm'
+      });
+      if (specimenId) {
+        params.set('specimen_id', specimenId);
+      }
+      window.open(`/api/v1/exports/health-inspections.csv?${params.toString()}`, '_blank');
+    }
+
     // Theme Handling (Safari Earth Day/Night)
     function updateThemeUI(theme) {
       const icon = document.getElementById('themeIcon');
@@ -4802,7 +4966,9 @@
 
         switchNotchSystem(currentNotchSystem);
         applyUnitPreferencesToForms();
+        updateOfflineQueueUI();
 
+        await syncOfflineObservationQueue(false);
         await loadSpecimens();
         await loadObservations();
         await loadBreedingAndClutches();

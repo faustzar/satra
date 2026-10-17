@@ -12,6 +12,7 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.graphics.shapes import Drawing, Rect, Line, Circle, PolyLine, String
 
 class ConservationReportGenerator:
     """
@@ -206,6 +207,116 @@ class ConservationReportGenerator:
         if matched_any and total_sum > 0:
             return (f"#{total_sum} ({raw})", scheme_label)
         return (raw, scheme_label)
+
+    def _build_longitudinal_trajectory_chart(self, inspections: List[Dict[str, Any]], mass_unit: str = "grams") -> Optional[Drawing]:
+        """
+        Builds a dual-panel vector chart (ReportLab Drawing) of:
+        - Left Panel: Body Mass & Somatic Mass vs. Table 2 ANCOVA Expected Mass over time
+        - Right Panel: Volumetric Body Condition Index (BCI, g/cm³) vs. Loehr et al. (2004) Optimal Band (1.05–1.25 g/cm³)
+        """
+        pts = []
+        for insp in inspections:
+            m_val = self._parse_float_safe(insp.get("mass_val")) or self._parse_float_safe(insp.get("mass"))
+            som_val = self._parse_float_safe(insp.get("somatic_mass_grams")) or m_val
+            pred_val = self._parse_float_safe(insp.get("predicted_mass_grams"))
+            bci_val = self._parse_float_safe(insp.get("body_condition_index")) or self._parse_float_safe(insp.get("bci")) or self._parse_float_safe(insp.get("ratio"))
+            vol_val = self._parse_float_safe(insp.get("shell_volume_cm3")) or self._parse_float_safe(insp.get("shell_vol"))
+            if pred_val is None and vol_val and vol_val > 0:
+                pred_val = round(0.885 * vol_val + 23.6, 1)
+            if m_val is not None:
+                pts.append({
+                    "date": str(insp.get("date") or "--")[-5:],  # MM-DD
+                    "mass": m_val,
+                    "somatic": som_val if som_val is not None else m_val,
+                    "predicted": pred_val,
+                    "bci": bci_val
+                })
+
+        if not pts:
+            return None
+
+        width_pt = 18.0 * cm
+        height_pt = 3.8 * cm
+        d = Drawing(width_pt, height_pt)
+
+        # Outer card background
+        d.add(Rect(0, 0, width_pt, height_pt, fillColor=colors.HexColor("#F8FAFC"), strokeColor=colors.HexColor("#CBD5E1"), strokeWidth=0.6, rx=4, ry=4))
+
+        # Panel 1: Mass & Table 2 ANCOVA Trajectory (left half)
+        p1_x, p1_y, p1_w, p1_h = 34, 20, 210, 68
+        d.add(String(p1_x, p1_y + p1_h + 7, "Mass vs. Table 2 ANCOVA Expected Trajectory", fontName="Helvetica-Bold", fontSize=7.5, fillColor=self.accent_color))
+        d.add(Rect(p1_x, p1_y, p1_w, p1_h, fillColor=colors.white, strokeColor=colors.HexColor("#E2E8F0"), strokeWidth=0.5))
+
+        all_masses = [p["mass"] for p in pts] + [p["somatic"] for p in pts] + [p["predicted"] for p in pts if p["predicted"] is not None]
+        m_min = max(0.0, min(all_masses) * 0.90) if all_masses else 50.0
+        m_max = (max(all_masses) * 1.08) if all_masses else 200.0
+        if abs(m_max - m_min) < 5.0:
+            m_max = m_min + 20.0
+
+        # Y-axis labels for Panel 1
+        is_kg = str(mass_unit).lower() in ("kilograms", "kg")
+        min_lbl = f"{m_min/1000.0:.2f}kg" if is_kg else f"{m_min:.0f}g"
+        max_lbl = f"{m_max/1000.0:.2f}kg" if is_kg else f"{m_max:.0f}g"
+        d.add(String(4, p1_y + 2, min_lbl, fontName="Helvetica", fontSize=6.5, fillColor=colors.HexColor("#64748B")))
+        d.add(String(4, p1_y + p1_h - 6, max_lbl, fontName="Helvetica", fontSize=6.5, fillColor=colors.HexColor("#64748B")))
+
+        n = len(pts)
+        mass_coords = []
+        pred_coords = []
+        for i, p in enumerate(pts):
+            cx = p1_x + (p1_w / 2.0 if n == 1 else (i / float(n - 1)) * (p1_w - 20) + 10)
+            cy_m = p1_y + ((p["mass"] - m_min) / (m_max - m_min)) * (p1_h - 12) + 6
+            mass_coords.extend([cx, cy_m])
+            d.add(Circle(cx, cy_m, 2.3, fillColor=self.primary_color, strokeColor=colors.white, strokeWidth=0.5))
+            d.add(String(cx - 9, 8, p["date"], fontName="Helvetica", fontSize=6, fillColor=colors.HexColor("#475569")))
+
+            if p["predicted"] is not None:
+                cy_pr = p1_y + ((p["predicted"] - m_min) / (m_max - m_min)) * (p1_h - 12) + 6
+                pred_coords.extend([cx, cy_pr])
+                d.add(Circle(cx, cy_pr, 1.8, fillColor=self.gold_color, strokeColor=self.accent_color, strokeWidth=0.4))
+
+        if len(pred_coords) >= 4:
+            d.add(PolyLine(pred_coords, strokeColor=self.gold_color, strokeWidth=1.1))
+        if len(mass_coords) >= 4:
+            d.add(PolyLine(mass_coords, strokeColor=self.primary_color, strokeWidth=1.5))
+
+        # Panel 2: BCI Density Trajectory vs. Loehr Optimal Band (1.05 - 1.25 g/cm3)
+        p2_x, p2_y, p2_w, p2_h = 285, 20, 210, 68
+        d.add(String(p2_x, p2_y + p2_h + 7, "BCI Density (g/cm³) vs. Loehr Optimal Band (1.05–1.25)", fontName="Helvetica-Bold", fontSize=7.5, fillColor=self.primary_color))
+        d.add(Rect(p2_x, p2_y, p2_w, p2_h, fillColor=colors.white, strokeColor=colors.HexColor("#E2E8F0"), strokeWidth=0.5))
+
+        bci_vals = [p["bci"] for p in pts if p["bci"] is not None]
+        b_min = min([0.85] + bci_vals) * 0.95
+        b_max = max([1.35] + bci_vals) * 1.03
+        if abs(b_max - b_min) < 0.1:
+            b_max = b_min + 0.4
+
+        # Shaded Optimal BCI Band (1.05 to 1.25 g/cm3)
+        opt_y1 = p2_y + max(0.0, min(1.0, (1.05 - b_min) / (b_max - b_min))) * p2_h
+        opt_y2 = p2_y + max(0.0, min(1.0, (1.25 - b_min) / (b_max - b_min))) * p2_h
+        if opt_y2 > opt_y1:
+            d.add(Rect(p2_x + 0.5, opt_y1, p2_w - 1.0, opt_y2 - opt_y1, fillColor=colors.HexColor("#DCFCE7"), strokeWidth=0))
+        # Baseline mean line (1.12 g/cm3)
+        mean_y = p2_y + max(0.0, min(1.0, (1.12 - b_min) / (b_max - b_min))) * p2_h
+        d.add(Line(p2_x, mean_y, p2_x + p2_w, mean_y, strokeColor=colors.HexColor("#86EFAC"), strokeWidth=0.7))
+
+        d.add(String(p2_x - 24, p2_y + 2, f"{b_min:.2f}", fontName="Helvetica", fontSize=6.5, fillColor=colors.HexColor("#64748B")))
+        d.add(String(p2_x - 24, p2_y + p2_h - 6, f"{b_max:.2f}", fontName="Helvetica", fontSize=6.5, fillColor=colors.HexColor("#64748B")))
+
+        bci_coords = []
+        for i, p in enumerate(pts):
+            if p["bci"] is None:
+                continue
+            cx = p2_x + (p2_w / 2.0 if n == 1 else (i / float(n - 1)) * (p2_w - 20) + 10)
+            cy_b = p2_y + ((p["bci"] - b_min) / (b_max - b_min)) * (p2_h - 10) + 5
+            bci_coords.extend([cx, cy_b])
+            d.add(Circle(cx, cy_b, 2.3, fillColor=colors.HexColor("#0284C7"), strokeColor=colors.white, strokeWidth=0.5))
+            d.add(String(cx - 9, 8, p["date"], fontName="Helvetica", fontSize=6, fillColor=colors.HexColor("#475569")))
+
+        if len(bci_coords) >= 4:
+            d.add(PolyLine(bci_coords, strokeColor=colors.HexColor("#0284C7"), strokeWidth=1.5))
+
+        return d
 
     def generate_specimen_report(self, specimen_data: Dict[str, Any]) -> bytes:
         """
@@ -600,6 +711,11 @@ class ConservationReportGenerator:
 
         mass_col_header = "Mass (kg)" if mass_unit in ("kilograms", "kg") else "Mass"
         scl_col_header = "SCL (cm)" if length_unit in ("cm", "centimeters") else "SCL"
+
+        chart_drawing = self._build_longitudinal_trajectory_chart(inspections, mass_unit)
+        if chart_drawing is not None:
+            elements.append(chart_drawing)
+            elements.append(Spacer(1, 6))
 
         health_table_data = [
             [

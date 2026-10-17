@@ -312,6 +312,74 @@ class TestPDFReportGenerator(unittest.TestCase):
         self.assertTrue(pdf_bytes.startswith(b"%PDF"))
         self.assertGreater(len(pdf_bytes), 2000)
 
+    def test_longitudinal_trajectory_chart_in_pdf(self):
+        """Test vector Longitudinal Growth & BCI Trajectory Chart generation across multiple seasonal timepoints."""
+        inspections = [
+            {
+                "date": "2026-01-14",
+                "type": "Summer Survey",
+                "mass_val": 136.4,
+                "scl_val": 90.8,
+                "shell_vol": "123.5 cm³",
+                "bci": "1.104",
+                "mass_to_scl": "1.50 g/mm",
+                "bcs": "Score 3/5",
+                "findings": "Summer baseline."
+            },
+            {
+                "date": "2026-04-18",
+                "type": "Autumn Vitellogenesis",
+                "mass_val": 144.2,
+                "scl_val": 91.6,
+                "shell_vol": "126.9 cm³",
+                "bci": "1.136",
+                "mass_to_scl": "1.57 g/mm",
+                "bcs": "Score 4/5",
+                "findings": "Autumn follicle development."
+            },
+            {
+                "date": "2026-07-22",
+                "type": "Winter Rainfall Peak",
+                "mass_val": 149.8,
+                "scl_val": 92.2,
+                "shell_vol": "129.6 cm³",
+                "bci": "1.156",
+                "mass_to_scl": "1.62 g/mm",
+                "bcs": "Score 4/5",
+                "findings": "Winter succulent forage peak."
+            },
+            {
+                "date": "2026-10-08",
+                "type": "Spring Gravid Survey",
+                "mass_val": 161.2,
+                "scl_val": 92.8,
+                "shell_vol": "132.0 cm³",
+                "bci": "1.221",
+                "mass_to_scl": "1.74 g/mm",
+                "bcs": "Score 5/5",
+                "findings": "Gravid with 1 shelled egg + preovulatory follicles."
+            }
+        ]
+        drawing = self.generator._build_longitudinal_trajectory_chart(inspections, "grams")
+        self.assertIsNotNone(drawing)
+
+        data = {
+            "custom_identifier": "LEOP-2026-001",
+            "species_name": "Stigmochelys pardalis",
+            "common_name": "Leopard Tortoise",
+            "sex": "Female",
+            "status": "Wild",
+            "latest_mass": 161.2,
+            "latest_scl": 92.8,
+            "latest_sh": 40.5,
+            "latest_sw": 69.2,
+            "inspections": inspections
+        }
+        pdf_bytes = self.generator.generate_specimen_report(data)
+        self.assertIsInstance(pdf_bytes, bytes)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+        self.assertGreater(len(pdf_bytes), 3000)
+
 if __name__ == "__main__":
     unittest.main()
 

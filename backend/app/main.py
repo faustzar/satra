@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse
 from app.config import settings
 from app.api.v1.api import api_router
 from app.db.session import engine, Base, SessionLocal
-from app.models.models import SpeciesTaxonomy, Specimen, Sighting
+from app.models.models import SpeciesTaxonomy, Specimen, Sighting, HealthInspection
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -211,6 +211,196 @@ async def lifespan(app: FastAPI):
                 ),
             ]
             db.add_all(sightings)
+            db.commit()
+
+        # Ensure sample longitudinal health inspections exist for growth trajectory charts
+        existing_insp = db.query(HealthInspection).first()
+        if not existing_insp:
+            now = datetime.utcnow()
+            seed_inspections = [
+                # LEOP-2026-001 longitudinal recovery & seasonal trajectory (4 timepoints)
+                HealthInspection(
+                    specimen_id="e4f5a3b2-1c2d-4e5f-9a8b-0c1d2e3f4a5b",
+                    inspection_type="Intake",
+                    mass_grams=132.4,
+                    straight_carapace_length_mm=91.0,
+                    shell_width_mm=67.8,
+                    shell_height_mm=39.5,
+                    plastron_length_mm=83.5,
+                    growth_rings="10 laminae",
+                    scute_wear_status="Countable (8-13)",
+                    weighed_before_excretion=True,
+                    shell_volume_cm3=127.5,
+                    body_condition_index=1.038,
+                    mass_to_scl_ratio=1.45,
+                    somatic_mass_grams=132.4,
+                    predicted_mass_grams=136.4,
+                    mass_condition_residual_g=-4.0,
+                    body_condition_score=3,
+                    observation_notes="Initial dry-season intake triage; mild dehydration prior to spring rains.",
+                    latitude=-33.8214,
+                    longitude=19.1120,
+                    inspected_at=now - timedelta(days=90)
+                ),
+                HealthInspection(
+                    specimen_id="e4f5a3b2-1c2d-4e5f-9a8b-0c1d2e3f4a5b",
+                    inspection_type="Scheduled",
+                    mass_grams=144.8,
+                    straight_carapace_length_mm=91.8,
+                    shell_width_mm=68.2,
+                    shell_height_mm=39.9,
+                    plastron_length_mm=84.2,
+                    growth_rings="10 laminae",
+                    scute_wear_status="Countable (8-13)",
+                    weighed_before_excretion=True,
+                    shell_volume_cm3=130.6,
+                    body_condition_index=1.109,
+                    mass_to_scl_ratio=1.58,
+                    follicle_count=3,
+                    mean_follicle_diameter_mm=14.2,
+                    follicle_volume_cm3=1.50,
+                    pos_fraction=0.30,
+                    somatic_mass_grams=140.3,
+                    predicted_mass_grams=129.5,
+                    mass_condition_residual_g=10.8,
+                    body_condition_score=4,
+                    observation_notes="Active foraging on succulent shrubs; 3 vitellogenic follicles (0.30 POS) on ultrasound.",
+                    latitude=-33.8250,
+                    longitude=19.1180,
+                    inspected_at=now - timedelta(days=45)
+                ),
+                HealthInspection(
+                    specimen_id="e4f5a3b2-1c2d-4e5f-9a8b-0c1d2e3f4a5b",
+                    inspection_type="GravidCheck",
+                    mass_grams=161.2,
+                    straight_carapace_length_mm=92.4,
+                    shell_width_mm=68.6,
+                    shell_height_mm=40.1,
+                    plastron_length_mm=84.8,
+                    growth_rings="10 laminae",
+                    scute_wear_status="Countable (8-13)",
+                    weighed_before_excretion=True,
+                    shell_volume_cm3=133.0,
+                    body_condition_index=1.212,
+                    mass_to_scl_ratio=1.74,
+                    eggs_palpated=True,
+                    estimated_egg_count=1,
+                    egg_length_mm=34.6,
+                    egg_width_mm=24.9,
+                    egg_volume_cm3=11.23,
+                    follicle_count=4,
+                    mean_follicle_diameter_mm=21.4,
+                    follicle_volume_cm3=5.13,
+                    pos_fraction=1.03,
+                    somatic_mass_grams=149.9,
+                    predicted_mass_grams=141.3,
+                    mass_condition_residual_g=8.6,
+                    body_condition_score=5,
+                    observation_notes="Dorso-ventral X-ray: 1 shelled egg (11.2 cm³) + preovulatory follicles (1.03 POS).",
+                    latitude=-33.8290,
+                    longitude=19.1250,
+                    inspected_at=now - timedelta(days=14)
+                ),
+                HealthInspection(
+                    specimen_id="e4f5a3b2-1c2d-4e5f-9a8b-0c1d2e3f4a5b",
+                    inspection_type="Scheduled",
+                    mass_grams=151.4,
+                    straight_carapace_length_mm=92.6,
+                    shell_width_mm=68.8,
+                    shell_height_mm=40.2,
+                    plastron_length_mm=85.0,
+                    growth_rings="10 laminae",
+                    scute_wear_status="Countable (8-13)",
+                    weighed_before_excretion=True,
+                    shell_volume_cm3=134.1,
+                    body_condition_index=1.129,
+                    mass_to_scl_ratio=1.63,
+                    follicle_count=3,
+                    mean_follicle_diameter_mm=16.5,
+                    follicle_volume_cm3=2.35,
+                    pos_fraction=0.47,
+                    somatic_mass_grams=144.3,
+                    predicted_mass_grams=132.6,
+                    mass_condition_residual_g=11.7,
+                    body_condition_score=4,
+                    observation_notes="Post-oviposition check: prime somatic condition (BCI 1.129 g/cm³); med-large follicles.",
+                    latitude=-33.8385,
+                    longitude=19.1395,
+                    inspected_at=now - timedelta(days=2)
+                ),
+                # ANGU-2026-014 male baseline inspections
+                HealthInspection(
+                    specimen_id="b1c2d3e4-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
+                    inspection_type="Scheduled",
+                    mass_grams=102.5,
+                    straight_carapace_length_mm=78.4,
+                    shell_width_mm=58.2,
+                    shell_height_mm=34.0,
+                    plastron_length_mm=71.0,
+                    growth_rings="9 laminae",
+                    scute_wear_status="Countable (8-13)",
+                    weighed_before_excretion=True,
+                    shell_volume_cm3=81.2,
+                    body_condition_index=1.262,
+                    mass_to_scl_ratio=1.31,
+                    somatic_mass_grams=102.5,
+                    predicted_mass_grams=95.5,
+                    mass_condition_residual_g=7.0,
+                    body_condition_score=4,
+                    observation_notes="Adult male in strong spring condition.",
+                    latitude=-33.8560,
+                    longitude=19.0910,
+                    inspected_at=now - timedelta(days=5)
+                ),
+                # GEOM-2026-003 rehabilitation recovery trajectory
+                HealthInspection(
+                    specimen_id="c3d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+                    inspection_type="Intake",
+                    mass_grams=118.0,
+                    straight_carapace_length_mm=88.5,
+                    shell_width_mm=65.0,
+                    shell_height_mm=38.2,
+                    plastron_length_mm=80.5,
+                    growth_rings="11 laminae",
+                    scute_wear_status="Countable (8-13)",
+                    weighed_before_excretion=True,
+                    shell_volume_cm3=115.0,
+                    body_condition_index=1.026,
+                    mass_to_scl_ratio=1.33,
+                    somatic_mass_grams=118.0,
+                    predicted_mass_grams=125.4,
+                    mass_condition_residual_g=-7.4,
+                    body_condition_score=3,
+                    observation_notes="Rescue intake post-firebreak; mild dehydration (-7.4g somatic residual).",
+                    latitude=-33.7920,
+                    longitude=19.0830,
+                    inspected_at=now - timedelta(days=30)
+                ),
+                HealthInspection(
+                    specimen_id="c3d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+                    inspection_type="Scheduled",
+                    mass_grams=131.5,
+                    straight_carapace_length_mm=89.0,
+                    shell_width_mm=65.4,
+                    shell_height_mm=38.5,
+                    plastron_length_mm=81.0,
+                    growth_rings="11 laminae",
+                    scute_wear_status="Countable (8-13)",
+                    weighed_before_excretion=True,
+                    shell_volume_cm3=117.3,
+                    body_condition_index=1.121,
+                    mass_to_scl_ratio=1.48,
+                    somatic_mass_grams=131.5,
+                    predicted_mass_grams=127.4,
+                    mass_condition_residual_g=4.1,
+                    body_condition_score=4,
+                    observation_notes="Rehab day 22: rehydrated and feeding well; BCI restored to 1.121 g/cm³.",
+                    latitude=-33.7920,
+                    longitude=19.0830,
+                    inspected_at=now - timedelta(days=8)
+                ),
+            ]
+            db.add_all(seed_inspections)
             db.commit()
     finally:
         db.close()

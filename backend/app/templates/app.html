@@ -1065,6 +1065,31 @@
           </div>
         </div>
       </div>
+
+      <!-- Card 3: Longitudinal Growth & Condition Trajectory (Loehr et al. 2004) -->
+      <div class="card" style="margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+          <div>
+            <div class="card-title" style="margin: 0;"><i class="fa-solid fa-chart-area" style="color: #4ade80;"></i> 3. Longitudinal Growth &amp; Condition Trajectory (Multi-Year / Multi-Season Tracking)</div>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0 0;">
+              Chronological tracking of observed Body Mass, True Somatic Mass, Table 2 ANCOVA Expected Mass (\(0.885\times V_{\text{shell}}+23.6\text{ g}\)), and Volumetric BCI Density against the Loehr et al. (2004) optimal band (\(1.05\text{–}1.25\text{ g/cm}^3\)).
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <label for="healthTrajectorySpecimenSelect" style="font-size: 12px; font-weight: 700; color: var(--accent-gold);">Specimen:</label>
+            <select id="healthTrajectorySpecimenSelect" onchange="updateTabHealthTrajectoryChart()" style="margin: 0; padding: 6px 12px; font-size: 12px; min-width: 240px; width: auto;"></select>
+            <button type="button" class="btn btn-gold" style="font-size: 11px; padding: 6px 10px;" onclick="const sel=document.getElementById('healthTrajectorySpecimenSelect'); openObservationModal('Followup', sel ? sel.value : null);">
+              <i class="fa-solid fa-plus"></i> Log Timepoint
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary Delta KPIs -->
+        <div id="tabHealthTrajectoryKpis" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px;"></div>
+
+        <!-- SVG Trajectory Chart Container -->
+        <div id="tabHealthTrajectoryChart" style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; min-height: 230px;"></div>
+      </div>
     </div>
 
     <!-- TAB 5: BREEDING & TSD -->
@@ -1224,6 +1249,17 @@
             <div><span style="color: var(--text-muted);">Shell Height (SH):</span> <strong id="modalHealthSh">--</strong></div>
             <div><span style="color: var(--text-muted);">Shell Volume (V<sub>shell</sub>):</span> <strong id="modalHealthVol">--</strong></div>
             <div><span style="color: var(--text-muted);">Mass/SCL Scaling:</span> <strong id="modalHealthMassScl">--</strong></div>
+          </div>
+
+          <!-- Longitudinal Trajectory Chart inside Specimen Dossier -->
+          <div style="margin-top: 12px; background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+              <div style="font-size: 12px; font-weight: 700; color: var(--accent-gold);">
+                <i class="fa-solid fa-chart-line"></i> Longitudinal Mass, Somatic Reserve &amp; Volumetric BCI Trajectory
+              </div>
+              <span id="modalTrajectoryDeltaBadge" style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">--</span>
+            </div>
+            <div id="modalTrajectoryChartContainer" style="min-height: 195px;"></div>
           </div>
         </div>
 
@@ -3115,6 +3151,7 @@
               historyList.appendChild(row);
             });
           }
+          renderLongitudinalTrajectoryChart('modalTrajectoryChartContainer', history, 'modalTrajectoryDeltaBadge', null);
         } else {
           // Defaults if no observations yet (Empirical Padloper baseline)
           document.getElementById('modalHealthMass').innerText = formatMass(151.4);
@@ -3130,6 +3167,7 @@
           if (historyList) {
             historyList.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 12px;">No historical observations recorded yet. Click <strong>Log Observation</strong> above to record field biometrics.</div>';
           }
+          renderLongitudinalTrajectoryChart('modalTrajectoryChartContainer', [], 'modalTrajectoryDeltaBadge', null);
         }
       } catch (err) {
         if (historyList) {
@@ -3980,9 +4018,254 @@
           `;
           listEl.appendChild(item);
         });
+        populateHealthTrajectorySelect();
       } catch (err) {
         console.error('Failed to load observations', err);
       }
+    }
+
+    // Longitudinal Growth & Condition Trajectory Chart (Loehr et al. 2004)
+    function populateHealthTrajectorySelect() {
+      const select = document.getElementById('healthTrajectorySpecimenSelect');
+      if (!select) return;
+      const prevVal = select.value;
+      select.innerHTML = '';
+
+      if (!currentSpecimensCache || currentSpecimensCache.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.innerText = '-- No Specimens Registered --';
+        select.appendChild(opt);
+        return;
+      }
+
+      currentSpecimensCache.forEach(sp => {
+        const obsCount = (currentObservationsCache || []).filter(o => o.specimen_id === sp.id).length;
+        const opt = document.createElement('option');
+        opt.value = sp.id;
+        opt.innerText = `${sp.custom_identifier} • ${sp.common_name || sp.species_name} (${obsCount} timepoint${obsCount === 1 ? '' : 's'})`;
+        select.appendChild(opt);
+      });
+
+      if (prevVal && Array.from(select.options).some(o => o.value === prevVal)) {
+        select.value = prevVal;
+      } else {
+        select.value = currentSpecimensCache[0].id;
+      }
+      updateTabHealthTrajectoryChart();
+    }
+
+    function updateTabHealthTrajectoryChart() {
+      const select = document.getElementById('healthTrajectorySpecimenSelect');
+      if (!select) return;
+      const specId = select.value;
+      const obsList = (currentObservationsCache || []).filter(o => o.specimen_id === specId);
+      renderLongitudinalTrajectoryChart('tabHealthTrajectoryChart', obsList, null, 'tabHealthTrajectoryKpis');
+    }
+
+    function renderLongitudinalTrajectoryChart(containerId, rawObservations, deltaBadgeId = null, kpisContainerId = null) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      // Sort chronologically (oldest first)
+      const sorted = [...(rawObservations || [])].sort((a, b) => {
+        const da = a.inspected_at ? new Date(a.inspected_at).getTime() : 0;
+        const db = b.inspected_at ? new Date(b.inspected_at).getTime() : 0;
+        return da - db;
+      });
+
+      // Normalize points
+      const pts = sorted.map((obs, idx) => {
+        const massG = Number(obs.mass_grams) || 0;
+        const sclMm = Number(obs.straight_carapace_length_mm) || 0;
+        const swMm = Number(obs.shell_width_mm) || (sclMm * 0.74);
+        const shMm = Number(obs.shell_height_mm) || (sclMm * 0.43);
+        const volCm3 = Number(obs.shell_volume_cm3) || ((Math.PI * sclMm * shMm * swMm) / 6000.0);
+        const bci = Number(obs.body_condition_index) || (volCm3 > 0 ? massG / volCm3 : 1.12);
+        const somaticG = Number(obs.somatic_mass_grams) || massG;
+        const expectedG = Number(obs.predicted_mass_grams) || (volCm3 > 0 ? (0.885 * volCm3 + 23.6) : massG);
+        const residualG = (obs.mass_condition_residual_g !== null && obs.mass_condition_residual_g !== undefined)
+          ? Number(obs.mass_condition_residual_g)
+          : (somaticG - expectedG);
+        const dateLabel = obs.inspected_at
+          ? new Date(obs.inspected_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' })
+          : `T${idx + 1}`;
+        return {
+          id: obs.id,
+          dateLabel,
+          type: obs.inspection_type || 'Scheduled',
+          massG,
+          somaticG,
+          expectedG,
+          residualG,
+          sclMm,
+          volCm3,
+          bci,
+          pos: obs.pos_fraction ? Number(obs.pos_fraction) : null,
+          gravid: !!(obs.eggs_palpated || obs.egg_volume_cm3)
+        };
+      }).filter(p => p.massG > 0);
+
+      if (pts.length === 0) {
+        if (deltaBadgeId && document.getElementById(deltaBadgeId)) {
+          document.getElementById(deltaBadgeId).innerText = 'No longitudinal timepoints';
+        }
+        if (kpisContainerId && document.getElementById(kpisContainerId)) {
+          document.getElementById(kpisContainerId).innerHTML = '';
+        }
+        container.innerHTML = `
+          <div style="text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 12px;">
+            <i class="fa-solid fa-chart-line" style="font-size: 24px; opacity: 0.5; margin-bottom: 6px; display: block;"></i>
+            No biometric timepoints recorded for this specimen yet. Log a field observation to generate its longitudinal trajectory.
+          </div>
+        `;
+        return;
+      }
+
+      const firstPt = pts[0];
+      const lastPt = pts[pts.length - 1];
+      const deltaMassG = lastPt.massG - firstPt.massG;
+      const deltaVol = lastPt.volCm3 - firstPt.volCm3;
+      const peakMassG = Math.max(...pts.map(p => p.massG));
+      const meanBci = pts.reduce((acc, p) => acc + p.bci, 0) / pts.length;
+
+      if (deltaBadgeId && document.getElementById(deltaBadgeId)) {
+        const sign = deltaMassG >= 0 ? '+' : '';
+        document.getElementById(deltaBadgeId).innerHTML = `
+          ${pts.length} Timepoint${pts.length === 1 ? '' : 's'} • Net ΔMass: <strong style="color:${deltaMassG >= 0 ? '#4ade80' : '#fbbf24'};">${sign}${formatMass(deltaMassG)}</strong> • Peak: <strong>${formatMass(peakMassG)}</strong>
+        `;
+      }
+
+      if (kpisContainerId && document.getElementById(kpisContainerId)) {
+        const kpiEl = document.getElementById(kpisContainerId);
+        const mSign = deltaMassG >= 0 ? '+' : '';
+        const vSign = deltaVol >= 0 ? '+' : '';
+        const resSign = lastPt.residualG >= 0 ? '+' : '';
+        kpiEl.innerHTML = `
+          <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center;">
+            <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Net Mass Trajectory (Δ)</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 800; color: ${deltaMassG >= 0 ? '#4ade80' : '#fbbf24'}; margin-top: 2px;">${mSign}${formatMass(deltaMassG)}</div>
+            <div style="font-size: 10px; color: var(--text-muted);">Peak Annual Mass: ${formatMass(peakMassG)}</div>
+          </div>
+          <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center;">
+            <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">3D Shell Volume Growth (ΔV<sub>shell</sub>)</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 800; color: var(--accent-gold); margin-top: 2px;">${vSign}${deltaVol.toFixed(1)} cm³</div>
+            <div style="font-size: 10px; color: var(--text-muted);">Latest V<sub>shell</sub>: ${lastPt.volCm3.toFixed(1)} cm³</div>
+          </div>
+          <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center;">
+            <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Mean Longitudinal BCI</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 800; color: #38bdf8; margin-top: 2px;">${meanBci.toFixed(3)} g/cm³</div>
+            <div style="font-size: 10px; color: var(--text-muted);">Loehr Target: 1.05–1.25 g/cm³</div>
+          </div>
+          <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center;">
+            <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Latest Table 2 ANCOVA Residual</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 800; color: ${lastPt.residualG >= -5 ? '#4ade80' : '#ef4444'}; margin-top: 2px;">${resSign}${lastPt.residualG.toFixed(1)} g</div>
+            <div style="font-size: 10px; color: var(--text-muted);">Somatic (${ lastPt.somaticG.toFixed(1) }g) vs Expected (${ lastPt.expectedG.toFixed(1) }g)</div>
+          </div>
+        `;
+      }
+
+      // Build responsive SVG dual-axis trajectory chart
+      const svgW = 780;
+      const svgH = 210;
+      const padL = 54;
+      const padR = 54;
+      const padT = 26;
+      const padB = 34;
+      const plotW = svgW - padL - padR;
+      const plotH = svgH - padT - padB;
+
+      const allMasses = [];
+      pts.forEach(p => {
+        allMasses.push(p.massG, p.somaticG, p.expectedG);
+      });
+      const minMass = Math.max(0, Math.min(...allMasses) * 0.90);
+      let maxMass = Math.max(...allMasses) * 1.08;
+      if (maxMass <= minMass) maxMass = minMass + 20;
+
+      const allBcis = pts.map(p => p.bci);
+      const minBci = Math.min(0.85, ...allBcis) - 0.04;
+      const maxBci = Math.max(1.35, ...allBcis) + 0.04;
+
+      const xForIdx = (i) => pts.length === 1 ? (padL + plotW / 2) : (padL + (i / (pts.length - 1)) * plotW);
+      const yForMass = (m) => padT + plotH - ((m - minMass) / (maxMass - minMass)) * plotH;
+      const yForBci = (b) => padT + plotH - ((b - minBci) / (maxBci - minBci)) * plotH;
+
+      // Shaded Loehr optimal BCI band (1.05 to 1.25 g/cm3)
+      const bandTopY = Math.max(padT, Math.min(padT + plotH, yForBci(1.25)));
+      const bandBotY = Math.max(padT, Math.min(padT + plotH, yForBci(1.05)));
+      const bandH = Math.max(0, bandBotY - bandTopY);
+
+      // Horizontal grid lines
+      let gridLinesSvg = '';
+      for (let step = 0; step <= 3; step++) {
+        const frac = step / 3;
+        const gy = padT + plotH - frac * plotH;
+        const mLabel = formatMass(minMass + frac * (maxMass - minMass));
+        const bLabel = (minBci + frac * (maxBci - minBci)).toFixed(2);
+        gridLinesSvg += `
+          <line x1="${padL}" y1="${gy.toFixed(1)}" x2="${padL + plotW}" y2="${gy.toFixed(1)}" stroke="rgba(148,163,184,0.16)" stroke-dasharray="3,3" />
+          <text x="${padL - 6}" y="${(gy + 3).toFixed(1)}" text-anchor="end" fill="#4ade80" font-size="9.5" font-family="JetBrains Mono, monospace">${mLabel}</text>
+          <text x="${padL + plotW + 6}" y="${(gy + 3).toFixed(1)}" text-anchor="start" fill="#f59e0b" font-size="9.5" font-family="JetBrains Mono, monospace">${bLabel}</text>
+        `;
+      }
+
+      const massPointsAttr = pts.map((p, i) => `${xForIdx(i).toFixed(1)},${yForMass(p.massG).toFixed(1)}`).join(' ');
+      const somaticPointsAttr = pts.map((p, i) => `${xForIdx(i).toFixed(1)},${yForMass(p.somaticG).toFixed(1)}`).join(' ');
+      const expectedPointsAttr = pts.map((p, i) => `${xForIdx(i).toFixed(1)},${yForMass(p.expectedG).toFixed(1)}`).join(' ');
+      const bciPointsAttr = pts.map((p, i) => `${xForIdx(i).toFixed(1)},${yForBci(p.bci).toFixed(1)}`).join(' ');
+
+      let nodesSvg = '';
+      pts.forEach((p, i) => {
+        const cx = xForIdx(i);
+        const cyMass = yForMass(p.massG);
+        const cySom = yForMass(p.somaticG);
+        const cyExp = yForMass(p.expectedG);
+        const cyBci = yForBci(p.bci);
+
+        const clickHandler = p.id ? `onclick="openObservationDetail('${p.id}')" style="cursor:pointer;"` : '';
+        const tooltip = `${p.dateLabel} (${p.type}) | Mass: ${formatMass(p.massG)} | Somatic: ${formatMass(p.somaticG)} | Expected (Table 2): ${formatMass(p.expectedG)} | BCI: ${p.bci.toFixed(3)} g/cm³`;
+
+        nodesSvg += `
+          <g ${clickHandler}>
+            <title>${tooltip}</title>
+            <line x1="${cx.toFixed(1)}" y1="${padT}" x2="${cx.toFixed(1)}" y2="${padT + plotH}" stroke="rgba(148,163,184,0.08)" />
+            <circle cx="${cx.toFixed(1)}" cy="${cyExp.toFixed(1)}" r="3.2" fill="#94a3b8" />
+            <circle cx="${cx.toFixed(1)}" cy="${cySom.toFixed(1)}" r="3.8" fill="#38bdf8" stroke="#0f172a" stroke-width="1.2" />
+            <circle cx="${cx.toFixed(1)}" cy="${cyMass.toFixed(1)}" r="4.8" fill="#4ade80" stroke="#0f172a" stroke-width="1.5" />
+            <circle cx="${cx.toFixed(1)}" cy="${cyBci.toFixed(1)}" r="4.2" fill="#f59e0b" stroke="#0f172a" stroke-width="1.5" />
+            <text x="${cx.toFixed(1)}" y="${(cyMass - 8).toFixed(1)}" text-anchor="middle" fill="#bbf7d0" font-size="9" font-weight="700" font-family="JetBrains Mono, monospace">${formatMass(p.massG)}</text>
+            <text x="${cx.toFixed(1)}" y="${svgH - 10}" text-anchor="middle" fill="#94a3b8" font-size="9.5" font-family="JetBrains Mono, monospace">${p.dateLabel}</text>
+          </g>
+        `;
+      });
+
+      container.innerHTML = `
+        <svg viewBox="0 0 ${svgW} ${svgH}" style="width: 100%; height: auto; display: block; overflow: visible;">
+          <!-- Shaded Loehr et al. (2004) Optimal BCI Band (1.05 - 1.25 g/cm³) -->
+          <rect x="${padL}" y="${bandTopY.toFixed(1)}" width="${plotW}" height="${bandH.toFixed(1)}" fill="rgba(74, 222, 128, 0.09)" stroke="rgba(74, 222, 128, 0.25)" stroke-dasharray="4,4" rx="4" />
+          <text x="${padL + 6}" y="${(bandTopY + 11).toFixed(1)}" fill="rgba(74, 222, 128, 0.75)" font-size="8.5" font-family="JetBrains Mono, monospace">Loehr Optimal BCI Band (1.05–1.25 g/cm³)</text>
+
+          ${gridLinesSvg}
+
+          <!-- Legend Header -->
+          <g transform="translate(${padL}, 12)" font-size="9.5" font-family="Plus Jakarta Sans, sans-serif" font-weight="600">
+            <circle cx="4" cy="-3" r="4" fill="#4ade80" /><text x="12" y="0" fill="#e2e8f0">Observed Mass</text>
+            <circle cx="105" cy="-3" r="3.5" fill="#38bdf8" /><text x="113" y="0" fill="#38bdf8">Somatic Mass (Mass−Egg−Foll)</text>
+            <line x1="278" y1="-3" x2="294" y2="-3" stroke="#94a3b8" stroke-width="2" stroke-dasharray="3,3" /><text x="299" y="0" fill="#94a3b8">Table 2 Expected Mass</text>
+            <circle cx="430" cy="-3" r="4" fill="#f59e0b" /><text x="438" y="0" fill="#f59e0b">Volumetric BCI (g/cm³)</text>
+          </g>
+
+          ${pts.length > 1 ? `
+            <polyline fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4,4" points="${expectedPointsAttr}" />
+            <polyline fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="2,2" points="${somaticPointsAttr}" />
+            <polyline fill="none" stroke="#4ade80" stroke-width="2.6" points="${massPointsAttr}" />
+            <polyline fill="none" stroke="#f59e0b" stroke-width="2.2" points="${bciPointsAttr}" />
+          ` : ''}
+
+          ${nodesSvg}
+        </svg>
+      `;
     }
 
     // Theme Handling (Safari Earth Day/Night)
@@ -4022,6 +4305,7 @@
 
         await loadSpecimens();
         await loadObservations();
+        populateHealthTrajectorySelect();
         updateSpecimensCardMarkings();
         calculateJacksons();
         updateTSD();

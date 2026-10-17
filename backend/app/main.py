@@ -37,7 +37,15 @@ async def lifespan(app: FastAPI):
                 ("egg_length_mm", "FLOAT"),
                 ("egg_width_mm", "FLOAT"),
                 ("egg_volume_cm3", "FLOAT"),
-                ("somatic_mass_grams", "FLOAT")
+                ("somatic_mass_grams", "FLOAT"),
+                ("weighed_before_excretion", "BOOLEAN"),
+                ("scute_wear_status", "VARCHAR(40)"),
+                ("follicle_count", "INTEGER"),
+                ("mean_follicle_diameter_mm", "FLOAT"),
+                ("follicle_volume_cm3", "FLOAT"),
+                ("pos_fraction", "FLOAT"),
+                ("predicted_mass_grams", "FLOAT"),
+                ("mass_condition_residual_g", "FLOAT")
             ]
             if dialect == "postgresql":
                 for col_name, col_type in columns_to_ensure:

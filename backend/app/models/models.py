@@ -92,13 +92,23 @@ class HealthInspection(Base):
     body_condition_index = Column(Float, nullable=True)      # BCI = Mass / V_fem (g/cm3, baseline 1.12)
     mass_to_scl_ratio = Column(Float, nullable=True)         # Mass / SCL (g/mm, baseline 1.62)
     
-    # Gravidity, Egg Biometrics (Coleman 1991) & Somatic Mass
+    # Gravidity, Egg Biometrics (Coleman 1991), Ultrasonography (POS) & Somatic Mass
     eggs_palpated = Column(Boolean, default=False)
     estimated_egg_count = Column(Integer, default=0)
     egg_length_mm = Column(Float, nullable=True)             # Radiographic / Ultrasound egg length
     egg_width_mm = Column(Float, nullable=True)              # Radiographic / Ultrasound egg width
     egg_volume_cm3 = Column(Float, nullable=True)            # V_egg = pi * L * W^2 / 6000 (cm3)
-    somatic_mass_grams = Column(Float, nullable=True)        # Somatic Mass = Mass - Egg Mass
+    somatic_mass_grams = Column(Float, nullable=True)        # Somatic Mass = Mass - Egg Mass - Follicle Mass
+
+    # Loehr et al. (2004) Field Weighing, Scute Wear, Ultrasonography & Table 2 ANCOVA Regressions
+    weighed_before_excretion = Column(Boolean, default=True) # Weighed prior to urine/fecal loss (±0.1 g)
+    scute_wear_status = Column(String(40), nullable=True)    # Countable (8-13) | Worn / Old (>13 laminae)
+    follicle_count = Column(Integer, nullable=True)          # Vitellogenic follicles counted via ultrasound (1-6)
+    mean_follicle_diameter_mm = Column(Float, nullable=True) # Mean follicle diameter (mm, range 4.7-22.6 mm)
+    follicle_volume_cm3 = Column(Float, nullable=True)       # V_foll = pi * d^3 / 6 (cm3 per follicle)
+    pos_fraction = Column(Float, nullable=True)              # Fraction of Preovulatory Size (POS = 4.99 cm3)
+    predicted_mass_grams = Column(Float, nullable=True)      # Table 2 ANCOVA expected mass (g)
+    mass_condition_residual_g = Column(Float, nullable=True) # Observed Somatic/Total Mass - Predicted Mass (g)
 
     # Legacy Jackson ratio (kept for backward compatibility)
     jacksons_ratio = Column(Float, nullable=True)

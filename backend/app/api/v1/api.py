@@ -60,11 +60,15 @@ class HealthInspectionCreate(BaseModel):
     anal_opening_mm: Optional[float] = None
     anal_width_mm: Optional[float] = None
     growth_rings: Optional[str] = Field(None, example="10 laminae")
+    scute_wear_status: Optional[str] = Field("Countable (8-13)", example="Countable (8-13)")
+    weighed_before_excretion: bool = True
     body_condition_score: int = Field(3, ge=1, le=5)
     eggs_palpated: bool = False
     estimated_egg_count: Optional[int] = 0
     egg_length_mm: Optional[float] = None
     egg_width_mm: Optional[float] = None
+    follicle_count: Optional[int] = None
+    mean_follicle_diameter_mm: Optional[float] = None
     shell_condition_notes: Optional[str] = None
     observation_notes: Optional[str] = None
     latitude: Optional[float] = None
@@ -85,6 +89,8 @@ class HealthInspectionResponse(BaseModel):
     anal_opening_mm: Optional[float] = None
     anal_width_mm: Optional[float] = None
     growth_rings: Optional[str] = None
+    scute_wear_status: Optional[str] = None
+    weighed_before_excretion: Optional[bool] = True
     body_condition_score: int
     shell_volume_cm3: Optional[float] = None
     body_condition_index: Optional[float] = None
@@ -95,7 +101,13 @@ class HealthInspectionResponse(BaseModel):
     egg_length_mm: Optional[float] = None
     egg_width_mm: Optional[float] = None
     egg_volume_cm3: Optional[float] = None
+    follicle_count: Optional[int] = None
+    mean_follicle_diameter_mm: Optional[float] = None
+    follicle_volume_cm3: Optional[float] = None
+    pos_fraction: Optional[float] = None
     somatic_mass_grams: Optional[float] = None
+    predicted_mass_grams: Optional[float] = None
+    mass_condition_residual_g: Optional[float] = None
     shell_condition_notes: Optional[str] = None
     observation_notes: Optional[str] = None
     latitude: Optional[float] = None
@@ -207,18 +219,55 @@ def record_health_inspection(inspection_in: HealthInspectionCreate, db: Session 
         if shell_volume > 0:
             bci = round(mass / shell_volume, 4)
 
-    # 3. Egg volume (Coleman 1991 formula: pi * L * W^2 / 6000 in cm3) & Somatic Mass
+    # 3. Egg volume (Coleman 1991 formula: pi * L * W^2 / 6000 in cm3)
     egg_volume = None
-    somatic_mass = None
+    egg_mass_estimate = 0.0
     el = inspection_in.egg_length_mm
     ew = inspection_in.egg_width_mm
     if el and ew and el > 0 and ew > 0:
         egg_volume = round((math.pi * el * (ew ** 2)) / 6000.0, 2)
         egg_mass_estimate = egg_volume * 1.0 * (inspection_in.estimated_egg_count or 1)
-        somatic_mass = round(max(0.0, mass - egg_mass_estimate), 1)
     elif inspection_in.eggs_palpated and (inspection_in.estimated_egg_count or 0) > 0:
-        egg_mass_estimate = 12.0 * inspection_in.estimated_egg_count
-        somatic_mass = round(max(0.0, mass - egg_mass_estimate), 1)
+        egg_mass_estimate = 11.3 * inspection_in.estimated_egg_count
+
+    # 4. Ultrasonography Ovarian Follicle Volume (V_foll = pi * d_cm^3 / 6) & Preovulatory Size (POS = 4.99 cm3)
+    follicle_volume = None
+    pos_fraction = None
+    follicle_mass_estimate = 0.0
+    f_diam_mm = inspection_in.mean_follicle_diameter_mm
+    f_count = inspection_in.follicle_count or 0
+    if f_diam_mm and f_diam_mm > 0:
+        d_cm = f_diam_mm / 10.0
+        follicle_volume = round((math.pi * (d_cm ** 3)) / 6.0, 3)
+        pos_fraction = round(follicle_volume / 4.99, 3)
+        follicle_mass_estimate = follicle_volume * 1.0 * (f_count if f_count > 0 else 1)
+
+    # 5. Somatic Mass (Mass - Egg Mass - Follicle Mass, assuming 1.0 g/cm3 density)
+    somatic_mass = None
+    if egg_mass_estimate > 0 or follicle_mass_estimate > 0:
+        somatic_mass = round(max(0.0, mass - egg_mass_estimate - follicle_mass_estimate), 1)
+
+    # 6. Table 2 ANCOVA Expected Body Mass & Condition Residual (Loehr et al. 2004, p. 449)
+    predicted_mass = None
+    mass_residual = None
+    if shell_volume and shell_volume > 0:
+        if follicle_mass_estimate > 0:
+            # Somatic Mass (Body Mass - Egg & Follicle Mass) vs Vfem: 0.886 * Vfem + 13.8 (r2 = 0.952)
+            predicted_mass = round(0.886 * shell_volume + 13.8, 1)
+        else:
+            # Somatic Mass (Body Mass - Egg Mass) vs Vfem: 0.885 * Vfem + 23.6 (r2 = 0.910)
+            predicted_mass = round(0.885 * shell_volume + 23.6, 1)
+    elif scl and scl > 0:
+        if follicle_mass_estimate > 0:
+            # Somatic Mass (Body Mass - Egg & Follicle Mass) vs SCL: 4.20 * SCL - 253 (r2 = 0.936)
+            predicted_mass = round(4.20 * scl - 253.0, 1)
+        else:
+            # Somatic Mass (Body Mass - Egg Mass) vs SCL: 4.18 * SCL - 243 (r2 = 0.880)
+            predicted_mass = round(4.18 * scl - 243.0, 1)
+
+    if predicted_mass is not None and predicted_mass > 0:
+        eval_mass = somatic_mass if somatic_mass is not None else mass
+        mass_residual = round(eval_mass - predicted_mass, 1)
 
     # Legacy Jackson ratio for backwards compatibility
     scl_cm = scl / 10.0 if scl and scl > 0 else 0
@@ -233,7 +282,11 @@ def record_health_inspection(inspection_in: HealthInspectionCreate, db: Session 
         body_condition_index=bci,
         mass_to_scl_ratio=mass_to_scl,
         egg_volume_cm3=egg_volume,
+        follicle_volume_cm3=follicle_volume,
+        pos_fraction=pos_fraction,
         somatic_mass_grams=somatic_mass,
+        predicted_mass_grams=predicted_mass,
+        mass_condition_residual_g=mass_residual,
         jacksons_ratio=jacksons_ratio,
         inspected_at=inspected_date,
         **dump_data
@@ -264,6 +317,12 @@ def record_health_inspection(inspection_in: HealthInspectionCreate, db: Session 
         "body_condition_index": bci,
         "shell_volume_cm3": shell_volume,
         "mass_to_scl_ratio": mass_to_scl,
+        "egg_volume_cm3": egg_volume,
+        "follicle_volume_cm3": follicle_volume,
+        "pos_fraction": pos_fraction,
+        "somatic_mass_grams": somatic_mass,
+        "predicted_mass_grams": predicted_mass,
+        "mass_condition_residual_g": mass_residual,
         "jacksons_ratio": jacksons_ratio,
         "inspected_at": inspection.inspected_at,
         "latitude": inspection.latitude,
@@ -434,6 +493,14 @@ def get_specimen_pdf_report(
     latest_mass_to_scl = None
     latest_egg_vol = None
     latest_somatic_mass = None
+    latest_follicle_count = None
+    latest_follicle_diam = None
+    latest_follicle_vol = None
+    latest_pos_fraction = None
+    latest_predicted_mass = None
+    latest_mass_residual = None
+    latest_weighed_before = True
+    latest_scute_wear = "Countable (8-13)"
 
     for insp in inspections:
         # Safe numeric formatting & fallback calculation for Loehr et al. (2004)
@@ -460,12 +527,33 @@ def get_specimen_pdf_report(
         if egg_vol is None and el and ew and el > 0 and ew > 0:
             egg_vol = round((math.pi * el * (ew ** 2)) / 6000.0, 2)
 
+        f_count = getattr(insp, 'follicle_count', None)
+        f_diam = getattr(insp, 'mean_follicle_diameter_mm', None)
+        f_vol = getattr(insp, 'follicle_volume_cm3', None)
+        pos_frac = getattr(insp, 'pos_fraction', None)
+        if f_vol is None and f_diam and f_diam > 0:
+            d_cm = f_diam / 10.0
+            f_vol = round((math.pi * (d_cm ** 3)) / 6.0, 3)
+            pos_frac = round(f_vol / 4.99, 3)
+
         somatic_mass = getattr(insp, 'somatic_mass_grams', None)
         if somatic_mass is None and mass_val is not None:
-            if egg_vol:
-                somatic_mass = round(max(0.0, mass_val - egg_vol * 1.0), 1)
-            elif getattr(insp, 'eggs_palpated', False):
-                somatic_mass = round(max(0.0, mass_val - 12.0), 1)
+            egg_m = (egg_vol * 1.0 * (getattr(insp, 'estimated_egg_count', 1) or 1)) if egg_vol else (11.3 if getattr(insp, 'eggs_palpated', False) else 0.0)
+            foll_m = (f_vol * 1.0 * (f_count if f_count and f_count > 0 else 1)) if f_vol else 0.0
+            if egg_m > 0 or foll_m > 0:
+                somatic_mass = round(max(0.0, mass_val - egg_m - foll_m), 1)
+
+        pred_mass = getattr(insp, 'predicted_mass_grams', None)
+        if pred_mass is None:
+            if shell_vol and shell_vol > 0:
+                pred_mass = round((0.886 * shell_vol + 13.8) if f_vol else (0.885 * shell_vol + 23.6), 1)
+            elif scl_val and scl_val > 0:
+                pred_mass = round((4.20 * scl_val - 253.0) if f_vol else (4.18 * scl_val - 243.0), 1)
+
+        mass_res = getattr(insp, 'mass_condition_residual_g', None)
+        if mass_res is None and pred_mass and pred_mass > 0 and mass_val is not None:
+            eval_m = somatic_mass if somatic_mass is not None else mass_val
+            mass_res = round(eval_m - pred_mass, 1)
 
         mass_str = f"{mass_val:.1f} g" if mass_val is not None else "--"
         scl_str = f"{scl_val:.1f} mm" if scl_val is not None else "--"
@@ -505,7 +593,16 @@ def get_specimen_pdf_report(
             "shell_volume_cm3": shell_vol,
             "body_condition_index": bci,
             "mass_to_scl_ratio": mass_to_scl,
-            "growth_rings": getattr(insp, 'growth_rings', None)
+            "growth_rings": getattr(insp, 'growth_rings', None),
+            "scute_wear_status": getattr(insp, 'scute_wear_status', None),
+            "weighed_before_excretion": getattr(insp, 'weighed_before_excretion', True),
+            "follicle_count": f_count,
+            "mean_follicle_diameter_mm": f_diam,
+            "follicle_volume_cm3": f_vol,
+            "pos_fraction": pos_frac,
+            "somatic_mass_grams": somatic_mass,
+            "predicted_mass_grams": pred_mass,
+            "mass_condition_residual_g": mass_res
         })
 
     if latest_insp:
@@ -514,10 +611,18 @@ def get_specimen_pdf_report(
         latest_sh = getattr(latest_insp, 'shell_height_mm', None)
         latest_sw = getattr(latest_insp, 'shell_width_mm', None)
         latest_rings = getattr(latest_insp, 'growth_rings', None)
+        latest_scute_wear = getattr(latest_insp, 'scute_wear_status', None) or "Countable (8-13)"
+        latest_weighed_before = getattr(latest_insp, 'weighed_before_excretion', True)
+        if latest_weighed_before is None:
+            latest_weighed_before = True
         latest_eggs = getattr(latest_insp, 'eggs_palpated', False)
         latest_egg_count = getattr(latest_insp, 'estimated_egg_count', 0)
         latest_el = getattr(latest_insp, 'egg_length_mm', None)
         latest_ew = getattr(latest_insp, 'egg_width_mm', None)
+        latest_follicle_count = getattr(latest_insp, 'follicle_count', None)
+        latest_follicle_diam = getattr(latest_insp, 'mean_follicle_diameter_mm', None)
+        latest_follicle_vol = getattr(latest_insp, 'follicle_volume_cm3', None)
+        latest_pos_fraction = getattr(latest_insp, 'pos_fraction', None)
 
         if latest_scl and latest_sh and latest_sw and latest_scl > 0 and latest_sh > 0 and latest_sw > 0:
             latest_shell_vol = round((math.pi * latest_scl * latest_sh * latest_sw) / 6000.0, 2)
@@ -527,9 +632,29 @@ def get_specimen_pdf_report(
             latest_mass_to_scl = round(latest_mass / latest_scl, 4)
         if latest_el and latest_ew and latest_el > 0 and latest_ew > 0:
             latest_egg_vol = round((math.pi * latest_el * (latest_ew ** 2)) / 6000.0, 2)
-            latest_somatic_mass = round(max(0.0, latest_mass - latest_egg_vol * 1.0), 1)
-        elif latest_eggs and latest_mass:
-            latest_somatic_mass = round(max(0.0, latest_mass - 12.0), 1)
+        if latest_follicle_vol is None and latest_follicle_diam and latest_follicle_diam > 0:
+            d_cm = latest_follicle_diam / 10.0
+            latest_follicle_vol = round((math.pi * (d_cm ** 3)) / 6.0, 3)
+            latest_pos_fraction = round(latest_follicle_vol / 4.99, 3)
+
+        latest_somatic_mass = getattr(latest_insp, 'somatic_mass_grams', None)
+        if latest_somatic_mass is None and latest_mass is not None:
+            egg_m = (latest_egg_vol * 1.0 * (latest_egg_count or 1)) if latest_egg_vol else (11.3 * (latest_egg_count or 1) if latest_eggs else 0.0)
+            foll_m = (latest_follicle_vol * 1.0 * (latest_follicle_count if latest_follicle_count and latest_follicle_count > 0 else 1)) if latest_follicle_vol else 0.0
+            if egg_m > 0 or foll_m > 0:
+                latest_somatic_mass = round(max(0.0, latest_mass - egg_m - foll_m), 1)
+
+        latest_predicted_mass = getattr(latest_insp, 'predicted_mass_grams', None)
+        if latest_predicted_mass is None:
+            if latest_shell_vol and latest_shell_vol > 0:
+                latest_predicted_mass = round((0.886 * latest_shell_vol + 13.8) if latest_follicle_vol else (0.885 * latest_shell_vol + 23.6), 1)
+            elif latest_scl and latest_scl > 0:
+                latest_predicted_mass = round((4.20 * latest_scl - 253.0) if latest_follicle_vol else (4.18 * latest_scl - 243.0), 1)
+
+        latest_mass_residual = getattr(latest_insp, 'mass_condition_residual_g', None)
+        if latest_mass_residual is None and latest_predicted_mass and latest_predicted_mass > 0 and latest_mass is not None:
+            eval_m = latest_somatic_mass if latest_somatic_mass is not None else latest_mass
+            latest_mass_residual = round(eval_m - latest_predicted_mass, 1)
     else:
         latest_mass = None
         latest_scl = None
@@ -572,12 +697,20 @@ def get_specimen_pdf_report(
         "latest_bci": latest_bci,
         "latest_mass_to_scl": latest_mass_to_scl,
         "latest_growth_rings": latest_rings,
+        "latest_scute_wear": latest_scute_wear,
+        "weighed_before_excretion": latest_weighed_before,
         "eggs_palpated": latest_eggs,
         "estimated_egg_count": latest_egg_count,
         "egg_length_mm": latest_el,
         "egg_width_mm": latest_ew,
         "egg_volume_cm3": latest_egg_vol,
+        "follicle_count": latest_follicle_count,
+        "mean_follicle_diameter_mm": latest_follicle_diam,
+        "follicle_volume_cm3": latest_follicle_vol,
+        "pos_fraction": latest_pos_fraction,
         "somatic_mass_grams": latest_somatic_mass,
+        "predicted_mass_grams": latest_predicted_mass,
+        "mass_condition_residual_g": latest_mass_residual,
         "is_adult_breeding_size": (latest_scl >= 84.1) if latest_scl is not None else None
     }
 

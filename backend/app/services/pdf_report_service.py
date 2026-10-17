@@ -344,10 +344,10 @@ class ConservationReportGenerator:
         # 5. Loehr, Henen & Hofmeyr (2004) Biometric Condition Profile
         elements.append(Paragraph("3. BIOMETRIC CONDITION & MORPHOMETRIC PROFILE (Loehr et al. 2004 Model)", self.styles['SectionHeading']))
         explainer_text = (
-            "Evaluated under the empirical morphometric and reproductive model for the Namaqualand speckled padloper "
-            "(<i>Homopus signatus signatus</i>; Loehr, Henen & Hofmeyr, <i>Herpetologica</i> 60(4):444–454, 2004). "
-            "Replaces legacy Mediterranean Testudo Jackson ratios (Mass/L³) with 3D shell ellipsoid volume (V<sub>shell</sub>), "
-            "volumetric Body Condition Index (BCI), linear mass-to-length scaling, and Coleman (1991) non-spherical egg geometry."
+            "Evaluated under the empirical morphometric, radiographic, and ultrasonographic health model for the Namaqualand "
+            "speckled padloper (<i>Homopus signatus signatus</i>; Loehr, Henen & Hofmeyr, <i>Herpetologica</i> 60(4):444–454, 2004). "
+            "Combines 3D shell ellipsoid volume (V<sub>shell</sub>), volumetric Body Condition Index (BCI), Table 2 ANCOVA somatic mass "
+            "regressions, Coleman (1991) radiographic egg volume, and ultrasonographic Preovulatory Size (POS = 4.99 cm³) follicle staging."
         )
         elements.append(Paragraph(explainer_text, self.styles['SectionExplainer']))
 
@@ -376,24 +376,51 @@ class ConservationReportGenerator:
         if latest_mass_to_scl is None and latest_mass and latest_scl and latest_scl > 0:
             latest_mass_to_scl = round(latest_mass / latest_scl, 4)
 
-        # Scute Laminae
+        # Scute Laminae & Wear Status
         latest_rings = specimen_data.get('latest_growth_rings') or last_insp.get('growth_rings') or "9 laminae (Costal-1)"
+        latest_wear = specimen_data.get('latest_scute_wear') or last_insp.get('scute_wear_status') or "Countable (8-13)"
+        weighed_pre = specimen_data.get('weighed_before_excretion')
+        if weighed_pre is None:
+            weighed_pre = last_insp.get('weighed_before_excretion', True)
 
-        # Reproductive & Clutch metrics
+        # Reproductive, Radiographic Egg & Ultrasonographic Follicle metrics
         eggs_palpated = specimen_data.get('eggs_palpated', False) or last_insp.get('eggs_palpated', False)
         egg_count = specimen_data.get('estimated_egg_count') or last_insp.get('estimated_egg_count', 0)
         egg_vol = specimen_data.get('egg_volume_cm3') or self._parse_float_safe(last_insp.get('egg_volume_cm3'))
         egg_l = specimen_data.get('egg_length_mm') or self._parse_float_safe(last_insp.get('egg_length_mm'))
         egg_w = specimen_data.get('egg_width_mm') or self._parse_float_safe(last_insp.get('egg_width_mm'))
-        somatic_mass = specimen_data.get('somatic_mass_grams') or self._parse_float_safe(last_insp.get('somatic_mass_grams'))
+
+        foll_count = specimen_data.get('follicle_count') or last_insp.get('follicle_count')
+        foll_diam = specimen_data.get('mean_follicle_diameter_mm') or self._parse_float_safe(last_insp.get('mean_follicle_diameter_mm'))
+        foll_vol = specimen_data.get('follicle_volume_cm3') or self._parse_float_safe(last_insp.get('follicle_volume_cm3'))
+        pos_frac = specimen_data.get('pos_fraction') or self._parse_float_safe(last_insp.get('pos_fraction'))
 
         if egg_vol is None and egg_l and egg_w and egg_l > 0 and egg_w > 0:
             egg_vol = round((math.pi * egg_l * (egg_w ** 2)) / 6000.0, 2)
+        if foll_vol is None and foll_diam and foll_diam > 0:
+            d_cm = foll_diam / 10.0
+            foll_vol = round((math.pi * (d_cm ** 3)) / 6.0, 3)
+            pos_frac = round(foll_vol / 4.99, 3)
+
+        somatic_mass = specimen_data.get('somatic_mass_grams') or self._parse_float_safe(last_insp.get('somatic_mass_grams'))
         if somatic_mass is None and latest_mass is not None:
-            if egg_vol:
-                somatic_mass = round(max(0.0, latest_mass - egg_vol * 1.0), 1)
-            elif eggs_palpated:
-                somatic_mass = round(max(0.0, latest_mass - 12.0), 1)
+            egg_m = (egg_vol * 1.0 * (egg_count or 1)) if egg_vol else (11.3 * (egg_count or 1) if eggs_palpated else 0.0)
+            foll_m = (foll_vol * 1.0 * (foll_count if foll_count and foll_count > 0 else 1)) if foll_vol else 0.0
+            if egg_m > 0 or foll_m > 0:
+                somatic_mass = round(max(0.0, latest_mass - egg_m - foll_m), 1)
+
+        # Table 2 ANCOVA Expected Mass & Condition Residual
+        predicted_mass = specimen_data.get('predicted_mass_grams') or self._parse_float_safe(last_insp.get('predicted_mass_grams'))
+        if predicted_mass is None:
+            if latest_shell_vol and latest_shell_vol > 0:
+                predicted_mass = round((0.886 * latest_shell_vol + 13.8) if foll_vol else (0.885 * latest_shell_vol + 23.6), 1)
+            elif latest_scl and latest_scl > 0:
+                predicted_mass = round((4.20 * latest_scl - 253.0) if foll_vol else (4.18 * latest_scl - 243.0), 1)
+
+        mass_residual = specimen_data.get('mass_condition_residual_g') or self._parse_float_safe(last_insp.get('mass_condition_residual_g'))
+        if mass_residual is None and predicted_mass and predicted_mass > 0 and latest_mass is not None:
+            eval_m = somatic_mass if somatic_mass is not None else latest_mass
+            mass_residual = round(eval_m - predicted_mass, 1)
 
         # BCI Evaluation & Classification
         if latest_bci is not None:
@@ -415,6 +442,18 @@ class ConservationReportGenerator:
             bci_detail = "Requires SCL, SH, SW, and Mass for 3D volumetric density."
             bci_display = "--"
 
+        # Table 2 ANCOVA Residual line
+        if predicted_mass is not None and predicted_mass > 0:
+            pred_str = self._format_mass(predicted_mass, mass_unit)
+            if mass_residual is not None:
+                sign_char = "+" if mass_residual >= 0 else ""
+                res_color = "#2D5A27" if mass_residual >= -5.0 else ("#d97706" if mass_residual >= -14.7 else "#dc2626")
+                ancova_line = f"<font size=7 color='#334155'>Table 2 Expected: <b>{pred_str}</b> (<font color='{res_color}'><b>{sign_char}{mass_residual:.1f} g</b></font>)</font>"
+            else:
+                ancova_line = f"<font size=7 color='#334155'>Table 2 Expected: <b>{pred_str}</b></font>"
+        else:
+            ancova_line = "<font size=7 color='#64748B'>Table 2 ANCOVA: 0.885×V<sub>shell</sub> + 23.6 g</font>"
+
         # Female Adult Breeding Threshold (Paper Table 1: Min female with egg SCL = 84.1 mm)
         thresh_str = "8.41 cm" if length_unit in ("cm", "centimeters") else "84.1 mm"
         if latest_scl is not None:
@@ -424,6 +463,20 @@ class ConservationReportGenerator:
                 maturity_display = f"<font color='#64748B'><b>Subadult / Immature (&lt; {thresh_str})</b></font>"
         else:
             maturity_display = "<b>Maturity Unknown</b>"
+
+        weigh_badge = "Weighed pre-excretion (±0.1 g)" if weighed_pre else "Weighed post-excretion (adjusted)"
+
+        # Ultrasonography Follicle & POS Staging line
+        if foll_vol is not None and pos_frac is not None:
+            if pos_frac >= 0.9:
+                pos_stage = "Preovulatory (&gt;0.9 POS • Multi-clutch)"
+            elif pos_frac >= 0.4:
+                pos_stage = "Med–Large Vitellogenic (0.4–0.8 POS)"
+            else:
+                pos_stage = "Small Vitellogenic (&lt;0.2 POS)"
+            foll_line = f"Ultrasound: {foll_count or 1} foll. ({foll_vol:.2f} cm³ = <b>{pos_frac:.2f} POS</b>, {pos_stage})"
+        else:
+            foll_line = "POS Threshold: 4.99 cm³ (≥21.2 mm yolk diameter)"
 
         # Gravid status display
         if eggs_palpated or (egg_count and egg_count > 0) or egg_vol:
@@ -438,26 +491,27 @@ class ConservationReportGenerator:
                 egg_dim_str = "Single-egg clutch"
             clutch_display = (
                 f"<font color='#0284c7'><b>Gravid: Single-Egg Clutch</b></font><br/>"
-                f"<font size=7 color='#475569'>Egg Vol: {egg_vol_str} {egg_dim_str}<br/>"
-                f"Somatic Body Mass: <b>{somatic_str}</b></font>"
+                f"<font size=7 color='#475569'>Egg Vol: {egg_vol_str} {egg_dim_str} • Somatic: <b>{somatic_str}</b><br/>"
+                f"{foll_line}</font>"
             )
         else:
-            somatic_str = self._format_mass(latest_mass, mass_unit) if latest_mass is not None else "--"
+            somatic_str = self._format_mass(somatic_mass if somatic_mass is not None else latest_mass, mass_unit) if (somatic_mass is not None or latest_mass is not None) else "--"
             clutch_display = (
                 "<b>Non-Gravid / Quiescent</b><br/>"
-                f"<font size=7 color='#475569'>Single-egg clutch mode (Aug–Dec spring)<br/>"
-                f"Somatic Body Mass: <b>{somatic_str}</b></font>"
+                f"<font size=7 color='#475569'>Somatic Body Mass: <b>{somatic_str}</b><br/>"
+                f"{foll_line}</font>"
             )
 
         vol_display = f"{latest_shell_vol:.1f} cm³" if latest_shell_vol else "--"
         mass_scl_display = f"{latest_mass_to_scl:.2f} g/mm" if latest_mass_to_scl else "--"
         rings_display = escape(str(latest_rings))
+        wear_display = escape(str(latest_wear))
 
         biometric_grid_data = [
             [
                 Paragraph("<b>3D Shell Ellipsoid Volume (V<sub>shell</sub>)</b>", self.styles['MetricCellTitle']),
-                Paragraph("<b>Linear Mass-to-Length Ratio</b>", self.styles['MetricCellTitle']),
-                Paragraph("<b>Reproductive Maturity (Loehr 2004)</b>", self.styles['MetricCellTitle'])
+                Paragraph("<b>Linear Mass-to-Length & ANCOVA</b>", self.styles['MetricCellTitle']),
+                Paragraph("<b>Maturity & Excretion Protocol</b>", self.styles['MetricCellTitle'])
             ],
             [
                 Paragraph(
@@ -467,19 +521,20 @@ class ConservationReportGenerator:
                 ),
                 Paragraph(
                     f"<font size=10 color='#583101'><b>{mass_scl_display}</b></font><br/>"
-                    f"<font size=7 color='#64748B'>Baseline: 1.62 ± 0.22 g/mm (Gravid: 1.68)</font>",
+                    f"<font size=7 color='#64748B'>Baseline: 1.62 ± 0.22 g/mm (Gravid: 1.68)</font><br/>"
+                    f"{ancova_line}",
                     self.styles['MetricCellBody']
                 ),
                 Paragraph(
                     f"{maturity_display}<br/>"
-                    f"<font size=7 color='#64748B'>Min padloper breeding female: SCL {thresh_str}</font>",
+                    f"<font size=7 color='#64748B'>Min female with egg: SCL {thresh_str}<br/>{weigh_badge}</font>",
                     self.styles['MetricCellBody']
                 )
             ],
             [
                 Paragraph("<b>Body Condition Index (BCI Density)</b>", self.styles['MetricCellTitle']),
-                Paragraph("<b>Scute Laminae (Growth Annuli)</b>", self.styles['MetricCellTitle']),
-                Paragraph("<b>Clutch Status & Somatic Reserve</b>", self.styles['MetricCellTitle'])
+                Paragraph("<b>Scute Laminae & Wear Class</b>", self.styles['MetricCellTitle']),
+                Paragraph("<b>Radiography, POS & Somatic Reserve</b>", self.styles['MetricCellTitle'])
             ],
             [
                 Paragraph(
@@ -490,7 +545,8 @@ class ConservationReportGenerator:
                 ),
                 Paragraph(
                     f"<font size=9><b>{rings_display}</b></font><br/>"
-                    f"<font size=7 color='#64748B'>Count on left anterior-most costal scute<br/>Adult padloper range: 8–13+ laminae</font>",
+                    f"<font size=7 color='#475569'>Wear Class: <b>{wear_display}</b></font><br/>"
+                    f"<font size=7 color='#64748B'>Left anterior-most costal scute (8–13+ laminae)</font>",
                     self.styles['MetricCellBody']
                 ),
                 Paragraph(

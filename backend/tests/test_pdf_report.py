@@ -269,7 +269,51 @@ class TestPDFReportGenerator(unittest.TestCase):
         self.assertTrue(pdf_bytes.startswith(b"%PDF"))
         self.assertGreater(len(pdf_bytes), 2000)
 
+    def test_loehr_2004_ultrasonography_pos_and_ancova_regressions(self):
+        """Test full Loehr, Henen & Hofmeyr (2004) ultrasonography follicle POS staging, Table 2 ANCOVA residuals, and scute wear."""
+        data = {
+            "custom_identifier": "PADL-POS-2004",
+            "species_name": "Homopus signatus signatus",
+            "common_name": "Namaqualand Speckled Padloper",
+            "notch_code": "L1-R2",
+            "sex": "Female",
+            "status": "Wild",
+            "latest_mass": 157.6,
+            "latest_scl": 93.7,
+            "latest_sh": 41.0,
+            "latest_sw": 69.5,
+            "latest_growth_rings": "12 laminae",
+            "latest_scute_wear": "Worn / Old (>13 laminae)",
+            "weighed_before_excretion": True,
+            "eggs_palpated": True,
+            "estimated_egg_count": 1,
+            "egg_length_mm": 34.7,
+            "egg_width_mm": 24.9,
+            "follicle_count": 4,
+            "mean_follicle_diameter_mm": 21.4,  # Preovulatory (>= 21.2 mm, > 0.9 POS)
+            "inspections": [
+                {
+                    "date": "2026-10-17",
+                    "type": "Ultrasound & Radiography",
+                    "mass": "157.6 g",
+                    "mass_val": 157.6,
+                    "scl": "93.7 mm",
+                    "scl_val": 93.7,
+                    "shell_vol": "139.8 cm³",
+                    "bci": "1.127",
+                    "mass_to_scl": "1.68 g/mm",
+                    "bcs": "Score 4/5",
+                    "findings": "Dorso-ventral X-ray (50 kV, 0.25s, 50 mA): 1 shelled egg + 4 preovulatory follicles (>0.9 POS)."
+                }
+            ]
+        }
+        pdf_bytes = self.generator.generate_specimen_report(data)
+        self.assertIsInstance(pdf_bytes, bytes)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+        self.assertGreater(len(pdf_bytes), 2000)
+
 if __name__ == "__main__":
     unittest.main()
+
 
 

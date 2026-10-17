@@ -123,6 +123,14 @@ class ConservationReportGenerator:
             textColor=colors.HexColor("#475569")
         ))
 
+    # Marginal Identification Coding Schemes (matching frontend NOTCH_SYSTEMS)
+    SA_STANDARD_LEFT = {1: 10, 2: 20, 3: 40, 4: 70, 8: 7000, 9: 4000, 10: 2000, 11: 1000}
+    SA_STANDARD_RIGHT = {1: 1, 2: 2, 3: 4, 4: 7, 8: 700, 9: 400, 10: 200, 11: 100}
+    SA_STANDARD_SUPRA = 3000
+
+    BINARY_LEFT = {1: 16, 2: 32, 3: 64, 4: 128, 8: 256, 9: 512, 10: 1024, 11: 2048}
+    BINARY_RIGHT = {1: 1, 2: 2, 3: 4, 4: 8, 8: 4096, 9: 8192, 10: 16384, 11: 32768}
+
     def _parse_float_safe(self, val: Any) -> Optional[float]:
         if val is None:
             return None
@@ -133,6 +141,71 @@ class ConservationReportGenerator:
             return float(cleaned) if cleaned else None
         except ValueError:
             return None
+
+    def _format_mass(self, grams: Optional[float], mass_unit: str = "grams") -> str:
+        if grams is None:
+            return "--"
+        if str(mass_unit).lower() in ("kilograms", "kg"):
+            return f"{grams / 1000.0:.3f} kg"
+        return f"{grams:.1f} g"
+
+    def _format_length(self, mm: Optional[float], length_unit: str = "mm") -> str:
+        if mm is None:
+            return "--"
+        if str(length_unit).lower() in ("cm", "centimeters"):
+            return f"{mm / 10.0:.2f} cm"
+        return f"{mm:.1f} mm"
+
+    def _format_notch_code(self, notch_code: Optional[str], notch_system: str = "sa_standard") -> tuple[str, str]:
+        """
+        Formats a marginal notch code according to the active identification scheme:
+        - 'sa_standard': South African Standard (1-2-4-7 Additive)
+        - 'binary': Binary Powers of Two (1-2-4-8 Additive)
+        - 'cagle': Cagle Positional (L1–L12 / R1–R12)
+        Returns (formatted_code, scheme_name).
+        """
+        sys_key = str(notch_system or "sa_standard").lower()
+        if sys_key == "cagle":
+            scheme_label = "Cagle Positional (L1–L12 / R1–R12)"
+        elif sys_key == "binary":
+            scheme_label = "Binary Powers of Two (1-2-4-8)"
+        else:
+            sys_key = "sa_standard"
+            scheme_label = "SA Standard (1-2-4-7 Additive)"
+
+        if not notch_code or str(notch_code).strip() in ("", "None", "Unnotched"):
+            return ("None / Unnotched", scheme_label)
+
+        raw = str(notch_code).strip()
+        if sys_key == "cagle" or raw.startswith("#"):
+            return (raw, scheme_label)
+
+        parts = re.split(r'[-,\s]+', raw)
+        total_sum = 0
+        matched_any = False
+
+        left_map = self.SA_STANDARD_LEFT if sys_key == "sa_standard" else self.BINARY_LEFT
+        right_map = self.SA_STANDARD_RIGHT if sys_key == "sa_standard" else self.BINARY_RIGHT
+
+        for p in parts:
+            clean = p.strip().upper()
+            if clean == "SUPRA" and sys_key == "sa_standard":
+                total_sum += self.SA_STANDARD_SUPRA
+                matched_any = True
+            elif clean.startswith("L") and clean[1:].isdigit():
+                idx = int(clean[1:])
+                if idx in left_map:
+                    total_sum += left_map[idx]
+                    matched_any = True
+            elif clean.startswith("R") and clean[1:].isdigit():
+                idx = int(clean[1:])
+                if idx in right_map:
+                    total_sum += right_map[idx]
+                    matched_any = True
+
+        if matched_any and total_sum > 0:
+            return (f"#{total_sum} ({raw})", scheme_label)
+        return (raw, scheme_label)
 
     def generate_specimen_report(self, specimen_data: Dict[str, Any]) -> bytes:
         """
@@ -149,6 +222,11 @@ class ConservationReportGenerator:
         )
 
         elements = []
+
+        # Extract user preferences (defaulting to SA Standard, grams, mm)
+        notch_system = str(specimen_data.get('notch_system') or 'sa_standard').lower()
+        mass_unit = str(specimen_data.get('mass_unit') or 'grams').lower()
+        length_unit = str(specimen_data.get('length_unit') or 'mm').lower()
 
         # 1. Document Header
         elements.append(Paragraph("SATRA CHELONIAN CONSERVATION REGISTRY", self.styles['ReportTitle']))
@@ -185,7 +263,9 @@ class ConservationReportGenerator:
         common_name = escape(str(specimen_data.get('common_name') or 'N/A'))
         iucn_status = escape(str(specimen_data.get('iucn_status') or 'LC (Least Concern)'))
         pit_tag = escape(str(specimen_data.get('pit_tag_number') or 'None / Unchipped'))
-        notch_code = escape(str(specimen_data.get('notch_code') or 'None'))
+        formatted_notch, scheme_label = self._format_notch_code(specimen_data.get('notch_code'), notch_system)
+        notch_code = escape(formatted_notch)
+        scheme_label_esc = escape(scheme_label)
         sex = escape(str(specimen_data.get('sex') or 'Undetermined'))
         status = escape(str(specimen_data.get('status') or 'Wild'))
 
@@ -206,7 +286,11 @@ class ConservationReportGenerator:
                 Paragraph("<b>Microchip (PIT Tag):</b>", self.styles['TableCellText']),
                 Paragraph(pit_tag, self.styles['TableCellText']),
                 Paragraph("<b>Marginal Scute Notch:</b>", self.styles['TableCellText']),
-                Paragraph(f"<font color='#583101'><b>{notch_code}</b></font>", self.styles['TableCellText'])
+                Paragraph(
+                    f"<font color='#583101'><b>{notch_code}</b></font><br/>"
+                    f"<font size=6.5 color='#64748B'>{scheme_label_esc}</font>",
+                    self.styles['TableCellText']
+                )
             ],
             [
                 Paragraph("<b>Sex:</b>", self.styles['TableCellText']),
@@ -332,26 +416,33 @@ class ConservationReportGenerator:
             bci_display = "--"
 
         # Female Adult Breeding Threshold (Paper Table 1: Min female with egg SCL = 84.1 mm)
+        thresh_str = "8.41 cm" if length_unit in ("cm", "centimeters") else "84.1 mm"
         if latest_scl is not None:
             if latest_scl >= 84.1:
-                maturity_display = "<font color='#2D5A27'><b>Adult Breeding Size (SCL ≥ 84.1 mm)</b></font>"
+                maturity_display = f"<font color='#2D5A27'><b>Adult Breeding Size (SCL ≥ {thresh_str})</b></font>"
             else:
-                maturity_display = "<font color='#64748B'><b>Subadult / Immature (&lt; 84.1 mm)</b></font>"
+                maturity_display = f"<font color='#64748B'><b>Subadult / Immature (&lt; {thresh_str})</b></font>"
         else:
             maturity_display = "<b>Maturity Unknown</b>"
 
         # Gravid status display
         if eggs_palpated or (egg_count and egg_count > 0) or egg_vol:
             egg_vol_str = f"{egg_vol:.1f} cm³" if egg_vol else "~11.3 cm³"
-            somatic_str = f"{somatic_mass:.1f} g" if somatic_mass else "--"
-            egg_dim_str = f"({egg_l:.1f} × {egg_w:.1f} mm)" if (egg_l and egg_w) else "Single-egg clutch"
+            somatic_str = self._format_mass(somatic_mass, mass_unit) if somatic_mass is not None else "--"
+            if egg_l and egg_w:
+                if length_unit in ("cm", "centimeters"):
+                    egg_dim_str = f"({egg_l / 10.0:.2f} × {egg_w / 10.0:.2f} cm)"
+                else:
+                    egg_dim_str = f"({egg_l:.1f} × {egg_w:.1f} mm)"
+            else:
+                egg_dim_str = "Single-egg clutch"
             clutch_display = (
                 f"<font color='#0284c7'><b>Gravid: Single-Egg Clutch</b></font><br/>"
                 f"<font size=7 color='#475569'>Egg Vol: {egg_vol_str} {egg_dim_str}<br/>"
                 f"Somatic Body Mass: <b>{somatic_str}</b></font>"
             )
         else:
-            somatic_str = f"{latest_mass:.1f} g" if latest_mass else "--"
+            somatic_str = self._format_mass(latest_mass, mass_unit) if latest_mass is not None else "--"
             clutch_display = (
                 "<b>Non-Gravid / Quiescent</b><br/>"
                 f"<font size=7 color='#475569'>Single-egg clutch mode (Aug–Dec spring)<br/>"
@@ -381,7 +472,7 @@ class ConservationReportGenerator:
                 ),
                 Paragraph(
                     f"{maturity_display}<br/>"
-                    f"<font size=7 color='#64748B'>Min padloper breeding female: SCL 84.1 mm</font>",
+                    f"<font size=7 color='#64748B'>Min padloper breeding female: SCL {thresh_str}</font>",
                     self.styles['MetricCellBody']
                 )
             ],
@@ -451,12 +542,15 @@ class ConservationReportGenerator:
                 }
             ]
 
+        mass_col_header = "Mass (kg)" if mass_unit in ("kilograms", "kg") else "Mass"
+        scl_col_header = "SCL (cm)" if length_unit in ("cm", "centimeters") else "SCL"
+
         health_table_data = [
             [
                 Paragraph("<b>Date</b>", self.styles['TableCellHeader']),
                 Paragraph("<b>Type</b>", self.styles['TableCellHeader']),
-                Paragraph("<b>Mass</b>", self.styles['TableCellHeader']),
-                Paragraph("<b>SCL</b>", self.styles['TableCellHeader']),
+                Paragraph(f"<b>{mass_col_header}</b>", self.styles['TableCellHeader']),
+                Paragraph(f"<b>{scl_col_header}</b>", self.styles['TableCellHeader']),
                 Paragraph("<b>Vol (cm³)</b>", self.styles['TableCellHeader']),
                 Paragraph("<b>BCI (g/cm³)</b>", self.styles['TableCellHeader']),
                 Paragraph("<b>Mass/SCL</b>", self.styles['TableCellHeader']),
@@ -467,8 +561,20 @@ class ConservationReportGenerator:
         for insp in inspections:
             date_str = escape(str(insp.get("date") or "--"))
             type_str = escape(str(insp.get("type") or "--"))
-            mass_str = escape(str(insp.get("mass") or "--"))
-            scl_str = escape(str(insp.get("scl") or "--"))
+
+            raw_mass = insp.get("mass")
+            if mass_unit in ("kilograms", "kg"):
+                m_num = self._parse_float_safe(insp.get("mass_val")) or self._parse_float_safe(raw_mass)
+                mass_str = escape(self._format_mass(m_num, mass_unit) if m_num is not None else str(raw_mass or "--"))
+            else:
+                mass_str = escape(str(raw_mass or "--"))
+
+            raw_scl = insp.get("scl")
+            if length_unit in ("cm", "centimeters"):
+                s_num = self._parse_float_safe(insp.get("scl_val")) or self._parse_float_safe(raw_scl)
+                scl_str = escape(self._format_length(s_num, length_unit) if s_num is not None else str(raw_scl or "--"))
+            else:
+                scl_str = escape(str(raw_scl or "--"))
 
             # Shell Volume column
             vol_val = insp.get("shell_vol") or insp.get("shell_volume_cm3")

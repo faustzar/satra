@@ -1061,7 +1061,7 @@
               <i class="fa-solid fa-fingerprint" style="color: var(--accent-gold);"></i>
               Physical Identification & Microchip
             </div>
-            <span style="font-size: 11px; color: var(--text-muted);">Cagle Notch System & RFID</span>
+            <span id="modalMarkingSchemeLabel" style="font-size: 11px; color: var(--text-muted);">SA 1-2-4-7 Notch System & RFID</span>
           </div>
           <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
             <div style="background: var(--card-inner); border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center;">
@@ -1403,68 +1403,68 @@
           <option value="">-- Select Tortoise Unique Number --</option>
         </select>
 
-        <!-- Weight (g) with Stepper -->
-        <label style="font-size: 13px; font-weight: 600;">Weight (g)</label>
+        <!-- Weight with Stepper -->
+        <label id="lblObsWeight" style="font-size: 13px; font-weight: 600;">Weight (g)</label>
         <div class="stepper-container">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsWeight', -10)">—</button>
-          <input type="number" step="0.1" id="obsWeight" value="0.0">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsWeight', 10)">+</button>
+          <button type="button" class="stepper-btn" onclick="stepVal('obsWeight', userPreferences.massUnit === 'kilograms' ? -0.01 : -10)">—</button>
+          <input type="number" step="0.001" id="obsWeight" value="0.0">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsWeight', userPreferences.massUnit === 'kilograms' ? 0.01 : 10)">+</button>
         </div>
 
         <!-- Length (SCL) with Stepper -->
-        <label style="font-size: 13px; font-weight: 600;">Length (SCL mm)</label>
+        <label id="lblObsScl" style="font-size: 13px; font-weight: 600;">Length (SCL mm)</label>
         <div class="stepper-container">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsScl', -1)">—</button>
-          <input type="number" step="0.1" id="obsScl" value="0.00">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsScl', 1)">+</button>
+          <button type="button" class="stepper-btn" onclick="stepVal('obsScl', userPreferences.lengthUnit === 'cm' ? -0.1 : -1)">—</button>
+          <input type="number" step="0.01" id="obsScl" value="0.00">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsScl', userPreferences.lengthUnit === 'cm' ? 0.1 : 1)">+</button>
         </div>
 
         <!-- Width (SW) with Stepper -->
-        <label style="font-size: 13px; font-weight: 600;">Width (SW mm)</label>
+        <label id="lblObsSw" style="font-size: 13px; font-weight: 600;">Width (SW mm)</label>
         <div class="stepper-container">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsSw', -1)">—</button>
-          <input type="number" step="0.1" id="obsSw" value="0.00">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsSw', 1)">+</button>
+          <button type="button" class="stepper-btn" onclick="stepVal('obsSw', userPreferences.lengthUnit === 'cm' ? -0.1 : -1)">—</button>
+          <input type="number" step="0.01" id="obsSw" value="0.00">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsSw', userPreferences.lengthUnit === 'cm' ? 0.1 : 1)">+</button>
         </div>
 
         <!-- Height (SH) with Stepper -->
-        <label style="font-size: 13px; font-weight: 600;">Height (SH mm)</label>
+        <label id="lblObsSh" style="font-size: 13px; font-weight: 600;">Height (SH mm)</label>
         <div class="stepper-container">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsSh', -1)">—</button>
-          <input type="number" step="0.1" id="obsSh" value="0.00">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsSh', 1)">+</button>
+          <button type="button" class="stepper-btn" onclick="stepVal('obsSh', userPreferences.lengthUnit === 'cm' ? -0.1 : -1)">—</button>
+          <input type="number" step="0.01" id="obsSh" value="0.00">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsSh', userPreferences.lengthUnit === 'cm' ? 0.1 : 1)">+</button>
         </div>
 
         <!-- Plastron Length with Stepper -->
-        <label style="font-size: 13px; font-weight: 600;">Plastron Length (mm)</label>
+        <label id="lblObsPlastronLength" style="font-size: 13px; font-weight: 600;">Plastron Length (mm)</label>
         <div class="stepper-container">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsPlastronLength', -1)">—</button>
-          <input type="number" step="0.1" id="obsPlastronLength" value="0.00">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsPlastronLength', 1)">+</button>
+          <button type="button" class="stepper-btn" onclick="stepVal('obsPlastronLength', userPreferences.lengthUnit === 'cm' ? -0.1 : -1)">—</button>
+          <input type="number" step="0.01" id="obsPlastronLength" value="0.00">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsPlastronLength', userPreferences.lengthUnit === 'cm' ? 0.1 : 1)">+</button>
         </div>
 
         <!-- Plastron Width with Stepper -->
-        <label style="font-size: 13px; font-weight: 600;">Plastron Width (mm)</label>
+        <label id="lblObsPlastronWidth" style="font-size: 13px; font-weight: 600;">Plastron Width (mm)</label>
         <div class="stepper-container">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsPlastronWidth', -1)">—</button>
-          <input type="number" step="0.1" id="obsPlastronWidth" value="0.00">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsPlastronWidth', 1)">+</button>
+          <button type="button" class="stepper-btn" onclick="stepVal('obsPlastronWidth', userPreferences.lengthUnit === 'cm' ? -0.1 : -1)">—</button>
+          <input type="number" step="0.01" id="obsPlastronWidth" value="0.00">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsPlastronWidth', userPreferences.lengthUnit === 'cm' ? 0.1 : 1)">+</button>
         </div>
 
         <!-- Anal Opening with Stepper -->
-        <label style="font-size: 13px; font-weight: 600;">Anal Opening (mm)</label>
+        <label id="lblObsAnalOpening" style="font-size: 13px; font-weight: 600;">Anal Opening (mm)</label>
         <div class="stepper-container">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsAnalOpening', -1)">—</button>
-          <input type="number" step="0.5" id="obsAnalOpening" value="0">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsAnalOpening', 1)">+</button>
+          <button type="button" class="stepper-btn" onclick="stepVal('obsAnalOpening', userPreferences.lengthUnit === 'cm' ? -0.1 : -1)">—</button>
+          <input type="number" step="0.1" id="obsAnalOpening" value="0">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsAnalOpening', userPreferences.lengthUnit === 'cm' ? 0.1 : 1)">+</button>
         </div>
 
         <!-- Anal Width with Stepper -->
-        <label style="font-size: 13px; font-weight: 600;">Anal Width (mm)</label>
+        <label id="lblObsAnalWidth" style="font-size: 13px; font-weight: 600;">Anal Width (mm)</label>
         <div class="stepper-container">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsAnalWidth', -1)">—</button>
-          <input type="number" step="0.5" id="obsAnalWidth" value="0">
-          <button type="button" class="stepper-btn" onclick="stepVal('obsAnalWidth', 1)">+</button>
+          <button type="button" class="stepper-btn" onclick="stepVal('obsAnalWidth', userPreferences.lengthUnit === 'cm' ? -0.1 : -1)">—</button>
+          <input type="number" step="0.1" id="obsAnalWidth" value="0">
+          <button type="button" class="stepper-btn" onclick="stepVal('obsAnalWidth', userPreferences.lengthUnit === 'cm' ? 0.1 : 1)">+</button>
         </div>
 
         <!-- Scute Laminae / Grow Rings -->
@@ -1483,12 +1483,12 @@
               <input type="number" id="obsEggCount" value="1" min="1" max="4" style="padding: 6px;">
             </div>
             <div>
-              <label style="font-size: 11px; color: var(--text-muted);">Egg Length (mm)</label>
-              <input type="number" step="0.1" id="obsEggLength" placeholder="34.6" style="padding: 6px;">
+              <label id="lblObsEggLength" style="font-size: 11px; color: var(--text-muted);">Egg Length (mm)</label>
+              <input type="number" step="0.01" id="obsEggLength" placeholder="34.6" style="padding: 6px;">
             </div>
             <div>
-              <label style="font-size: 11px; color: var(--text-muted);">Egg Width (mm)</label>
-              <input type="number" step="0.1" id="obsEggWidth" placeholder="24.9" style="padding: 6px;">
+              <label id="lblObsEggWidth" style="font-size: 11px; color: var(--text-muted);">Egg Width (mm)</label>
+              <input type="number" step="0.01" id="obsEggWidth" placeholder="24.9" style="padding: 6px;">
             </div>
           </div>
         </div>
@@ -1905,6 +1905,62 @@
     let currentObservationsCache = [];
     let currentFilterStatus = 'All';
 
+    function formatMass(grams) {
+      if (grams === null || grams === undefined || grams === '' || isNaN(Number(grams))) return '—';
+      const val = Number(grams);
+      if (userPreferences.massUnit === 'kilograms') {
+        return `${(val / 1000).toFixed(3)} kg`;
+      }
+      return `${Number(val.toFixed(1))} g`;
+    }
+
+    function formatLength(mm) {
+      if (mm === null || mm === undefined || mm === '' || isNaN(Number(mm))) return '—';
+      const val = Number(mm);
+      if (userPreferences.lengthUnit === 'cm') {
+        return `${(val / 10).toFixed(2)} cm`;
+      }
+      return `${Number(val.toFixed(1))} mm`;
+    }
+
+    function getPdfReportUrl(specimenId) {
+      const params = new URLSearchParams({
+        notch_system: userPreferences.idSystem || 'sa_standard',
+        mass_unit: userPreferences.massUnit || 'grams',
+        length_unit: userPreferences.lengthUnit || 'mm'
+      });
+      return `/api/v1/reports/specimen/${specimenId}/pdf?${params.toString()}`;
+    }
+
+    function applyUnitPreferencesToForms() {
+      const isKg = userPreferences.massUnit === 'kilograms';
+      const isCm = userPreferences.lengthUnit === 'cm';
+      const lenUnitStr = isCm ? 'cm' : 'mm';
+
+      const setLabel = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = text;
+      };
+
+      setLabel('lblObsWeight', isKg ? 'Mass / Weight (kg) *' : 'Mass / Weight (grams) *');
+      setLabel('lblObsScl', `Straight Carapace Length - SCL (${lenUnitStr}) *`);
+      setLabel('lblObsSw', `Shell Width - SW (${lenUnitStr})`);
+      setLabel('lblObsSh', `Shell Height - SH (${lenUnitStr})`);
+      setLabel('lblObsPlastronLength', `Plastron Length (${lenUnitStr})`);
+      setLabel('lblObsPlastronWidth', `Plastron Width (${lenUnitStr})`);
+      setLabel('lblObsAnalOpening', `Anal Opening (${lenUnitStr})`);
+      setLabel('lblObsAnalWidth', `Anal Width (${lenUnitStr})`);
+      setLabel('lblObsEggLength', `Egg Length (${lenUnitStr}, avg ~34.7${isCm ? 'mm / 3.47cm' : 'mm'})`);
+      setLabel('lblObsEggWidth', `Egg Width (${lenUnitStr}, avg ~27.3${isCm ? 'mm / 2.73cm' : 'mm'})`);
+
+      const weightInput = document.getElementById('obsWeight');
+      if (weightInput) weightInput.step = isKg ? '0.001' : '0.1';
+      ['obsScl', 'obsSw', 'obsSh', 'obsPlastronLength', 'obsPlastronWidth', 'obsAnalOpening', 'obsAnalWidth', 'obsEggLength', 'obsEggWidth'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.step = isCm ? '0.01' : '0.1';
+      });
+    }
+
     function updateSpecimensCardMarkings() {
       if (currentSpecimensCache && currentSpecimensCache.length > 0) {
         if (currentFilterStatus === 'All') {
@@ -1962,6 +2018,9 @@
 
       closeModal('preferencesModal');
       switchNotchSystem(userPreferences.idSystem);
+      applyUnitPreferencesToForms();
+      updateSpecimensCardMarkings();
+      loadObservations();
       alert('Preferences saved successfully!');
     }
 
@@ -2336,8 +2395,8 @@
         let widgetsHtml = '';
 
         if (activeWidgets.has('health')) {
-          const massDisplay = lastObs ? `${lastObs.mass_grams}g` : '151g';
-          const sclDisplay = lastObs ? `${lastObs.straight_carapace_length_mm}mm` : '93mm';
+          const massDisplay = formatMass(lastObs ? lastObs.mass_grams : 151);
+          const sclDisplay = formatLength(lastObs ? lastObs.straight_carapace_length_mm : 93);
           const bciDisplay = lastObs && lastObs.body_condition_index ? `${lastObs.body_condition_index.toFixed(3)}` : (lastObs && lastObs.jacksons_ratio ? lastObs.jacksons_ratio.toFixed(3) : '1.124');
           widgetsHtml += `
             <div class="specimen-widget" onclick="event.stopPropagation(); switchTab('health');">
@@ -2446,7 +2505,7 @@
             <button class="btn btn-gold" style="font-size: 12px; padding: 6px 10px; flex: 1;" onclick="event.stopPropagation(); openObservationModal('Regular', '${sp.id}')" title="Log Field Observation">
               <i class="fa-solid fa-plus"></i> Observe
             </button>
-            <a href="/api/v1/reports/specimen/${sp.id}/pdf" class="btn btn-secondary" style="font-size: 12px; padding: 6px 10px;" title="Download PDF" target="_blank" onclick="event.stopPropagation();">
+            <a href="${getPdfReportUrl(sp.id)}" class="btn btn-secondary" style="font-size: 12px; padding: 6px 10px;" title="Download PDF" target="_blank" onclick="event.stopPropagation();">
               <i class="fa-solid fa-file-pdf"></i>
             </a>
           </div>
@@ -2535,6 +2594,10 @@
       document.getElementById('modalSpecies').innerText = species;
       document.getElementById('modalPit').innerText = pit || 'Unchipped';
       document.getElementById('modalNotch').innerText = formatNotchForDisplay(notch, currentNotchSystem);
+      const schemeLbl = document.getElementById('modalMarkingSchemeLabel');
+      if (schemeLbl && NOTCH_SYSTEMS[currentNotchSystem]) {
+        schemeLbl.innerText = `Marginal Notch Code (${NOTCH_SYSTEMS[currentNotchSystem].name})`;
+      }
       document.getElementById('modalSex').innerText = sex || 'Undetermined';
       
       const statusBadge = document.getElementById('modalStatusBadge');
@@ -2560,7 +2623,7 @@
         };
       }
 
-      document.getElementById('modalPdfBtn').href = `/api/v1/reports/specimen/${id}/pdf`;
+      document.getElementById('modalPdfBtn').href = getPdfReportUrl(id);
 
       // Configure IUCN & Reproduction details based on species & sex
       const isCrit = (species || '').toLowerCase().includes('geometricus');
@@ -2624,15 +2687,15 @@
         
         if (history.length > 0) {
           const latest = history[0];
-          document.getElementById('modalHealthMass').innerText = `${latest.mass_grams}g`;
-          document.getElementById('modalHealthScl').innerText = `${latest.straight_carapace_length_mm}mm`;
-          document.getElementById('modalHealthSw').innerText = latest.shell_width_mm ? `${latest.shell_width_mm}mm` : '—';
-          document.getElementById('modalHealthSh').innerText = latest.shell_height_mm ? `${latest.shell_height_mm}mm` : '—';
+          document.getElementById('modalHealthMass').innerText = formatMass(latest.mass_grams);
+          document.getElementById('modalHealthScl').innerText = formatLength(latest.straight_carapace_length_mm);
+          document.getElementById('modalHealthSw').innerText = formatLength(latest.shell_width_mm);
+          document.getElementById('modalHealthSh').innerText = formatLength(latest.shell_height_mm);
           if (document.getElementById('modalHealthPlastronL')) {
-            document.getElementById('modalHealthPlastronL').innerText = latest.plastron_length_mm ? `${latest.plastron_length_mm}mm` : '—';
+            document.getElementById('modalHealthPlastronL').innerText = formatLength(latest.plastron_length_mm);
           }
           if (document.getElementById('modalHealthPlastronW')) {
-            document.getElementById('modalHealthPlastronW').innerText = latest.plastron_width_mm ? `${latest.plastron_width_mm}mm` : '—';
+            document.getElementById('modalHealthPlastronW').innerText = formatLength(latest.plastron_width_mm);
           }
           document.getElementById('modalRings').innerText = latest.growth_rings || '10 laminae (Costal-1)';
 
@@ -2713,7 +2776,7 @@
                     <span style="font-weight: normal; color: var(--text-muted); margin-left: 8px;">(${h.inspection_type || 'Field Assessment'})</span>
                   </div>
                   <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                    Mass: ${h.mass_grams}g • SCL: ${h.straight_carapace_length_mm}mm • BCI: ${h.body_condition_index ? h.body_condition_index.toFixed(3) + ' g/cm³' : (h.jacksons_ratio || '—')}
+                    Mass: ${formatMass(h.mass_grams)} • SCL: ${formatLength(h.straight_carapace_length_mm)} • BCI: ${h.body_condition_index ? h.body_condition_index.toFixed(3) + ' g/cm³' : (h.jacksons_ratio || '—')}
                   </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -2726,12 +2789,12 @@
           }
         } else {
           // Defaults if no observations yet (Empirical Padloper baseline)
-          document.getElementById('modalHealthMass').innerText = '151.4g';
-          document.getElementById('modalHealthScl').innerText = '92.6mm';
+          document.getElementById('modalHealthMass').innerText = formatMass(151.4);
+          document.getElementById('modalHealthScl').innerText = formatLength(92.6);
           if (document.getElementById('modalHealthBci')) document.getElementById('modalHealthBci').innerText = '1.185';
           if (document.getElementById('modalHealthJackson')) document.getElementById('modalHealthJackson').innerText = '1.185';
-          document.getElementById('modalHealthSw').innerText = '68.8mm';
-          document.getElementById('modalHealthSh').innerText = '40.2mm';
+          document.getElementById('modalHealthSw').innerText = formatLength(68.8);
+          document.getElementById('modalHealthSh').innerText = formatLength(40.2);
           if (document.getElementById('modalHealthVol')) document.getElementById('modalHealthVol').innerText = '127.8 cm³';
           if (document.getElementById('modalHealthMassScl')) document.getElementById('modalHealthMassScl').innerText = '1.63 g/mm';
           document.getElementById('modalRings').innerText = '10 laminae (Costal-1)';
@@ -2990,9 +3053,13 @@
       if (!el) return;
       let val = parseFloat(el.value) || 0;
       val = Math.max(0, val + delta);
+      const isKg = userPreferences.massUnit === 'kilograms';
+      const isCm = userPreferences.lengthUnit === 'cm';
       // Format decimals nicely
-      if (inputId === 'obsWeight' || inputId === 'obsScl' || inputId === 'obsSw' || inputId === 'obsSh' || inputId === 'obsPlastronLength' || inputId === 'obsPlastronWidth') {
-        el.value = val.toFixed(1);
+      if (inputId === 'obsWeight') {
+        el.value = isKg ? val.toFixed(3) : val.toFixed(1);
+      } else if (inputId === 'obsScl' || inputId === 'obsSw' || inputId === 'obsSh' || inputId === 'obsPlastronLength' || inputId === 'obsPlastronWidth' || inputId === 'obsAnalOpening' || inputId === 'obsAnalWidth' || inputId === 'obsEggLength' || inputId === 'obsEggWidth') {
+        el.value = isCm ? val.toFixed(2) : val.toFixed(1);
       } else {
         el.value = val;
       }
@@ -3044,6 +3111,7 @@
 
     function openObservationModal(category = 'Regular', preselectedSpecimenId = null) {
       const modal = document.getElementById('observationModal');
+      applyUnitPreferencesToForms();
       const dateEl = document.getElementById('obsDate');
       if (dateEl && !dateEl.value) {
         dateEl.value = new Date().toISOString().split('T')[0];
@@ -3058,7 +3126,8 @@
       currentSpecimensCache.forEach(sp => {
         const opt = document.createElement('option');
         opt.value = sp.id;
-        opt.innerText = `${sp.custom_identifier} - ${sp.species_name || sp.common_name} (${sp.notch_code || 'No Notch'})`;
+        const formattedNotch = formatNotchForDisplay(sp.notch_code, currentNotchSystem);
+        opt.innerText = `${sp.custom_identifier} - ${sp.species_name || sp.common_name} (${formattedNotch})`;
         if (preselectedSpecimenId && sp.id === preselectedSpecimenId) {
           opt.selected = true;
         }
@@ -3082,30 +3151,39 @@
         return;
       }
 
-      const weight = parseFloat(document.getElementById('obsWeight').value) || 0;
-      const scl = parseFloat(document.getElementById('obsScl').value) || 0;
+      const rawWeight = parseFloat(document.getElementById('obsWeight').value) || 0;
+      const rawScl = parseFloat(document.getElementById('obsScl').value) || 0;
 
-      if (weight <= 0 || scl <= 0) {
+      if (rawWeight <= 0 || rawScl <= 0) {
         alert('Please enter a valid Mass (Weight) and SCL (Length) greater than 0.');
         return;
       }
 
+      const massFactor = userPreferences.massUnit === 'kilograms' ? 1000 : 1;
+      const lenFactor = userPreferences.lengthUnit === 'cm' ? 10 : 1;
+      const parseLen = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return null;
+        const v = parseFloat(el.value);
+        return (!isNaN(v) && v > 0) ? Number((v * lenFactor).toFixed(2)) : null;
+      };
+
       const payload = {
         specimen_id: specimenId,
         inspection_type: "Scheduled",
-        mass_grams: weight,
-        straight_carapace_length_mm: scl,
-        shell_width_mm: parseFloat(document.getElementById('obsSw').value) || null,
-        shell_height_mm: parseFloat(document.getElementById('obsSh').value) || null,
-        plastron_length_mm: parseFloat(document.getElementById('obsPlastronLength').value) || null,
-        plastron_width_mm: parseFloat(document.getElementById('obsPlastronWidth').value) || null,
-        anal_opening_mm: parseFloat(document.getElementById('obsAnalOpening').value) || null,
-        anal_width_mm: parseFloat(document.getElementById('obsAnalWidth').value) || null,
+        mass_grams: Number((rawWeight * massFactor).toFixed(2)),
+        straight_carapace_length_mm: Number((rawScl * lenFactor).toFixed(2)),
+        shell_width_mm: parseLen('obsSw'),
+        shell_height_mm: parseLen('obsSh'),
+        plastron_length_mm: parseLen('obsPlastronLength'),
+        plastron_width_mm: parseLen('obsPlastronWidth'),
+        anal_opening_mm: parseLen('obsAnalOpening'),
+        anal_width_mm: parseLen('obsAnalWidth'),
         growth_rings: document.getElementById('obsGrowRings').value || null,
         eggs_palpated: document.getElementById('obsEggsPalpated') ? document.getElementById('obsEggsPalpated').checked : false,
         estimated_egg_count: document.getElementById('obsEggCount') ? parseInt(document.getElementById('obsEggCount').value, 10) || 0 : 0,
-        egg_length_mm: document.getElementById('obsEggLength') ? parseFloat(document.getElementById('obsEggLength').value) || null : null,
-        egg_width_mm: document.getElementById('obsEggWidth') ? parseFloat(document.getElementById('obsEggWidth').value) || null : null,
+        egg_length_mm: parseLen('obsEggLength'),
+        egg_width_mm: parseLen('obsEggWidth'),
         observation_notes: document.getElementById('obsNotes').value || null,
         latitude: parseFloat(document.getElementById('obsLat').value) || (lastObsGpsCoords ? lastObsGpsCoords.latitude : null),
         longitude: parseFloat(document.getElementById('obsLon').value) || (lastObsGpsCoords ? lastObsGpsCoords.longitude : null),
@@ -3155,8 +3233,8 @@
       document.getElementById('drillSpecimenId').innerText = specId;
       document.getElementById('drillSpecies').innerText = specSpecies;
       document.getElementById('drillDate').innerText = obs.inspected_at ? new Date(obs.inspected_at).toLocaleDateString() : 'N/A';
-      document.getElementById('drillMass').innerText = `${obs.mass_grams}g`;
-      document.getElementById('drillScl').innerText = `${obs.straight_carapace_length_mm}mm`;
+      document.getElementById('drillMass').innerText = formatMass(obs.mass_grams);
+      document.getElementById('drillScl').innerText = formatLength(obs.straight_carapace_length_mm);
 
       // 3D Shell Volume (V_shell = pi * SCL * SH * SW / 6000)
       let vol = obs.shell_volume_cm3;
@@ -3197,16 +3275,16 @@
         }
       }
       if (document.getElementById('drillSomaticMass')) {
-        const somMass = obs.somatic_mass_grams ? `${obs.somatic_mass_grams} g` : `${obs.mass_grams} g`;
+        const somMass = obs.somatic_mass_grams ? formatMass(obs.somatic_mass_grams) : formatMass(obs.mass_grams);
         document.getElementById('drillSomaticMass').innerText = somMass;
       }
 
-      document.getElementById('drillSw').innerText = obs.shell_width_mm ? `${obs.shell_width_mm} mm` : '—';
-      document.getElementById('drillSh').innerText = obs.shell_height_mm ? `${obs.shell_height_mm} mm` : '—';
-      document.getElementById('drillPlastronLength').innerText = obs.plastron_length_mm ? `${obs.plastron_length_mm} mm` : '—';
-      document.getElementById('drillPlastronWidth').innerText = obs.plastron_width_mm ? `${obs.plastron_width_mm} mm` : '—';
-      document.getElementById('drillAnalOpening').innerText = obs.anal_opening_mm ? `${obs.anal_opening_mm} mm` : '—';
-      document.getElementById('drillAnalWidth').innerText = obs.anal_width_mm ? `${obs.anal_width_mm} mm` : '—';
+      document.getElementById('drillSw').innerText = formatLength(obs.shell_width_mm);
+      document.getElementById('drillSh').innerText = formatLength(obs.shell_height_mm);
+      document.getElementById('drillPlastronLength').innerText = formatLength(obs.plastron_length_mm);
+      document.getElementById('drillPlastronWidth').innerText = formatLength(obs.plastron_width_mm);
+      document.getElementById('drillAnalOpening').innerText = formatLength(obs.anal_opening_mm);
+      document.getElementById('drillAnalWidth').innerText = formatLength(obs.anal_width_mm);
       document.getElementById('drillGrowRings').innerText = obs.growth_rings || '—';
       document.getElementById('drillNotes').innerText = obs.observation_notes || 'No field notes or clinical observations recorded.';
       
@@ -3221,7 +3299,7 @@
       
       const pdfBtn = document.getElementById('drillPdfBtn');
       if (pdfBtn && matchedSp) {
-        pdfBtn.href = `/api/v1/reports/specimen/${matchedSp.id}/pdf`;
+        pdfBtn.href = getPdfReportUrl(matchedSp.id);
         pdfBtn.style.display = 'inline-flex';
       } else if (pdfBtn) {
         pdfBtn.style.display = 'none';
@@ -3270,9 +3348,9 @@
                 <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-magnifying-glass"></i> Click to drill down</span>
               </div>
               <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; display: flex; gap: 14px; flex-wrap: wrap;">
-                <span><strong>Mass:</strong> ${obs.mass_grams}g</span>
-                <span><strong>SCL:</strong> ${obs.straight_carapace_length_mm}mm</span>
-                <span><strong>Plastron:</strong> ${obs.plastron_length_mm ? obs.plastron_length_mm + 'mm' : '—'}</span>
+                <span><strong>Mass:</strong> ${formatMass(obs.mass_grams)}</span>
+                <span><strong>SCL:</strong> ${formatLength(obs.straight_carapace_length_mm)}</span>
+                <span><strong>Plastron:</strong> ${formatLength(obs.plastron_length_mm)}</span>
                 <span><strong>Scute Laminae:</strong> ${obs.growth_rings || '—'}</span>
                 <span><strong>BCI:</strong> <code style="color: var(--primary-light); font-weight: bold;">${obs.body_condition_index ? obs.body_condition_index.toFixed(3) + ' g/cm³' : (obs.jacksons_ratio ? obs.jacksons_ratio.toFixed(4) : '—')}</code></span>
               </div>
@@ -3327,9 +3405,11 @@
         if (activeBtn) activeBtn.classList.add('active');
 
         switchNotchSystem(currentNotchSystem);
+        applyUnitPreferencesToForms();
 
         await loadSpecimens();
         await loadObservations();
+        updateSpecimensCardMarkings();
         calculateJacksons();
         updateTSD();
       } catch (err) {

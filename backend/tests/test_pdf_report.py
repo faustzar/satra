@@ -219,6 +219,57 @@ class TestPDFReportGenerator(unittest.TestCase):
         self.assertIsInstance(pdf_bytes, bytes)
         self.assertTrue(pdf_bytes.startswith(b"%PDF"))
 
+    def test_preferences_notch_and_units_in_pdf(self):
+        """Test marginal notch formatting (sa_standard, binary, cagle) and unit conversions (kg, cm) in PDF generation."""
+        # Verify helper methods directly
+        self.assertEqual(self.generator._format_notch_code("L1-L3-R2-R3", "sa_standard")[0], "#56 (L1-L3-R2-R3)")
+        self.assertEqual(self.generator._format_notch_code("L1-R1", "binary")[0], "#17 (L1-R1)")
+        self.assertEqual(self.generator._format_notch_code("L1-R4", "cagle")[0], "L1-R4")
+        self.assertEqual(self.generator._format_mass(1450.0, "kilograms"), "1.450 kg")
+        self.assertEqual(self.generator._format_mass(151.4, "grams"), "151.4 g")
+        self.assertEqual(self.generator._format_length(92.6, "cm"), "9.26 cm")
+        self.assertEqual(self.generator._format_length(92.6, "mm"), "92.6 mm")
+
+        # Verify full PDF generation with kilograms, cm, and binary notch scheme
+        data = {
+            "custom_identifier": "PADL-PREF-056",
+            "species_name": "Homopus signatus signatus",
+            "common_name": "Namaqualand Speckled Padloper",
+            "notch_code": "L1-L3-R2-R3",
+            "notch_system": "sa_standard",
+            "mass_unit": "kilograms",
+            "length_unit": "cm",
+            "sex": "Female",
+            "latest_mass": 151.4,
+            "latest_scl": 92.6,
+            "latest_sh": 40.2,
+            "latest_sw": 68.8,
+            "eggs_palpated": True,
+            "estimated_egg_count": 1,
+            "egg_length_mm": 34.6,
+            "egg_width_mm": 24.9,
+            "egg_volume_cm3": 11.24,
+            "somatic_mass_grams": 140.2,
+            "inspections": [
+                {
+                    "date": "2026-10-15",
+                    "type": "Scheduled",
+                    "mass_val": 151.4,
+                    "scl_val": 92.6,
+                    "shell_vol": "127.8 cm³",
+                    "bci": "1.185",
+                    "mass_to_scl": "1.63 g/mm",
+                    "bcs": "Score 4/5",
+                    "findings": "Healthy gravid female."
+                }
+            ]
+        }
+        pdf_bytes = self.generator.generate_specimen_report(data)
+        self.assertIsInstance(pdf_bytes, bytes)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+        self.assertGreater(len(pdf_bytes), 2000)
+
 if __name__ == "__main__":
     unittest.main()
+
 

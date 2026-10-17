@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Response
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Response, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -395,7 +395,13 @@ def get_stats_summary(db: Session = Depends(get_db)):
     }
 
 @api_router.get("/reports/specimen/{specimen_id}/pdf")
-def get_specimen_pdf_report(specimen_id: str, db: Session = Depends(get_db)):
+def get_specimen_pdf_report(
+    specimen_id: str,
+    notch_system: str = Query("sa_standard", description="Marginal identification scheme: sa_standard, cagle, or binary"),
+    mass_unit: str = Query("grams", description="Preferred mass unit: grams or kilograms"),
+    length_unit: str = Query("mm", description="Preferred length unit: mm or cm"),
+    db: Session = Depends(get_db)
+):
     """
     Generates and returns an official Conservation Health & Studbook PDF certificate
     for the specified specimen, including morphometric growth and medical history.
@@ -487,7 +493,9 @@ def get_specimen_pdf_report(specimen_id: str, db: Session = Depends(get_db)):
             "date": date_str,
             "type": getattr(insp, 'inspection_type', None) or "Scheduled",
             "mass": mass_str,
+            "mass_val": mass_val,
             "scl": scl_str,
+            "scl_val": scl_val,
             "shell_vol": vol_str,
             "bci": bci_str,
             "mass_to_scl": mass_to_scl_str,
@@ -548,6 +556,9 @@ def get_specimen_pdf_report(specimen_id: str, db: Session = Depends(get_db)):
         "iucn_status": iucn_status,
         "pit_tag_number": specimen.pit_tag_number,
         "notch_code": specimen.notch_code,
+        "notch_system": notch_system,
+        "mass_unit": mass_unit,
+        "length_unit": length_unit,
         "sex": specimen.sex or "Undetermined",
         "status": specimen.status or "Wild",
         "dam_id": specimen.dam_id,

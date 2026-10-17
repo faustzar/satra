@@ -1901,6 +1901,19 @@
     };
 
     let currentNotchSystem = userPreferences.idSystem;
+    let currentSpecimensCache = [];
+    let currentObservationsCache = [];
+    let currentFilterStatus = 'All';
+
+    function updateSpecimensCardMarkings() {
+      if (currentSpecimensCache && currentSpecimensCache.length > 0) {
+        if (currentFilterStatus === 'All') {
+          renderSpecimenCards(currentSpecimensCache);
+        } else {
+          renderSpecimenCards(currentSpecimensCache.filter(s => s.status === currentFilterStatus));
+        }
+      }
+    }
 
     function openPreferencesModal() {
       // Sync radio selection
@@ -2187,23 +2200,29 @@
         const res = await fetch('/api/v1/specimens');
         const specimens = await res.json();
         const grid = document.getElementById('specimenGrid');
-        grid.innerHTML = '';
+        if (grid) grid.innerHTML = '';
 
-        currentSpecimensCache = specimens;
-        updateKpiCounts(specimens);
-        renderSpecimenCards(specimens);
+        currentSpecimensCache = Array.isArray(specimens) ? specimens : [];
+        updateKpiCounts(currentSpecimensCache);
+        if (currentFilterStatus === 'All') {
+          renderSpecimenCards(currentSpecimensCache);
+        } else {
+          const filtered = currentSpecimensCache.filter(s => s.status === currentFilterStatus);
+          renderSpecimenCards(filtered);
+        }
       } catch (err) {
         console.error('Failed to load specimens', err);
       }
     }
 
     function updateKpiCounts(specimens) {
-      document.getElementById('statTotal').innerText = specimens.length;
-      document.getElementById('statRehab').innerText = specimens.filter(s => s.status === 'InRehab').length;
-      document.getElementById('statReleased').innerText = specimens.filter(s => s.status === 'Released').length;
+      const totalEl = document.getElementById('statTotal');
+      const rehabEl = document.getElementById('statRehab');
+      const relEl = document.getElementById('statReleased');
+      if (totalEl) totalEl.innerText = specimens.length;
+      if (rehabEl) rehabEl.innerText = specimens.filter(s => s.status === 'InRehab').length;
+      if (relEl) relEl.innerText = specimens.filter(s => s.status === 'Released').length;
     }
-
-    let currentFilterStatus = 'All';
 
     function filterSpecimens(status) {
       if (!currentSpecimensCache) return;
@@ -2966,8 +2985,6 @@
     }
 
     // Observation Form & Stepper Handlers
-    let currentSpecimensCache = [];
-
     function stepVal(inputId, delta) {
       const el = document.getElementById(inputId);
       if (!el) return;
@@ -3126,8 +3143,6 @@
         alert('Network error while saving observation.');
       }
     }
-
-    let currentObservationsCache = [];
 
     function openObservationDetail(obsId) {
       const obs = currentObservationsCache.find(o => o.id === obsId);
@@ -3302,18 +3317,24 @@
     }
 
     window.onload = async () => {
-      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-      updateThemeUI(currentTheme);
-      switchNotchSystem(currentNotchSystem);
-      // Highlight saved role preset button
-      document.querySelectorAll('.role-pill').forEach(btn => btn.classList.remove('active'));
-      const activeBtn = document.getElementById('roleBtn' + activeRolePreset.charAt(0).toUpperCase() + activeRolePreset.slice(1));
-      if (activeBtn) activeBtn.classList.add('active');
+      try {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        updateThemeUI(currentTheme);
+        
+        // Highlight saved role preset button
+        document.querySelectorAll('.role-pill').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.getElementById('roleBtn' + activeRolePreset.charAt(0).toUpperCase() + activeRolePreset.slice(1));
+        if (activeBtn) activeBtn.classList.add('active');
 
-      await loadObservations();
-      await loadSpecimens();
-      calculateJacksons();
-      updateTSD();
+        switchNotchSystem(currentNotchSystem);
+
+        await loadSpecimens();
+        await loadObservations();
+        calculateJacksons();
+        updateTSD();
+      } catch (err) {
+        console.error('Initialization error during window.onload:', err);
+      }
     };
   </script>
 </body>

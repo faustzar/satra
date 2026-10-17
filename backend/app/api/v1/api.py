@@ -1298,3 +1298,630 @@ def export_health_inspections_csv(
         }
     )
 
+
+# --- APPSHEET CSV IMPORTER & DIRECT APPSHEET CLOUD REST API SYNC ---
+
+class AppSheetRowImportRequest(BaseModel):
+    rows: List[dict]
+    column_mapping: Optional[dict] = None
+    default_species_name: str = "Chersobius signatus"
+    default_common_name: str = "Speckled Padloper"
+    mass_unit: str = "grams"  # grams | kilograms
+    length_unit: str = "mm"   # mm | cm
+
+
+class AppSheetCloudSyncRequest(BaseModel):
+    app_id: str = Field(..., description="AppSheet Application ID (UUID)")
+    access_key: str = Field(..., description="AppSheet ApplicationAccessKey")
+    table_name: str = Field(..., description="AppSheet Table Name (e.g. Specimens, Inspections, Observations)")
+    region_host: str = Field("api.appsheet.com", description="api.appsheet.com or eu.appsheet.com")
+    selector: Optional[str] = Field(None, description="Optional AppSheet Filter/Selector expression")
+    column_mapping: Optional[dict] = None
+    default_species_name: str = "Chersobius signatus"
+    default_common_name: str = "Speckled Padloper"
+    mass_unit: str = "grams"
+    length_unit: str = "mm"
+    preview_only: bool = False
+
+
+APPSHEET_FIELD_ALIASES = {
+    "custom_identifier": [
+        "custom_identifier", "specimen_identifier", "tortoise_id", "tortoise id", "specimen_id", "specimen id",
+        "id_code", "id code", "accession", "accession_id", "animal_id", "animal id", "mark_id", "name", "code",
+        "tortoise_no", "tortoise #", "id", "_rownumber", "row id"
+    ],
+    "species_name": [
+        "species_name", "scientific_name", "scientific name", "species", "taxon", "latin_name", "binomial"
+    ],
+    "common_name": [
+        "common_name", "common name", "vernacular", "english_name", "species_common"
+    ],
+    "sex": [
+        "sex", "gender"
+    ],
+    "status": [
+        "status", "cohort", "disposition", "rehab_status", "state"
+    ],
+    "notch_code": [
+        "notch_code", "raw_notch_code", "notch", "notches", "notch id", "marginal_notch", "cagle_code",
+        "shell_notch", "marking", "scute_notch"
+    ],
+    "pit_tag_number": [
+        "pit_tag_number", "pit_microchip_15digit", "pit_tag", "pit tag", "microchip", "rfid", "chip_number", "transponder"
+    ],
+    "inspected_at": [
+        "inspected_at", "inspected_at_utc", "date", "observation_date", "inspection_date", "timestamp",
+        "capture_date", "date_time", "recorded_at", "survey_date"
+    ],
+    "inspection_type": [
+        "inspection_type", "type", "assessment_type", "visit_type", "event_type"
+    ],
+    "mass_grams": [
+        "mass_grams", "body_mass (g)", "body_mass (kg)", "latest_mass (g)", "latest_mass (kg)",
+        "mass", "weight", "body_mass", "mass_g", "weight_g", "mass (g)", "weight (g)"
+    ],
+    "straight_carapace_length_mm": [
+        "straight_carapace_length_mm", "scl (mm)", "scl (cm)", "latest_scl (mm)", "latest_scl (cm)",
+        "scl", "carapace_length", "length", "scl_mm", "length_mm", "carapace length"
+    ],
+    "shell_width_mm": [
+        "shell_width_mm", "shell_width_sw (mm)", "shell_width_sw (cm)", "latest_sw (mm)",
+        "sw", "scw", "shell_width", "width", "carapace_width", "sw_mm", "width_mm", "mid_body_width"
+    ],
+    "shell_height_mm": [
+        "shell_height_mm", "shell_height_sh (mm)", "shell_height_sh (cm)", "latest_sh (mm)",
+        "sh", "shell_height", "height", "doming", "sh_mm", "height_mm"
+    ],
+    "plastron_length_mm": [
+        "plastron_length_mm", "plastron_length_pl (mm)", "plastron_length_pl (cm)",
+        "pl", "plastron_length", "plastron length", "pl_mm"
+    ],
+    "plastron_width_mm": [
+        "plastron_width_mm", "plastron_width_pw (mm)", "plastron_width_pw (cm)",
+        "pw", "plastron_width", "plastron width", "pw_mm"
+    ],
+    "growth_rings": [
+        "growth_rings", "costal1_growth_rings", "rings", "annuli", "scute_rings", "growth rings", "laminae"
+    ],
+    "scute_wear_status": [
+        "scute_wear_status", "scute_wear_class", "wear", "scute_wear", "shell_wear"
+    ],
+    "body_condition_score": [
+        "body_condition_score", "body_condition_score_1to5", "bcs", "condition_score", "health_score"
+    ],
+    "eggs_palpated": [
+        "eggs_palpated", "eggs_palpated_or_xray", "gravid", "is_gravid", "pregnant", "calcified_eggs"
+    ],
+    "estimated_egg_count": [
+        "estimated_egg_count", "egg_count", "eggs", "clutch_size", "number_of_eggs"
+    ],
+    "egg_length_mm": [
+        "egg_length_mm", "egg_length (mm)", "egg_length (cm)", "egg_length", "el", "egg_l"
+    ],
+    "egg_width_mm": [
+        "egg_width_mm", "egg_width (mm)", "egg_width (cm)", "egg_width", "ew", "egg_w"
+    ],
+    "follicle_count": [
+        "follicle_count", "ultrasound_follicle_count", "follicles", "ovarian_follicles"
+    ],
+    "mean_follicle_diameter_mm": [
+        "mean_follicle_diameter_mm", "mean_follicle_diameter (mm)", "follicle_diameter", "follicle_size_mm"
+    ],
+    "latitude": [
+        "latitude", "gps_latitude", "lat", "y_coord", "decimal_latitude"
+    ],
+    "longitude": [
+        "longitude", "gps_longitude", "lon", "lng", "long", "x_coord", "decimal_longitude"
+    ],
+    "observation_notes": [
+        "observation_notes", "clinical_and_field_notes", "notes", "comments", "remarks", "field_notes", "clinical_notes", "description"
+    ]
+}
+
+
+def _auto_detect_appsheet_mapping(headers: List[str]) -> dict:
+    """Automatically map incoming AppSheet CSV or REST API column names to SATRA canonical fields."""
+    mapping = {}
+    norm_to_orig = {}
+    for h in headers:
+        if not h:
+            continue
+        norm = re.sub(r"[\s_\-]+", "_", str(h).strip().lower())
+        norm_to_orig[norm] = h
+        norm_plain = str(h).strip().lower()
+        norm_to_orig[norm_plain] = h
+
+    used_headers = set()
+    for target_field, aliases in APPSHEET_FIELD_ALIASES.items():
+        for alias in aliases:
+            alias_norm = re.sub(r"[\s_\-]+", "_", alias.lower())
+            if alias.lower() in norm_to_orig and norm_to_orig[alias.lower()] not in used_headers:
+                orig_col = norm_to_orig[alias.lower()]
+                mapping[target_field] = orig_col
+                used_headers.add(orig_col)
+                break
+            if alias_norm in norm_to_orig and norm_to_orig[alias_norm] not in used_headers:
+                orig_col = norm_to_orig[alias_norm]
+                mapping[target_field] = orig_col
+                used_headers.add(orig_col)
+                break
+
+    # Look for AppSheet Combined LatLong column ("LatLong", "Location", "GPS", "Coordinates")
+    if "latitude" not in mapping and "longitude" not in mapping:
+        for h in headers:
+            hl = str(h).strip().lower()
+            if hl in ("latlong", "location", "gps", "coordinates", "gps_coordinates", "position"):
+                mapping["latlong_combined"] = h
+                break
+
+    return mapping
+
+
+def _parse_float(val) -> Optional[float]:
+    if val is None:
+        return None
+    s = str(val).strip()
+    if not s or s.lower() in ("none", "null", "na", "n/a", "-", "--"):
+        return None
+    s = re.sub(r"[^\d.\-+]", "", s.replace(",", "."))
+    try:
+        return float(s)
+    except Exception:
+        return None
+
+
+def _parse_int(val) -> Optional[int]:
+    f = _parse_float(val)
+    return int(round(f)) if f is not None else None
+
+
+def _parse_bool(val) -> bool:
+    if isinstance(val, bool):
+        return val
+    if val is None:
+        return False
+    s = str(val).strip().lower()
+    return s in ("true", "yes", "y", "1", "gravid", "confirmed", "checked")
+
+
+def _parse_datetime(val) -> Optional[datetime]:
+    if not val:
+        return None
+    if isinstance(val, datetime):
+        return val
+    s = str(val).strip()
+    if not s:
+        return None
+    for fmt in (
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M:%SZ",
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%d",
+        "%m/%d/%Y %H:%M:%S",
+        "%m/%d/%Y %I:%M:%S %p",
+        "%m/%d/%Y %H:%M",
+        "%m/%d/%Y",
+        "%d/%m/%Y %H:%M:%S",
+        "%d/%m/%Y %H:%M",
+        "%d/%m/%Y",
+        "%Y/%m/%d",
+    ):
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError:
+            continue
+    try:
+        return datetime.fromisoformat(s.replace("Z", "+00:00")).replace(tzinfo=None)
+    except Exception:
+        return None
+
+
+def _normalize_notch_code(raw_val: Optional[str]) -> Optional[str]:
+    """Normalize AppSheet notch codes (e.g. '1L, 4R', 'L1 R4', 'L1-R4') into SATRA's 'L1-R4' format."""
+    if not raw_val:
+        return None
+    s = str(raw_val).strip().upper()
+    if not s or s in ("NONE", "NULL", "UNMARKED", "N/A", "--"):
+        return None
+    tokens = re.findall(r"(?:[LR]\d{1,2}|\d{1,2}[LR]|SUPRACAUDAL|SC)", s)
+    if not tokens:
+        return s
+    normalized = []
+    for t in tokens:
+        if re.match(r"^\d{1,2}[LR]$", t):
+            normalized.append(t[-1] + t[:-1])
+        else:
+            normalized.append(t)
+    return "-".join(normalized)
+
+
+def _ingest_appsheet_rows(
+    rows: List[dict],
+    db: Session,
+    column_mapping: Optional[dict] = None,
+    default_species_name: str = "Chersobius signatus",
+    default_common_name: str = "Speckled Padloper",
+    mass_unit: str = "grams",
+    length_unit: str = "mm"
+) -> dict:
+    """Idempotently upsert Specimens, HealthInspections (with full Loehr 2004 calculations), and Sightings from AppSheet rows."""
+    if not rows:
+        return {
+            "status": "success",
+            "rows_processed": 0,
+            "specimens_created": 0,
+            "specimens_updated": 0,
+            "inspections_created": 0,
+            "sightings_created": 0,
+            "skipped_rows": 0,
+            "applied_mapping": {}
+        }
+
+    headers = list(rows[0].keys())
+    auto_map = _auto_detect_appsheet_mapping(headers)
+    mapping = {**auto_map, **(column_mapping or {})}
+
+    is_kg = mass_unit.lower() in ("kilograms", "kg")
+    is_cm = length_unit.lower() in ("cm", "centimeters")
+
+    specimens_created = 0
+    specimens_updated = 0
+    inspections_created = 0
+    sightings_created = 0
+    skipped_rows = 0
+
+    existing_specimens = {s.custom_identifier.upper(): s for s in db.query(Specimen).all() if s.custom_identifier}
+
+    def get_val(row: dict, field_key: str):
+        col = mapping.get(field_key)
+        if not col or col not in row:
+            return None
+        v = row.get(col)
+        if v is None:
+            return None
+        sv = str(v).strip()
+        return sv if sv != "" else None
+
+    for idx, row in enumerate(rows):
+        raw_id = get_val(row, "custom_identifier")
+        raw_notch = _normalize_notch_code(get_val(row, "notch_code"))
+        raw_pit = get_val(row, "pit_tag_number")
+
+        if not raw_id:
+            if raw_notch:
+                raw_id = f"APPSHEET-{raw_notch}"
+            elif raw_pit:
+                raw_id = f"PIT-{raw_pit[-6:]}"
+            else:
+                skipped_rows += 1
+                continue
+
+        norm_id_key = raw_id.upper()
+        sp = existing_specimens.get(norm_id_key)
+
+        species = get_val(row, "species_name") or default_species_name
+        common = get_val(row, "common_name") or default_common_name
+        sex_raw = (get_val(row, "sex") or "Undetermined").strip()
+        if sex_raw.upper().startswith("F"):
+            sex = "Female"
+        elif sex_raw.upper().startswith("M"):
+            sex = "Male"
+        else:
+            sex = "Undetermined"
+
+        status_raw = (get_val(row, "status") or "Wild").strip()
+        if "rehab" in status_raw.lower() or "icu" in status_raw.lower():
+            status = "InRehab"
+        elif "releas" in status_raw.lower():
+            status = "Released"
+        elif "breed" in status_raw.lower() or "captiv" in status_raw.lower():
+            status = "Breeding"
+        else:
+            status = "Wild"
+
+        if not sp:
+            sp = Specimen(
+                id=str(uuid.uuid4()),
+                custom_identifier=raw_id,
+                species_name=species,
+                common_name=common,
+                sex=sex,
+                status=status,
+                notch_code=raw_notch,
+                pit_tag_number=raw_pit,
+                created_at=_parse_datetime(get_val(row, "inspected_at")) or datetime.utcnow()
+            )
+            db.add(sp)
+            db.flush()
+            existing_specimens[norm_id_key] = sp
+            specimens_created += 1
+        else:
+            updated = False
+            if raw_notch and not sp.notch_code:
+                sp.notch_code = raw_notch
+                updated = True
+            if raw_pit and not sp.pit_tag_number:
+                sp.pit_tag_number = raw_pit
+                updated = True
+            if sex != "Undetermined" and sp.sex == "Undetermined":
+                sp.sex = sex
+                updated = True
+            if updated:
+                specimens_updated += 1
+
+        # Parse Biometric & Health Inspection fields if present in row
+        mass_val = _parse_float(get_val(row, "mass_grams"))
+        scl_val = _parse_float(get_val(row, "straight_carapace_length_mm"))
+        sw_val = _parse_float(get_val(row, "shell_width_mm"))
+        sh_val = _parse_float(get_val(row, "shell_height_mm"))
+        pl_val = _parse_float(get_val(row, "plastron_length_mm"))
+        pw_val = _parse_float(get_val(row, "plastron_width_mm"))
+
+        if is_kg and mass_val is not None:
+            mass_val = round(mass_val * 1000.0, 2)
+        if is_cm:
+            if scl_val is not None:
+                scl_val = round(scl_val * 10.0, 2)
+            if sw_val is not None:
+                sw_val = round(sw_val * 10.0, 2)
+            if sh_val is not None:
+                sh_val = round(sh_val * 10.0, 2)
+            if pl_val is not None:
+                pl_val = round(pl_val * 10.0, 2)
+            if pw_val is not None:
+                pw_val = round(pw_val * 10.0, 2)
+
+        # Parse GPS coordinates (either separate Lat/Lon or AppSheet "Lat, Long" LatLong column)
+        lat_val = _parse_float(get_val(row, "latitude"))
+        lon_val = _parse_float(get_val(row, "longitude"))
+        if (lat_val is None or lon_val is None) and mapping.get("latlong_combined"):
+            raw_ll = row.get(mapping["latlong_combined"])
+            if raw_ll and "," in str(raw_ll):
+                parts = str(raw_ll).split(",")
+                if len(parts) >= 2:
+                    lat_val = _parse_float(parts[0])
+                    lon_val = _parse_float(parts[1])
+
+        inspected_at = _parse_datetime(get_val(row, "inspected_at")) or datetime.utcnow()
+        notes_val = get_val(row, "observation_notes")
+
+        if mass_val is not None and scl_val is not None and mass_val > 0 and scl_val > 0:
+            # Check for duplicate inspection on same specimen, date, and mass
+            existing_insp = db.query(HealthInspection).filter(
+                HealthInspection.specimen_id == sp.id,
+                HealthInspection.mass_grams == mass_val,
+                HealthInspection.straight_carapace_length_mm == scl_val
+            ).first()
+
+            if not existing_insp or (existing_insp.inspected_at and abs((existing_insp.inspected_at - inspected_at).total_seconds()) > 43200):
+                el_val = _parse_float(get_val(row, "egg_length_mm"))
+                ew_val = _parse_float(get_val(row, "egg_width_mm"))
+                f_diam = _parse_float(get_val(row, "mean_follicle_diameter_mm"))
+                if is_cm:
+                    if el_val is not None:
+                        el_val = round(el_val * 10.0, 2)
+                    if ew_val is not None:
+                        ew_val = round(ew_val * 10.0, 2)
+                    if f_diam is not None:
+                        f_diam = round(f_diam * 10.0, 2)
+
+                egg_cnt = _parse_int(get_val(row, "estimated_egg_count")) or 0
+                gravid_flag = _parse_bool(get_val(row, "eggs_palpated")) or (egg_cnt > 0) or (el_val is not None and el_val > 0)
+
+                # Compute Loehr et al. (2004) biometrics via record_health_inspection logic
+                mass_to_scl = round(mass_val / scl_val, 4) if scl_val > 0 else None
+                shell_volume = None
+                bci = None
+                if scl_val and sh_val and sw_val and scl_val > 0 and sh_val > 0 and sw_val > 0:
+                    shell_volume = round((math.pi * scl_val * sh_val * sw_val) / 6000.0, 2)
+                    if shell_volume > 0:
+                        bci = round(mass_val / shell_volume, 4)
+
+                egg_volume = None
+                egg_mass_est = 0.0
+                if el_val and ew_val and el_val > 0 and ew_val > 0:
+                    egg_volume = round((math.pi * el_val * (ew_val ** 2)) / 6000.0, 2)
+                    egg_mass_est = egg_volume * 1.0 * (egg_cnt or 1)
+                elif gravid_flag and egg_cnt > 0:
+                    egg_mass_est = 11.3 * egg_cnt
+
+                f_cnt = _parse_int(get_val(row, "follicle_count"))
+                follicle_volume = None
+                pos_fraction = None
+                follicle_mass_est = 0.0
+                if f_diam and f_diam > 0:
+                    d_cm = f_diam / 10.0
+                    follicle_volume = round((math.pi * (d_cm ** 3)) / 6.0, 3)
+                    pos_fraction = round(follicle_volume / 4.99, 3)
+                    follicle_mass_est = follicle_volume * 1.0 * (f_cnt if f_cnt and f_cnt > 0 else 1)
+
+                somatic_mass = None
+                if egg_mass_est > 0 or follicle_mass_est > 0:
+                    somatic_mass = round(max(0.0, mass_val - egg_mass_est - follicle_mass_est), 1)
+
+                predicted_mass = None
+                mass_residual = None
+                if shell_volume and shell_volume > 0:
+                    predicted_mass = round((0.886 * shell_volume + 13.8) if follicle_mass_est > 0 else (0.885 * shell_volume + 23.6), 1)
+                elif scl_val and scl_val > 0:
+                    predicted_mass = round((4.20 * scl_val - 253.0) if follicle_mass_est > 0 else (4.18 * scl_val - 243.0), 1)
+
+                if predicted_mass is not None and predicted_mass > 0:
+                    eval_mass = somatic_mass if somatic_mass is not None else mass_val
+                    mass_residual = round(eval_mass - predicted_mass, 1)
+
+                scl_cm = scl_val / 10.0
+                jacksons_ratio = round(mass_val / (scl_cm ** 3), 4) if scl_cm > 0 else None
+                bcs_val = _parse_int(get_val(row, "body_condition_score"))
+                if bcs_val is None or bcs_val < 1 or bcs_val > 5:
+                    bcs_val = 4 if (bci and bci >= 1.0) else 3
+
+                insp = HealthInspection(
+                    id=str(uuid.uuid4()),
+                    specimen_id=sp.id,
+                    inspection_type=get_val(row, "inspection_type") or "AppSheet Import",
+                    mass_grams=mass_val,
+                    straight_carapace_length_mm=scl_val,
+                    shell_width_mm=sw_val,
+                    shell_height_mm=sh_val,
+                    plastron_length_mm=pl_val,
+                    plastron_width_mm=pw_val,
+                    growth_rings=get_val(row, "growth_rings"),
+                    scute_wear_status=get_val(row, "scute_wear_status") or "Countable (8-13)",
+                    weighed_before_excretion=True,
+                    body_condition_score=bcs_val,
+                    shell_volume_cm3=shell_volume,
+                    body_condition_index=bci,
+                    mass_to_scl_ratio=mass_to_scl,
+                    jacksons_ratio=jacksons_ratio,
+                    eggs_palpated=gravid_flag,
+                    estimated_egg_count=egg_cnt if gravid_flag else 0,
+                    egg_length_mm=el_val,
+                    egg_width_mm=ew_val,
+                    egg_volume_cm3=egg_volume,
+                    follicle_count=f_cnt,
+                    mean_follicle_diameter_mm=f_diam,
+                    follicle_volume_cm3=follicle_volume,
+                    pos_fraction=pos_fraction,
+                    somatic_mass_grams=somatic_mass,
+                    predicted_mass_grams=predicted_mass,
+                    mass_condition_residual_g=mass_residual,
+                    observation_notes=notes_val or "Imported from Google AppSheet historical database",
+                    latitude=lat_val,
+                    longitude=lon_val,
+                    gps_accuracy_m=5.0 if (lat_val is not None and lon_val is not None) else None,
+                    inspected_at=inspected_at
+                )
+                db.add(insp)
+                inspections_created += 1
+
+        if lat_val is not None and lon_val is not None:
+            sighting = Sighting(
+                id=str(uuid.uuid4()),
+                specimen_id=sp.id,
+                latitude=lat_val,
+                longitude=lon_val,
+                horizontal_accuracy=5.0,
+                notes=notes_val or f"AppSheet GPS import for {sp.custom_identifier}",
+                recorded_at=inspected_at
+            )
+            db.add(sighting)
+            sightings_created += 1
+
+    db.commit()
+    return {
+        "status": "success",
+        "rows_processed": len(rows),
+        "specimens_created": specimens_created,
+        "specimens_updated": specimens_updated,
+        "inspections_created": inspections_created,
+        "sightings_created": sightings_created,
+        "skipped_rows": skipped_rows,
+        "applied_mapping": mapping
+    }
+
+
+@api_router.post("/imports/appsheet-rows")
+def import_appsheet_rows(payload: AppSheetRowImportRequest, db: Session = Depends(get_db)):
+    """Import parsed CSV rows from Google AppSheet Database with custom or auto-detected column mapping."""
+    return _ingest_appsheet_rows(
+        rows=payload.rows,
+        db=db,
+        column_mapping=payload.column_mapping,
+        default_species_name=payload.default_species_name,
+        default_common_name=payload.default_common_name,
+        mass_unit=payload.mass_unit,
+        length_unit=payload.length_unit
+    )
+
+
+@api_router.post("/imports/appsheet-cloud-sync")
+def sync_from_appsheet_cloud(payload: AppSheetCloudSyncRequest, db: Session = Depends(get_db)):
+    """
+    Connect directly to Google AppSheet REST API v2:
+    POST https://{region_host}/api/v2/apps/{app_id}/tables/{table_name}/Action
+    with header ApplicationAccessKey and Action="Find", then preview or ingest all rows.
+    """
+    import urllib.request
+    import urllib.parse
+    import urllib.error
+    import json
+
+    host = payload.region_host.strip().replace("https://", "").replace("http://", "").strip("/")
+    if host not in ("api.appsheet.com", "eu.appsheet.com"):
+        host = "api.appsheet.com"
+
+    encoded_table = urllib.parse.quote(payload.table_name.strip(), safe="")
+    encoded_app = urllib.parse.quote(payload.app_id.strip(), safe="")
+    url = f"https://{host}/api/v2/apps/{encoded_app}/tables/{encoded_table}/Action"
+
+    props = {"Locale": "en-US"}
+    if payload.selector and payload.selector.strip():
+        props["Selector"] = payload.selector.strip()
+
+    body_bytes = json.dumps({
+        "Action": "Find",
+        "Properties": props,
+        "Rows": []
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        url,
+        data=body_bytes,
+        headers={
+            "ApplicationAccessKey": payload.access_key.strip(),
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "SATRA-AppSheet-Connector/1.0"
+        },
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            raw_resp = resp.read().decode("utf-8")
+            data = json.loads(raw_resp) if raw_resp.strip() else []
+    except urllib.error.HTTPError as he:
+        err_body = ""
+        try:
+            err_body = he.read().decode("utf-8")[:300]
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=400,
+            detail=f"AppSheet API HTTP {he.code}: {err_body or he.reason}. Verify App ID, ApplicationAccessKey, and Table Name '{payload.table_name}'."
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to connect to AppSheet REST API ({host}): {str(e)}"
+        )
+
+    rows = data if isinstance(data, list) else (data.get("Rows") or data.get("rows") or [])
+    headers = list(rows[0].keys()) if rows else []
+    detected_mapping = _auto_detect_appsheet_mapping(headers)
+
+    if payload.preview_only:
+        return {
+            "status": "preview",
+            "table_name": payload.table_name,
+            "total_rows_found": len(rows),
+            "headers": headers,
+            "detected_mapping": detected_mapping,
+            "sample_rows": rows[:5]
+        }
+
+    result = _ingest_appsheet_rows(
+        rows=rows,
+        db=db,
+        column_mapping=payload.column_mapping,
+        default_species_name=payload.default_species_name,
+        default_common_name=payload.default_common_name,
+        mass_unit=payload.mass_unit,
+        length_unit=payload.length_unit
+    )
+    result["table_name"] = payload.table_name
+    result["headers"] = headers
+    return result
+

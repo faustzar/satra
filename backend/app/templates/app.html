@@ -623,6 +623,11 @@
         <span id="offlineQueueLabel">Online • Synced</span>
       </button>
 
+      <button id="appSheetSyncNavBtn" class="btn btn-secondary" onclick="openAppSheetModal('csv')" style="padding: 8px 12px; font-size: 12px; cursor: pointer; border-color: rgba(56, 189, 248, 0.35);" title="Import Historical Google AppSheet CSV or Connect to AppSheet REST API">
+        <i class="fa-solid fa-cloud-arrow-down" style="color: #38bdf8;"></i>
+        <span>AppSheet Import</span>
+      </button>
+
       <button id="themeToggleBtn" class="btn btn-secondary" onclick="toggleTheme()" style="padding: 8px 12px; font-size: 12px; cursor: pointer;" title="Toggle Safari Light / Dark Theme">
         <i class="fa-solid fa-sun" id="themeIcon"></i>
         <span id="themeLabel">Safari Day</span>
@@ -645,6 +650,9 @@
           <p style="color: var(--text-muted); font-size: 13px;">Manage physical markings, clinical dossiers, and studbook lineage.</p>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-secondary" onclick="openAppSheetModal('csv')" title="Import historical records from Google AppSheet CSV or REST API">
+            <i class="fa-solid fa-cloud-arrow-down" style="color: #38bdf8;"></i> Import AppSheet
+          </button>
           <button class="btn btn-secondary" onclick="exportSpecimensCsv()" title="Export Specimen Registry with Loehr (2004) Biometrics to CSV / Excel">
             <i class="fa-solid fa-file-csv" style="color: #4ade80;"></i> Export Registry CSV
           </button>
@@ -742,6 +750,9 @@
           <p style="color: var(--text-muted); font-size: 13px;">Capture complete physical measurements, biometric growth rings, clinical condition and sightings.</p>
         </div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn-secondary" onclick="openAppSheetModal('csv')" title="Import historical observations from Google AppSheet CSV or REST API">
+            <i class="fa-solid fa-cloud-arrow-down" style="color: #38bdf8;"></i> Import AppSheet
+          </button>
           <button class="btn btn-secondary" onclick="exportObservationsCsv()" title="Export all longitudinal Loehr (2004) biometrics, POS ultrasound, and GPS observations to CSV / Excel">
             <i class="fa-solid fa-file-csv" style="color: #4ade80;"></i> Export Biometrics CSV
           </button>
@@ -2219,6 +2230,159 @@
           <button type="submit" class="btn btn-gold"><i class="fa-solid fa-check"></i> Save Studbook Pairing</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Google AppSheet Historical Data Importer & Cloud API Sync Modal -->
+  <div class="modal-backdrop" id="appSheetModal">
+    <div class="modal-box" style="max-width: 780px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-cloud-arrow-down" style="font-size: 20px; color: #38bdf8;"></i>
+          <div>
+            <h2 style="font-size: 19px; font-weight: 800; margin: 0;">Google AppSheet Historical Data Importer &amp; Cloud Sync</h2>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">Idempotent import with automatic Loehr et al. (2004) biometric &amp; Coleman (1991) egg volume calculation</p>
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="closeModal('appSheetModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Mode Switcher Tabs -->
+      <div style="display: flex; gap: 8px; margin-bottom: 16px; background: var(--card-inner); padding: 6px; border-radius: 10px; border: 1px solid var(--border-color);">
+        <button type="button" id="appSheetTabBtnCsv" class="btn btn-gold" style="flex: 1; justify-content: center; font-size: 13px;" onclick="switchAppSheetMode('csv')">
+          <i class="fa-solid fa-file-csv"></i> Option 1: Smart CSV / TSV File Upload
+        </button>
+        <button type="button" id="appSheetTabBtnApi" class="btn btn-secondary" style="flex: 1; justify-content: center; font-size: 13px;" onclick="switchAppSheetMode('api')">
+          <i class="fa-solid fa-bolt"></i> Option 2: Direct AppSheet REST API Sync
+        </button>
+      </div>
+
+      <!-- Shared Import Defaults (Species & Units) -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: var(--card-inner); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 14px;">
+        <div>
+          <label style="font-size: 11px; color: var(--text-muted); margin-bottom: 3px;">Default Species (if blank)</label>
+          <select id="asDefaultSpecies" style="margin-bottom: 0; padding: 6px 8px; font-size: 12px;" onchange="updateAsCommonName()">
+            <option value="Chersobius signatus" selected>Chersobius signatus</option>
+            <option value="Stigmochelys pardalis">Stigmochelys pardalis</option>
+            <option value="Chersina angulata">Chersina angulata</option>
+            <option value="Psammobates geometricus">Psammobates geometricus</option>
+            <option value="Homopus areolatus">Homopus areolatus</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 11px; color: var(--text-muted); margin-bottom: 3px;">Default Common Name</label>
+          <input type="text" id="asDefaultCommon" value="Speckled Padloper" style="margin-bottom: 0; padding: 6px 8px; font-size: 12px;">
+        </div>
+        <div>
+          <label style="font-size: 11px; color: var(--text-muted); margin-bottom: 3px;">Source Mass Unit</label>
+          <select id="asMassUnit" style="margin-bottom: 0; padding: 6px 8px; font-size: 12px;">
+            <option value="grams" selected>Grams (g)</option>
+            <option value="kilograms">Kilograms (kg → g)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 11px; color: var(--text-muted); margin-bottom: 3px;">Source Length Unit</label>
+          <select id="asLengthUnit" style="margin-bottom: 0; padding: 6px 8px; font-size: 12px;">
+            <option value="mm" selected>Millimeters (mm)</option>
+            <option value="cm">Centimeters (cm → mm)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- PANEL 1: SMART CSV UPLOAD & COLUMN MAPPER -->
+      <div id="appSheetCsvPanel">
+        <div style="border: 2px dashed rgba(56, 189, 248, 0.45); background: rgba(56, 189, 248, 0.05); border-radius: 12px; padding: 18px; text-align: center; margin-bottom: 14px;">
+          <i class="fa-solid fa-file-arrow-up" style="font-size: 28px; color: #38bdf8; margin-bottom: 8px;"></i>
+          <div style="font-size: 14px; font-weight: 700; margin-bottom: 4px;">Select your exported AppSheet Database CSV file</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+            In Google AppSheet Database editor, click your table menu (<strong>⋮ → Export to CSV</strong>) and select the file below, or load a sample template to test.
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
+            <input type="file" id="appSheetCsvFileInput" accept=".csv,.tsv,.txt" style="max-width: 300px; margin: 0; padding: 6px;" onchange="handleAppSheetCsvFile(event)">
+            <button type="button" class="btn btn-secondary" style="font-size: 12px; padding: 7px 12px;" onclick="loadSampleAppSheetCsv()">
+              <i class="fa-solid fa-vial" style="color: var(--accent-gold);"></i> Load Sample AppSheet Data
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL 2: DIRECT APPSHEET REST API v2 CLOUD SYNC -->
+      <div id="appSheetApiPanel" style="display: none;">
+        <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.5;">
+            <i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i>
+            In the AppSheet Editor, open <strong>Manage → Integrations → IN: from cloud services to your app</strong>, enable the API, and copy your <strong>App ID</strong> and <strong>ApplicationAccessKey</strong>. Credentials can be saved in your browser for one-click syncs.
+          </div>
+          <div style="display: grid; grid-template-columns: 1.3fr 1.3fr 1fr; gap: 10px;">
+            <div>
+              <label style="font-size: 11px; font-weight: 700;">AppSheet App ID (UUID) *</label>
+              <input type="text" id="asApiAppId" placeholder="e.g. a1b2c3d4-e5f6-7890-abcd-ef1234567890" style="margin-bottom: 6px; font-size: 12px;">
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700;">ApplicationAccessKey *</label>
+              <input type="password" id="asApiAccessKey" placeholder="V2-xxxxx-xxxxx-xxxxx" style="margin-bottom: 6px; font-size: 12px;">
+            </div>
+            <div>
+              <label style="font-size: 11px; font-weight: 700;">Table Name *</label>
+              <input type="text" id="asApiTableName" placeholder="e.g. Tortoises or Observations" value="Observations" style="margin-bottom: 6px; font-size: 12px;">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1.5fr auto; gap: 10px; align-items: end;">
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted);">AppSheet Region Server</label>
+              <select id="asApiRegion" style="margin-bottom: 0; font-size: 12px; padding: 6px 8px;">
+                <option value="api.appsheet.com" selected>Global / US (api.appsheet.com)</option>
+                <option value="eu.appsheet.com">Europe (eu.appsheet.com)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted);">Optional Filter / Selector Expression</label>
+              <input type="text" id="asApiSelector" placeholder="Leave blank for all rows, or e.g. Filter(Observations, true)" style="margin-bottom: 0; font-size: 12px; padding: 6px 8px;">
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="btn btn-secondary" style="font-size: 12px; padding: 8px 12px;" onclick="previewAppSheetCloudApi()">
+                <i class="fa-solid fa-magnifying-glass"></i> Fetch &amp; Preview Table
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE COLUMN MAPPING & PREVIEW AREA (Shared by CSV & API) -->
+      <div id="appSheetMappingSection" style="display: none; background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div style="font-size: 13px; font-weight: 800; color: var(--primary-light);">
+            <i class="fa-solid fa-table-columns"></i> Detected AppSheet Schema &amp; Column Mapping (<span id="asRowCountBadge">0</span> rows ready)
+          </div>
+          <span style="font-size: 11px; color: var(--text-muted);">Verify or adjust how your AppSheet columns map to SATRA fields:</span>
+        </div>
+
+        <div id="appSheetMappingGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px; margin-bottom: 12px;">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">
+          First 3 Rows Preview:
+        </div>
+        <div id="appSheetSampleTableWrap" style="overflow-x: auto; max-height: 140px; border: 1px solid var(--border-color); border-radius: 8px;">
+          <!-- Sample preview table -->
+        </div>
+      </div>
+
+      <!-- Status / Result Banner -->
+      <div id="appSheetResultBanner" style="display: none; padding: 12px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 14px;"></div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <div style="font-size: 11px; color: var(--text-muted);">
+          <i class="fa-solid fa-shield-halved" style="color: #4ade80;"></i> Duplicate-safe upsert: matches existing tortoises by ID/Notch and calculates Loehr (2004) BCI &amp; ANCOVA residuals automatically.
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('appSheetModal')">Close</button>
+          <button type="button" id="appSheetExecuteBtn" class="btn btn-gold" onclick="executeAppSheetImport()">
+            <i class="fa-solid fa-cloud-arrow-down"></i> Run Import into SATRA
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -4930,6 +5094,453 @@
         params.set('specimen_id', specimenId);
       }
       window.open(`/api/v1/exports/health-inspections.csv?${params.toString()}`, '_blank');
+    }
+
+    // --- GOOGLE APPSHEET CSV IMPORTER & DIRECT CLOUD REST API SYNC ---
+    let appSheetActiveMode = 'csv';
+    let appSheetParsedRows = [];
+    let appSheetHeaders = [];
+    let appSheetColumnMapping = {};
+
+    const SATRA_APPSHEET_FIELDS = [
+      { key: 'custom_identifier', label: 'Tortoise / Specimen ID *', aliases: ['custom_identifier', 'specimen_identifier', 'tortoise_id', 'tortoise id', 'specimen id', 'id_code', 'accession', 'animal_id', 'mark_id', 'name', 'code', 'tortoise #', 'id', 'row id'] },
+      { key: 'notch_code', label: 'Marginal Notch Code', aliases: ['notch_code', 'raw_notch_code', 'notch', 'notches', 'notch id', 'marginal_notch', 'cagle_code', 'marking'] },
+      { key: 'pit_tag_number', label: 'PIT Tag / Microchip', aliases: ['pit_tag_number', 'pit_microchip_15digit', 'pit_tag', 'pit tag', 'microchip', 'rfid', 'transponder'] },
+      { key: 'species_name', label: 'Scientific Species Name', aliases: ['species_name', 'scientific_name', 'scientific name', 'species', 'taxon'] },
+      { key: 'common_name', label: 'Common Name', aliases: ['common_name', 'common name', 'vernacular'] },
+      { key: 'sex', label: 'Sex (M / F / Undetermined)', aliases: ['sex', 'gender'] },
+      { key: 'status', label: 'Cohort / Status', aliases: ['status', 'cohort', 'disposition', 'state'] },
+      { key: 'inspected_at', label: 'Observation / Capture Date', aliases: ['inspected_at', 'inspected_at_utc', 'date', 'observation_date', 'inspection_date', 'timestamp', 'capture_date', 'recorded_at'] },
+      { key: 'mass_grams', label: 'Body Mass', aliases: ['mass_grams', 'body_mass (g)', 'body_mass (kg)', 'mass', 'weight', 'body_mass', 'mass (g)', 'weight (g)'] },
+      { key: 'straight_carapace_length_mm', label: 'Carapace Length (SCL)', aliases: ['straight_carapace_length_mm', 'scl (mm)', 'scl (cm)', 'scl', 'carapace_length', 'length', 'carapace length'] },
+      { key: 'shell_width_mm', label: 'Shell Width (SW / SCW)', aliases: ['shell_width_mm', 'shell_width_sw (mm)', 'sw', 'scw', 'shell_width', 'width', 'carapace_width'] },
+      { key: 'shell_height_mm', label: 'Shell Height (SH)', aliases: ['shell_height_mm', 'shell_height_sh (mm)', 'sh', 'shell_height', 'height'] },
+      { key: 'plastron_length_mm', label: 'Plastron Length (PL)', aliases: ['plastron_length_mm', 'plastron_length_pl (mm)', 'pl', 'plastron_length', 'plastron length'] },
+      { key: 'plastron_width_mm', label: 'Plastron Width (PW)', aliases: ['plastron_width_mm', 'plastron_width_pw (mm)', 'pw', 'plastron_width', 'plastron width'] },
+      { key: 'growth_rings', label: 'Costal-1 Scute Rings', aliases: ['growth_rings', 'costal1_growth_rings', 'rings', 'annuli', 'growth rings', 'laminae'] },
+      { key: 'scute_wear_status', label: 'Scute Wear Class', aliases: ['scute_wear_status', 'scute_wear_class', 'wear', 'scute_wear'] },
+      { key: 'eggs_palpated', label: 'Gravid / Calcified Eggs', aliases: ['eggs_palpated', 'eggs_palpated_or_xray', 'gravid', 'is_gravid', 'calcified_eggs'] },
+      { key: 'estimated_egg_count', label: 'Egg Count', aliases: ['estimated_egg_count', 'egg_count', 'eggs', 'clutch_size'] },
+      { key: 'egg_length_mm', label: 'Egg Length (EL)', aliases: ['egg_length_mm', 'egg_length (mm)', 'egg_length', 'el'] },
+      { key: 'egg_width_mm', label: 'Egg Width (EW)', aliases: ['egg_width_mm', 'egg_width (mm)', 'egg_width', 'ew'] },
+      { key: 'follicle_count', label: 'Ultrasound Follicle Count', aliases: ['follicle_count', 'ultrasound_follicle_count', 'follicles'] },
+      { key: 'mean_follicle_diameter_mm', label: 'Mean Follicle Diameter', aliases: ['mean_follicle_diameter_mm', 'mean_follicle_diameter (mm)', 'follicle_diameter'] },
+      { key: 'latitude', label: 'GPS Latitude', aliases: ['latitude', 'gps_latitude', 'lat', 'y_coord'] },
+      { key: 'longitude', label: 'GPS Longitude', aliases: ['longitude', 'gps_longitude', 'lon', 'lng', 'long', 'x_coord'] },
+      { key: 'latlong_combined', label: 'Combined LatLong ("Lat, Lon")', aliases: ['latlong', 'location', 'gps', 'coordinates', 'gps_coordinates'] },
+      { key: 'observation_notes', label: 'Clinical / Field Notes', aliases: ['observation_notes', 'clinical_and_field_notes', 'notes', 'comments', 'remarks', 'field_notes'] }
+    ];
+
+    function updateAsCommonName() {
+      const sp = document.getElementById('asDefaultSpecies')?.value;
+      const map = {
+        'Chersobius signatus': 'Speckled Padloper',
+        'Stigmochelys pardalis': 'Leopard Tortoise',
+        'Chersina angulata': 'Angulate Tortoise',
+        'Psammobates geometricus': 'Geometric Tortoise',
+        'Homopus areolatus': 'Parrot-Beaked Padloper'
+      };
+      const commonEl = document.getElementById('asDefaultCommon');
+      if (commonEl && map[sp]) commonEl.value = map[sp];
+    }
+
+    function openAppSheetModal(mode = 'csv') {
+      // Load saved AppSheet API config if present
+      try {
+        const saved = JSON.parse(localStorage.getItem('satra-appsheet-api-config') || '{}');
+        if (saved.app_id) document.getElementById('asApiAppId').value = saved.app_id;
+        if (saved.access_key) document.getElementById('asApiAccessKey').value = saved.access_key;
+        if (saved.table_name) document.getElementById('asApiTableName').value = saved.table_name;
+        if (saved.region_host) document.getElementById('asApiRegion').value = saved.region_host;
+      } catch (e) {}
+
+      // Default units to user preferences
+      if (userPreferences) {
+        const mEl = document.getElementById('asMassUnit');
+        const lEl = document.getElementById('asLengthUnit');
+        if (mEl) mEl.value = userPreferences.massUnit || 'grams';
+        if (lEl) lEl.value = userPreferences.lengthUnit || 'mm';
+      }
+
+      const banner = document.getElementById('appSheetResultBanner');
+      if (banner) banner.style.display = 'none';
+
+      switchAppSheetMode(mode);
+      document.getElementById('appSheetModal').classList.add('active');
+    }
+
+    function switchAppSheetMode(mode) {
+      appSheetActiveMode = mode;
+      const csvBtn = document.getElementById('appSheetTabBtnCsv');
+      const apiBtn = document.getElementById('appSheetTabBtnApi');
+      const csvPanel = document.getElementById('appSheetCsvPanel');
+      const apiPanel = document.getElementById('appSheetApiPanel');
+
+      if (mode === 'api') {
+        csvBtn.className = 'btn btn-secondary';
+        apiBtn.className = 'btn btn-gold';
+        csvPanel.style.display = 'none';
+        apiPanel.style.display = 'block';
+      } else {
+        csvBtn.className = 'btn btn-gold';
+        apiBtn.className = 'btn btn-secondary';
+        csvPanel.style.display = 'block';
+        apiPanel.style.display = 'none';
+      }
+    }
+
+    function parseDelimitedText(text) {
+      const clean = text.replace(/^\uFEFF/, '').trim();
+      if (!clean) return { headers: [], rows: [] };
+
+      const firstLine = clean.split(/\r?\n/)[0] || '';
+      const tabCount = (firstLine.match(/\t/g) || []).length;
+      const semiCount = (firstLine.match(/;/g) || []).length;
+      const commaCount = (firstLine.match(/,/g) || []).length;
+      let delimiter = ',';
+      if (tabCount > commaCount && tabCount >= semiCount) delimiter = '\t';
+      else if (semiCount > commaCount) delimiter = ';';
+
+      const records = [];
+      let curRow = [];
+      let curVal = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < clean.length; i++) {
+        const ch = clean[i];
+        const next = clean[i + 1];
+        if (inQuotes) {
+          if (ch === '"' && next === '"') {
+            curVal += '"';
+            i++;
+          } else if (ch === '"') {
+            inQuotes = false;
+          } else {
+            curVal += ch;
+          }
+        } else {
+          if (ch === '"') {
+            inQuotes = true;
+          } else if (ch === delimiter) {
+            curRow.push(curVal.trim());
+            curVal = '';
+          } else if (ch === '\r' && next === '\n') {
+            curRow.push(curVal.trim());
+            records.push(curRow);
+            curRow = [];
+            curVal = '';
+            i++;
+          } else if (ch === '\n' || ch === '\r') {
+            curRow.push(curVal.trim());
+            records.push(curRow);
+            curRow = [];
+            curVal = '';
+          } else {
+            curVal += ch;
+          }
+        }
+      }
+      if (curVal.length > 0 || curRow.length > 0) {
+        curRow.push(curVal.trim());
+        records.push(curRow);
+      }
+
+      if (records.length < 2) return { headers: records[0] || [], rows: [] };
+      const headers = records[0].map((h, idx) => h || `Column_${idx + 1}`);
+      const rows = [];
+      for (let r = 1; r < records.length; r++) {
+        const rec = records[r];
+        if (rec.every(c => !c)) continue;
+        const obj = {};
+        headers.forEach((h, idx) => {
+          obj[h] = rec[idx] !== undefined ? rec[idx] : '';
+        });
+        rows.push(obj);
+      }
+      return { headers, rows };
+    }
+
+    function autoDetectClientMapping(headers) {
+      const mapping = {};
+      const normMap = {};
+      headers.forEach(h => {
+        const norm = String(h).trim().toLowerCase().replace(/[\s_\-]+/g, '_');
+        normMap[norm] = h;
+        normMap[String(h).trim().toLowerCase()] = h;
+      });
+      const used = new Set();
+      SATRA_APPSHEET_FIELDS.forEach(f => {
+        for (const alias of f.aliases) {
+          const alLow = alias.toLowerCase();
+          const alNorm = alLow.replace(/[\s_\-]+/g, '_');
+          if (normMap[alLow] && !used.has(normMap[alLow])) {
+            mapping[f.key] = normMap[alLow];
+            used.add(normMap[alLow]);
+            break;
+          }
+          if (normMap[alNorm] && !used.has(normMap[alNorm])) {
+            mapping[f.key] = normMap[alNorm];
+            used.add(normMap[alNorm]);
+            break;
+          }
+        }
+      });
+      return mapping;
+    }
+
+    function renderAppSheetMappingAndPreview(headers, rows, presetMapping = null) {
+      appSheetHeaders = headers;
+      appSheetParsedRows = rows;
+      appSheetColumnMapping = presetMapping || autoDetectClientMapping(headers);
+
+      const sec = document.getElementById('appSheetMappingSection');
+      if (sec) sec.style.display = 'block';
+      const badge = document.getElementById('asRowCountBadge');
+      if (badge) badge.innerText = rows.length;
+
+      const grid = document.getElementById('appSheetMappingGrid');
+      if (grid) {
+        grid.innerHTML = SATRA_APPSHEET_FIELDS.map(f => {
+          const selectedCol = appSheetColumnMapping[f.key] || '';
+          const opts = [`<option value="">-- Not Mapped --</option>`]
+            .concat(headers.map(h => `<option value="${h.replace(/"/g, '&quot;')}" ${h === selectedCol ? 'selected' : ''}>${h}</option>`))
+            .join('');
+          return `
+            <div style="background: rgba(15, 29, 21, 0.45); border: 1px solid ${selectedCol ? 'rgba(74, 222, 128, 0.4)' : 'var(--border-color)'}; border-radius: 8px; padding: 6px 8px;">
+              <label style="font-size: 10px; font-weight: 700; color: ${selectedCol ? '#4ade80' : 'var(--text-muted)'}; margin-bottom: 2px; display: block;">
+                ${selectedCol ? '<i class="fa-solid fa-check"></i> ' : ''}${f.label}
+              </label>
+              <select data-satra-field="${f.key}" onchange="onAppSheetMapChange(this)" style="margin: 0; padding: 4px 6px; font-size: 11px;">
+                ${opts}
+              </select>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const wrap = document.getElementById('appSheetSampleTableWrap');
+      if (wrap) {
+        const previewRows = rows.slice(0, 3);
+        const ths = headers.map(h => `<th style="padding: 6px 8px; font-size: 10px; white-space: nowrap;">${h}</th>`).join('');
+        const trs = previewRows.map(r => {
+          const tds = headers.map(h => `<td style="padding: 5px 8px; font-size: 11px; white-space: nowrap;">${r[h] !== undefined && r[h] !== null ? r[h] : ''}</td>`).join('');
+          return `<tr>${tds}</tr>`;
+        }).join('');
+        wrap.innerHTML = `<table style="margin: 0;"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+      }
+    }
+
+    function onAppSheetMapChange(selectEl) {
+      const key = selectEl.getAttribute('data-satra-field');
+      const val = selectEl.value;
+      if (val) {
+        appSheetColumnMapping[key] = val;
+      } else {
+        delete appSheetColumnMapping[key];
+      }
+    }
+
+    function handleAppSheetCsvFile(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target.result || '';
+        const { headers, rows } = parseDelimitedText(text);
+        if (!headers.length || !rows.length) {
+          alert('Could not find any data rows in the selected CSV file.');
+          return;
+        }
+        renderAppSheetMappingAndPreview(headers, rows);
+      };
+      reader.readAsText(file);
+    }
+
+    function loadSampleAppSheetCsv() {
+      const sampleCsv = [
+        'Row ID,Tortoise ID,Species,Sex,Status,Notch Code,PIT Tag,Date,Mass (g),SCL (mm),SCW,SH,PL,Rings,Gravid,Egg Count,Egg Length,Egg Width,Follicles,Mean Follicle Diameter,LatLong,Notes',
+        'AS-101,CSIG-2023-014,Chersobius signatus,Female,Wild,"1L, 7R",982000365110014,2024-09-14 09:30:00,154.0,93.2,69.8,41.4,84.1,11 laminae,TRUE,1,34.8,25.0,3,13.8,"-29.6691, 17.8862","Springfontein granite kopje — gravid female X-rayed prior to oviposition"',
+        'AS-102,CSIG-2023-014,Chersobius signatus,Female,Wild,"1L, 7R",982000365110014,2025-09-18 10:15:00,161.5,94.6,70.5,42.0,85.2,12 laminae,TRUE,1,35.2,25.3,4,15.2,"-29.6688, 17.8867","Recaptured near same crevice (+7.5g mass gain, preovulatory follicles + calcified egg)"',
+        'AS-103,CSIG-2024-019,Chersobius signatus,Male,Wild,"2L, 4R",982000365110019,2025-09-19 11:05:00,98.4,78.5,58.6,33.2,67.4,9 laminae,FALSE,0,,,,, "-29.6704, 17.8849","Active adult male foraging on Oxalis and Crassula"'
+      ].join('\n');
+
+      const { headers, rows } = parseDelimitedText(sampleCsv);
+      renderAppSheetMappingAndPreview(headers, rows);
+    }
+
+    async function previewAppSheetCloudApi() {
+      const appId = document.getElementById('asApiAppId')?.value.trim();
+      const accessKey = document.getElementById('asApiAccessKey')?.value.trim();
+      const tableName = document.getElementById('asApiTableName')?.value.trim();
+      const regionHost = document.getElementById('asApiRegion')?.value || 'api.appsheet.com';
+      const selector = document.getElementById('asApiSelector')?.value.trim() || null;
+
+      if (!appId || !accessKey || !tableName) {
+        alert('Please enter your AppSheet App ID, ApplicationAccessKey, and Table Name.');
+        return;
+      }
+
+      localStorage.setItem('satra-appsheet-api-config', JSON.stringify({
+        app_id: appId,
+        access_key: accessKey,
+        table_name: tableName,
+        region_host: regionHost
+      }));
+
+      const banner = document.getElementById('appSheetResultBanner');
+      if (banner) {
+        banner.style.display = 'block';
+        banner.style.background = 'rgba(56, 189, 248, 0.12)';
+        banner.style.border = '1px solid rgba(56, 189, 248, 0.4)';
+        banner.style.color = '#38bdf8';
+        banner.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Connecting to AppSheet REST API (${regionHost}) for table <strong>${tableName}</strong>...`;
+      }
+
+      try {
+        const res = await fetch('/api/v1/imports/appsheet-cloud-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            app_id: appId,
+            access_key: accessKey,
+            table_name: tableName,
+            region_host: regionHost,
+            selector: selector,
+            preview_only: true
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || 'AppSheet API connection failed');
+        }
+        renderAppSheetMappingAndPreview(data.headers || [], data.sample_rows || [], data.detected_mapping || null);
+        const badge = document.getElementById('asRowCountBadge');
+        if (badge) badge.innerText = data.total_rows_found || 0;
+
+        if (banner) {
+          banner.style.background = 'rgba(74, 222, 128, 0.12)';
+          banner.style.border = '1px solid rgba(74, 222, 128, 0.4)';
+          banner.style.color = '#4ade80';
+          banner.innerHTML = `<i class="fa-solid fa-circle-check"></i> Connected to AppSheet! Found <strong>${data.total_rows_found}</strong> records in table <strong>${tableName}</strong>. Review column mappings below and click <strong>Run Import into SATRA</strong>.`;
+        }
+      } catch (err) {
+        if (banner) {
+          banner.style.background = 'rgba(239, 68, 68, 0.12)';
+          banner.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+          banner.style.color = '#f87171';
+          banner.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${err.message}`;
+        }
+      }
+    }
+
+    async function executeAppSheetImport() {
+      const defaultSpecies = document.getElementById('asDefaultSpecies')?.value || 'Chersobius signatus';
+      const defaultCommon = document.getElementById('asDefaultCommon')?.value || 'Speckled Padloper';
+      const massUnit = document.getElementById('asMassUnit')?.value || 'grams';
+      const lengthUnit = document.getElementById('asLengthUnit')?.value || 'mm';
+      const banner = document.getElementById('appSheetResultBanner');
+      const btn = document.getElementById('appSheetExecuteBtn');
+
+      if (appSheetActiveMode === 'csv' && (!appSheetParsedRows || appSheetParsedRows.length === 0)) {
+        alert('Please choose a CSV file or click "Load Sample AppSheet Data" first.');
+        return;
+      }
+
+      if (btn) btn.disabled = true;
+      if (banner) {
+        banner.style.display = 'block';
+        banner.style.background = 'rgba(56, 189, 248, 0.12)';
+        banner.style.border = '1px solid rgba(56, 189, 248, 0.4)';
+        banner.style.color = '#38bdf8';
+        banner.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Importing records and computing Loehr et al. (2004) biometrics &amp; ANCOVA residuals...`;
+      }
+
+      try {
+        let res;
+        if (appSheetActiveMode === 'api') {
+          const appId = document.getElementById('asApiAppId')?.value.trim();
+          const accessKey = document.getElementById('asApiAccessKey')?.value.trim();
+          const tableName = document.getElementById('asApiTableName')?.value.trim();
+          const regionHost = document.getElementById('asApiRegion')?.value || 'api.appsheet.com';
+          const selector = document.getElementById('asApiSelector')?.value.trim() || null;
+
+          if (!appId || !accessKey || !tableName) {
+            throw new Error('Please enter your AppSheet App ID, ApplicationAccessKey, and Table Name.');
+          }
+          localStorage.setItem('satra-appsheet-api-config', JSON.stringify({
+            app_id: appId,
+            access_key: accessKey,
+            table_name: tableName,
+            region_host: regionHost
+          }));
+
+          res = await fetch('/api/v1/imports/appsheet-cloud-sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              app_id: appId,
+              access_key: accessKey,
+              table_name: tableName,
+              region_host: regionHost,
+              selector: selector,
+              column_mapping: appSheetColumnMapping,
+              default_species_name: defaultSpecies,
+              default_common_name: defaultCommon,
+              mass_unit: massUnit,
+              length_unit: lengthUnit,
+              preview_only: false
+            })
+          });
+        } else {
+          res = await fetch('/api/v1/imports/appsheet-rows', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              rows: appSheetParsedRows,
+              column_mapping: appSheetColumnMapping,
+              default_species_name: defaultSpecies,
+              default_common_name: defaultCommon,
+              mass_unit: massUnit,
+              length_unit: lengthUnit
+            })
+          });
+        }
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || 'Import failed');
+        }
+
+        if (banner) {
+          banner.style.background = 'rgba(74, 222, 128, 0.14)';
+          banner.style.border = '1px solid rgba(74, 222, 128, 0.45)';
+          banner.style.color = '#4ade80';
+          banner.innerHTML = `
+            <div style="font-weight: 800; margin-bottom: 4px;"><i class="fa-solid fa-circle-check"></i> AppSheet Historical Import Complete!</div>
+            <div style="font-size: 12px; color: var(--text-main);">
+              Processed <strong>${data.rows_processed}</strong> rows &bull;
+              New Specimens: <strong>${data.specimens_created}</strong> &bull;
+              Updated Specimens: <strong>${data.specimens_updated}</strong> &bull;
+              Loehr Biometric Inspections Added: <strong>${data.inspections_created}</strong> &bull;
+              GPS Telemetry Fixes Added: <strong>${data.sightings_created}</strong>
+            </div>
+          `;
+        }
+
+        await loadSpecimens();
+        await loadObservations();
+        populateHealthTrajectorySelect();
+        if (markersGroup) reloadMapSightings();
+      } catch (err) {
+        if (banner) {
+          banner.style.background = 'rgba(239, 68, 68, 0.12)';
+          banner.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+          banner.style.color = '#f87171';
+          banner.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${err.message}`;
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     }
 
     // Theme Handling (Safari Earth Day/Night)

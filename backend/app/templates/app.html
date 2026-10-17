@@ -678,7 +678,7 @@
         </div>
       </div>
 
-      <!-- Persona View Presets Bar & Widget Config -->
+      <!-- Persona View Presets Bar, Search Filter & Widget Config -->
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
@@ -701,9 +701,21 @@
           </button>
         </div>
 
-        <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 14px;" onclick="openWidgetConfigModal()" title="Customize Card Widgets">
-          <i class="fa-solid fa-sliders"></i> Customize Widgets
-        </button>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; justify-content: flex-end; min-width: 280px;">
+          <div style="position: relative; flex: 1; max-width: 340px;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px;"></i>
+            <input type="text" id="registrySearchInput" oninput="handleRegistrySearch(this.value)" placeholder="Search by ID, Notch (#17, L1-R4), PIT, or Species..." style="margin: 0; padding: 7px 30px 7px 32px; font-size: 12px; border-radius: 999px;">
+            <button id="clearRegistrySearchBtn" type="button" onclick="clearRegistrySearch()" style="display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px;" title="Clear Search">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+          </div>
+          <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="switchTab('notches')" title="Open Scute Notch Picker to search or register by marginal notches">
+            <i class="fa-solid fa-fingerprint" style="color: var(--accent-gold);"></i> Lookup by Notch
+          </button>
+          <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 14px;" onclick="openWidgetConfigModal()" title="Customize Card Widgets">
+            <i class="fa-solid fa-sliders"></i> Customize Widgets
+          </button>
+        </div>
       </div>
 
       <!-- Specimen Cards List -->
@@ -838,6 +850,14 @@
             <div id="notchBreakdownDisplay" style="font-size: 12px; color: var(--accent-clay); margin-top: 6px; font-family: 'JetBrains Mono', monospace;">
               Formula: --
             </div>
+            <div id="notchAnatomicalCodeDisplay" style="font-size: 11px; color: var(--text-muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace;">
+              Marginal Sequence: L1-R4
+            </div>
+          </div>
+
+          <!-- Live Registry Match Preview -->
+          <div id="notchMatchPreviewBox" style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 14px; font-size: 12px;">
+            <!-- Populated by updateNotchDisplay() -->
           </div>
 
           <!-- Formula & Calculation Guide Box -->
@@ -852,12 +872,15 @@
             </div>
           </div>
 
-          <div style="display: flex; gap: 10px;">
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button class="btn btn-secondary" onclick="clearNotches()">
               <i class="fa-solid fa-trash"></i> Clear All
             </button>
             <button class="btn btn-gold" onclick="applyNotchToSearch()">
               <i class="fa-solid fa-magnifying-glass"></i> Search Catalog by ID
+            </button>
+            <button class="btn btn-secondary" style="border-color: var(--primary-light); color: var(--primary-light);" onclick="registerSpecimenFromNotchPicker()">
+              <i class="fa-solid fa-plus"></i> Register Specimen with This Code
             </button>
             <button class="btn btn-secondary" onclick="openPreferencesModal()" title="Change default identification system">
               <i class="fa-solid fa-gear"></i> Preferences
@@ -1313,11 +1336,12 @@
 
       <form id="intakeForm" onsubmit="submitNewIntake(event)">
         <label>Species Classification</label>
-        <select id="inSpecies">
+        <select id="inSpecies" onchange="suggestIntakeCustomId()">
           <option value="Stigmochelys pardalis">Leopard Tortoise (Stigmochelys pardalis)</option>
           <option value="Chersina angulata">Angulate Tortoise (Chersina angulata)</option>
           <option value="Psammobates geometricus">Geometric Tortoise (Psammobates geometricus - CR)</option>
           <option value="Psammobates tentorius">Tent Tortoise (Psammobates tentorius)</option>
+          <option value="Homopus signatus signatus">Namaqualand Speckled Padloper (Homopus signatus signatus)</option>
           <option value="Homopus areolatus">Parrot-beaked Padloper (Homopus areolatus)</option>
         </select>
 
@@ -1327,8 +1351,39 @@
         <label>15-Digit FDX-B RFID Microchip (PIT Tag)</label>
         <input type="text" id="inPitTag" placeholder="e.g. 982000365829108">
 
-        <label>Marginal Scute Notch Code</label>
-        <input type="text" id="inNotchCode" placeholder="e.g. L1-R4">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+          <label style="margin: 0;">Marginal Scute Notch Code</label>
+          <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="toggleIntakeScutePicker()">
+            <i class="fa-solid fa-fingerprint" style="color: var(--accent-gold);"></i> <span id="intakePickerToggleLabel">Pick on Diagram</span>
+          </button>
+        </div>
+        <input type="text" id="inNotchCode" placeholder="e.g. L1-R4" oninput="syncIntakeInputToDiagram(this.value)">
+        <div id="inNotchComputedPreview" style="font-size: 12px; color: var(--accent-gold); font-family: 'JetBrains Mono', monospace; margin-top: -8px; margin-bottom: 12px;">
+          Computed ID: Unnotched
+        </div>
+
+        <!-- Embedded Interactive Scute Picker inside Intake Modal -->
+        <div id="intakeScutePickerWrap" style="display: none; background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--primary-light);">
+              <i class="fa-solid fa-fingerprint"></i> Tap Marginal Scutes to Notch
+            </span>
+            <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 3px 8px;" onclick="clearIntakeNotches()">
+              <i class="fa-solid fa-trash"></i> Clear
+            </button>
+          </div>
+          <div class="shell-container" style="margin: 8px auto; transform: scale(0.92); transform-origin: top center;">
+            <div class="nuchal-scute">Nuchal</div>
+            <div class="scute-row">
+              <div class="scute-col" id="intakeLeftMarginals"></div>
+              <div class="shell-center">
+                <span>V1</span><span>V2</span><span>V3</span><span>V4</span><span>V5</span>
+              </div>
+              <div class="scute-col" id="intakeRightMarginals"></div>
+            </div>
+            <div class="supracaudal-scute" id="intakeDiagramSupracaudal">Supracaudal</div>
+          </div>
+        </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div>
@@ -1809,12 +1864,21 @@
 
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-      document.getElementById('tab-' + tabId).classList.add('active');
-      event.currentTarget.classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('active');
+        const onclickAttr = el.getAttribute('onclick') || '';
+        if (onclickAttr.includes(`'${tabId}'`) || onclickAttr.includes(`"${tabId}"`)) {
+          el.classList.add('active');
+        }
+      });
+      const tabEl = document.getElementById('tab-' + tabId);
+      if (tabEl) tabEl.classList.add('active');
 
       if (tabId === 'telemetry') {
         setTimeout(initDashboardMap, 150);
+      }
+      if (tabId === 'notches') {
+        updateNotchDisplay();
       }
     }
 
@@ -1904,6 +1968,81 @@
     let currentSpecimensCache = [];
     let currentObservationsCache = [];
     let currentFilterStatus = 'All';
+    let currentSearchQuery = '';
+    let intakeActiveNotches = new Set();
+
+    function getCanonicalNotchSequence(notchesSet) {
+      if (!notchesSet || notchesSet.size === 0) return '';
+      const sorted = Array.from(notchesSet).sort((a, b) => {
+        if (a === 'SUPRA') return 1;
+        if (b === 'SUPRA') return -1;
+        if (a[0] !== b[0]) return a[0] === 'L' ? -1 : 1;
+        return parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10);
+      });
+      return sorted.join('-');
+    }
+
+    function parseNotchStringToSet(notchStr) {
+      const set = new Set();
+      if (!notchStr || notchStr === 'None' || notchStr === 'Unnotched') return set;
+      notchStr.split(/[-,\s]+/).forEach(part => {
+        const clean = part.trim().toUpperCase();
+        if (clean === 'SUPRA' || /^L\d+$/.test(clean) || /^R\d+$/.test(clean)) {
+          set.add(clean);
+        }
+      });
+      return set;
+    }
+
+    function getFilteredSpecimens() {
+      if (!currentSpecimensCache) return [];
+      let list = currentSpecimensCache;
+      if (currentFilterStatus !== 'All') {
+        list = list.filter(s => s.status === currentFilterStatus);
+      }
+      const q = (currentSearchQuery || '').trim().toLowerCase();
+      if (!q) return list;
+
+      return list.filter(sp => {
+        const customId = (sp.custom_identifier || '').toLowerCase();
+        const species = (sp.species_name || '').toLowerCase();
+        const common = (sp.common_name || '').toLowerCase();
+        const pit = (sp.pit_tag_number || '').toLowerCase();
+        const rawNotch = (sp.notch_code || '').toLowerCase();
+        const saNotch = formatNotchForDisplay(sp.notch_code, 'sa_standard').toLowerCase();
+        const binNotch = formatNotchForDisplay(sp.notch_code, 'binary').toLowerCase();
+        const curNotch = formatNotchForDisplay(sp.notch_code, currentNotchSystem).toLowerCase();
+
+        return (
+          customId.includes(q) ||
+          species.includes(q) ||
+          common.includes(q) ||
+          pit.includes(q) ||
+          rawNotch.includes(q) ||
+          saNotch.includes(q) ||
+          binNotch.includes(q) ||
+          curNotch.includes(q)
+        );
+      });
+    }
+
+    function handleRegistrySearch(val) {
+      currentSearchQuery = val || '';
+      const clearBtn = document.getElementById('clearRegistrySearchBtn');
+      if (clearBtn) {
+        clearBtn.style.display = currentSearchQuery.trim().length > 0 ? 'block' : 'none';
+      }
+      renderSpecimenCards(getFilteredSpecimens());
+    }
+
+    function clearRegistrySearch() {
+      currentSearchQuery = '';
+      const input = document.getElementById('registrySearchInput');
+      if (input) input.value = '';
+      const clearBtn = document.getElementById('clearRegistrySearchBtn');
+      if (clearBtn) clearBtn.style.display = 'none';
+      renderSpecimenCards(getFilteredSpecimens());
+    }
 
     function formatMass(grams) {
       if (grams === null || grams === undefined || grams === '' || isNaN(Number(grams))) return '—';
@@ -1963,12 +2102,9 @@
 
     function updateSpecimensCardMarkings() {
       if (currentSpecimensCache && currentSpecimensCache.length > 0) {
-        if (currentFilterStatus === 'All') {
-          renderSpecimenCards(currentSpecimensCache);
-        } else {
-          renderSpecimenCards(currentSpecimensCache.filter(s => s.status === currentFilterStatus));
-        }
+        renderSpecimenCards(getFilteredSpecimens());
       }
+      updateNotchDisplay();
     }
 
     function openPreferencesModal() {
@@ -2091,6 +2227,7 @@
       }
 
       initScuteDiagram();
+      initIntakeScuteDiagram();
       updateSpecimensCardMarkings();
     }
 
@@ -2156,7 +2293,7 @@
 
     function clearNotches() {
       activeNotches.clear();
-      document.querySelectorAll('.scute-btn').forEach(btn => btn.classList.remove('notched'));
+      document.querySelectorAll('#tab-notches .scute-btn').forEach(btn => btn.classList.remove('notched'));
       const supraEl = document.getElementById('diagramSupracaudal');
       if (supraEl) supraEl.classList.remove('notched');
       updateNotchDisplay();
@@ -2210,19 +2347,87 @@
       const display = document.getElementById('notchCodeDisplay');
       const breakdownEl = document.getElementById('notchBreakdownDisplay');
       const labelEl = document.getElementById('notchCodeLabel');
+      const anatEl = document.getElementById('notchAnatomicalCodeDisplay');
+      const matchBox = document.getElementById('notchMatchPreviewBox');
 
       const sys = NOTCH_SYSTEMS[currentNotchSystem] || NOTCH_SYSTEMS.sa_standard;
       const result = calculateIdentificationCode(activeNotches, currentNotchSystem);
+      const canonicalSeq = getCanonicalNotchSequence(activeNotches);
 
       if (sys.isAdditive) {
         if (labelEl) labelEl.innerText = 'Computed Specimen Number (Additive Sum):';
         if (display) display.innerText = result.code;
         if (breakdownEl) breakdownEl.innerText = `Formula: ${result.breakdown}`;
+        if (anatEl) anatEl.innerText = `Marginal Sequence: ${canonicalSeq || 'None'}`;
       } else {
         if (labelEl) labelEl.innerText = 'Computed Notch Sequence (Cagle):';
         if (display) display.innerText = result.code;
         if (breakdownEl) breakdownEl.innerText = `Anatomical: ${result.code}`;
+        if (anatEl) anatEl.innerText = `Marginal Sequence: ${canonicalSeq || 'None'}`;
       }
+
+      if (matchBox) {
+        if (!canonicalSeq) {
+          matchBox.innerHTML = `<span style="color: var(--text-muted);"><i class="fa-solid fa-circle-info"></i> Tap marginal scutes on the diagram to check for existing registry matches or register a new tortoise.</span>`;
+        } else {
+          const matches = (currentSpecimensCache || []).filter(sp => {
+            const spSeq = getCanonicalNotchSequence(parseNotchStringToSet(sp.notch_code));
+            return spSeq === canonicalSeq || (sp.notch_code || '').toUpperCase() === result.code.toUpperCase();
+          });
+
+          if (matches.length > 0) {
+            const m = matches[0];
+            matchBox.innerHTML = `
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div>
+                  <span style="color: #4ade80; font-weight: 700;"><i class="fa-solid fa-circle-check"></i> Registered Match Found:</span>
+                  <strong style="color: var(--primary-light); margin-left: 4px;">${m.custom_identifier}</strong>
+                  <span style="color: var(--text-muted); font-style: italic;">(${m.species_name || m.common_name})</span>
+                </div>
+                <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="openDetailModal('${m.id}', '${m.custom_identifier}', '${m.species_name || m.common_name}', '${m.pit_tag_number || 'Unchipped'}', '${m.notch_code || 'None'}', '${m.sex}', '${m.status}')">
+                  <i class="fa-solid fa-eye"></i> Open Dossier
+                </button>
+              </div>
+            `;
+          } else {
+            matchBox.innerHTML = `
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="color: var(--accent-gold);"><i class="fa-solid fa-sparkles"></i> Unassigned Notch Code (<strong>${formatNotchForDisplay(canonicalSeq, currentNotchSystem)}</strong>) — Available for new intake!</span>
+                <button type="button" class="btn btn-gold" style="font-size: 11px; padding: 4px 10px;" onclick="registerSpecimenFromNotchPicker()">
+                  <i class="fa-solid fa-plus"></i> Register Tortoise
+                </button>
+              </div>
+            `;
+          }
+        }
+      }
+    }
+
+    function applyNotchToSearch() {
+      const canonicalSeq = getCanonicalNotchSequence(activeNotches);
+      const result = calculateIdentificationCode(activeNotches, currentNotchSystem);
+      const query = canonicalSeq || (result.sum > 0 ? `#${result.sum}` : '');
+
+      switchTab('specimens');
+      currentFilterStatus = 'All';
+      const cardAll = document.getElementById('kpiCardAll');
+      const cardRehab = document.getElementById('kpiCardInRehab');
+      const cardReleased = document.getElementById('kpiCardReleased');
+      if (cardAll) cardAll.classList.add('active');
+      if (cardRehab) cardRehab.classList.remove('active');
+      if (cardReleased) cardReleased.classList.remove('active');
+
+      const searchInput = document.getElementById('registrySearchInput');
+      if (searchInput) {
+        searchInput.value = query;
+        searchInput.focus();
+      }
+      handleRegistrySearch(query);
+    }
+
+    function registerSpecimenFromNotchPicker() {
+      const canonicalSeq = getCanonicalNotchSequence(activeNotches);
+      openIntakeModal(canonicalSeq, true);
     }
 
     // Helper to format any notch code (e.g. 'L1-R4') into the active identification standard
@@ -2263,12 +2468,8 @@
 
         currentSpecimensCache = Array.isArray(specimens) ? specimens : [];
         updateKpiCounts(currentSpecimensCache);
-        if (currentFilterStatus === 'All') {
-          renderSpecimenCards(currentSpecimensCache);
-        } else {
-          const filtered = currentSpecimensCache.filter(s => s.status === currentFilterStatus);
-          renderSpecimenCards(filtered);
-        }
+        renderSpecimenCards(getFilteredSpecimens());
+        updateNotchDisplay();
       } catch (err) {
         console.error('Failed to load specimens', err);
       }
@@ -2296,12 +2497,7 @@
       if (cardRehab) cardRehab.classList.toggle('active', status === 'InRehab');
       if (cardReleased) cardReleased.classList.toggle('active', status === 'Released');
 
-      if (status === 'All') {
-        renderSpecimenCards(currentSpecimensCache);
-      } else {
-        const filtered = currentSpecimensCache.filter(s => s.status === status);
-        renderSpecimenCards(filtered);
-      }
+      renderSpecimenCards(getFilteredSpecimens());
     }
 
     // Mini-Dashboard Widget System & Role Presets
@@ -2329,7 +2525,7 @@
         localStorage.setItem('satra-card-widgets', JSON.stringify(Array.from(activeWidgets)));
       }
 
-      renderSpecimenCards(currentSpecimensCache);
+      renderSpecimenCards(getFilteredSpecimens());
     }
 
     function openWidgetConfigModal() {
@@ -2360,7 +2556,7 @@
       document.querySelectorAll('.role-pill').forEach(btn => btn.classList.remove('active'));
 
       closeModal('widgetConfigModal');
-      renderSpecimenCards(currentSpecimensCache);
+      renderSpecimenCards(getFilteredSpecimens());
     }
 
     function renderSpecimenCards(specimens) {
@@ -2368,10 +2564,14 @@
       grid.innerHTML = '';
 
       if (specimens.length === 0) {
+        const hasSearch = (currentSearchQuery || '').trim().length > 0;
         grid.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: var(--text-muted);">
             <i class="fa-solid fa-filter" style="font-size: 28px; opacity: 0.5; margin-bottom: 8px;"></i>
-            <p>No specimens match this filter. <a href="javascript:void(0)" onclick="filterSpecimens('All')" style="color: var(--accent-gold);">Show all specimens</a></p>
+            <p>No specimens match ${hasSearch ? `search "<strong>${currentSearchQuery}</strong>"` : 'this filter'}. 
+              <a href="javascript:void(0)" onclick="clearRegistrySearch(); filterSpecimens('All');" style="color: var(--accent-gold);">Show all specimens</a>
+              ${hasSearch ? ` • <a href="javascript:void(0)" onclick="openIntakeModal('${currentSearchQuery}', true)" style="color: var(--primary-light);"><i class="fa-solid fa-plus"></i> Register new tortoise with this code</a>` : ''}
+            </p>
           </div>
         `;
         return;
@@ -2849,7 +3049,146 @@
       }, 120);
     }
 
-    function openIntakeModal() {
+    function suggestIntakeCustomId() {
+      const speciesEl = document.getElementById('inSpecies');
+      const customIdEl = document.getElementById('inCustomId');
+      if (!speciesEl || !customIdEl) return;
+
+      const val = speciesEl.value || '';
+      let prefix = 'TORT';
+      if (val.includes('pardalis')) prefix = 'LEOP';
+      else if (val.includes('angulata')) prefix = 'ANGU';
+      else if (val.includes('geometricus')) prefix = 'GEOM';
+      else if (val.includes('tentorius')) prefix = 'TENT';
+      else if (val.includes('signatus')) prefix = 'PADL';
+      else if (val.includes('areolatus')) prefix = 'AREO';
+
+      const year = new Date().getFullYear();
+      const seq = String((currentSpecimensCache ? currentSpecimensCache.length : 0) + 1).padStart(3, '0');
+      customIdEl.value = `${prefix}-${year}-${seq}`;
+    }
+
+    function toggleIntakeScutePicker(forceShow = null) {
+      const wrap = document.getElementById('intakeScutePickerWrap');
+      const lbl = document.getElementById('intakePickerToggleLabel');
+      if (!wrap) return;
+      const show = forceShow !== null ? forceShow : (wrap.style.display === 'none');
+      wrap.style.display = show ? 'block' : 'none';
+      if (lbl) lbl.innerText = show ? 'Hide Diagram' : 'Pick on Diagram';
+      if (show) {
+        initIntakeScuteDiagram();
+      }
+    }
+
+    function initIntakeScuteDiagram() {
+      const leftCol = document.getElementById('intakeLeftMarginals');
+      const rightCol = document.getElementById('intakeRightMarginals');
+      if (!leftCol || !rightCol) return;
+      leftCol.innerHTML = '';
+      rightCol.innerHTML = '';
+
+      const sys = NOTCH_SYSTEMS[currentNotchSystem] || NOTCH_SYSTEMS.sa_standard;
+      const count = (currentNotchSystem === 'cagle') ? 12 : 11;
+
+      for (let i = 1; i <= count; i++) {
+        const lId = 'L' + i;
+        const rId = 'R' + i;
+        const lData = sys.leftValues[i] || { val: null, label: '—' };
+        const rData = sys.rightValues[i] || { val: null, label: '—' };
+
+        const lBtn = document.createElement('button');
+        lBtn.type = 'button';
+        lBtn.className = 'scute-btn' + (intakeActiveNotches.has(lId) ? ' notched' : '');
+        lBtn.innerText = lData.label;
+        lBtn.title = `Left Marginal ${i} (${lData.label})`;
+        if (lData.val === null) {
+          lBtn.style.opacity = '0.35';
+          lBtn.style.cursor = 'not-allowed';
+        } else {
+          lBtn.onclick = () => toggleIntakeNotch(lId, lBtn);
+        }
+        leftCol.appendChild(lBtn);
+
+        const rBtn = document.createElement('button');
+        rBtn.type = 'button';
+        rBtn.className = 'scute-btn' + (intakeActiveNotches.has(rId) ? ' notched' : '');
+        rBtn.innerText = rData.label;
+        rBtn.title = `Right Marginal ${i} (${rData.label})`;
+        if (rData.val === null) {
+          rBtn.style.opacity = '0.35';
+          rBtn.style.cursor = 'not-allowed';
+        } else {
+          rBtn.onclick = () => toggleIntakeNotch(rId, rBtn);
+        }
+        rightCol.appendChild(rBtn);
+      }
+
+      const supraEl = document.getElementById('intakeDiagramSupracaudal');
+      if (supraEl) {
+        supraEl.innerText = sys.supracaudal?.label || 'Supracaudal';
+        supraEl.style.cursor = sys.supracaudal?.val ? 'pointer' : 'default';
+        supraEl.onclick = sys.supracaudal?.val ? () => toggleIntakeNotch('SUPRA', supraEl) : null;
+        if (intakeActiveNotches.has('SUPRA') && sys.supracaudal?.val) {
+          supraEl.classList.add('notched');
+        } else {
+          supraEl.classList.remove('notched');
+        }
+      }
+
+      updateIntakeNotchPreview();
+    }
+
+    function toggleIntakeNotch(id, btn) {
+      if (intakeActiveNotches.has(id)) {
+        intakeActiveNotches.delete(id);
+        btn.classList.remove('notched');
+      } else {
+        intakeActiveNotches.add(id);
+        btn.classList.add('notched');
+      }
+      const seq = getCanonicalNotchSequence(intakeActiveNotches);
+      const input = document.getElementById('inNotchCode');
+      if (input) input.value = seq;
+      updateIntakeNotchPreview();
+    }
+
+    function clearIntakeNotches() {
+      intakeActiveNotches.clear();
+      const input = document.getElementById('inNotchCode');
+      if (input) input.value = '';
+      initIntakeScuteDiagram();
+    }
+
+    function syncIntakeInputToDiagram(val) {
+      intakeActiveNotches = parseNotchStringToSet(val);
+      initIntakeScuteDiagram();
+    }
+
+    function updateIntakeNotchPreview() {
+      const previewEl = document.getElementById('inNotchComputedPreview');
+      const inputEl = document.getElementById('inNotchCode');
+      if (!previewEl) return;
+
+      const raw = inputEl ? inputEl.value.trim() : '';
+      if (!raw) {
+        previewEl.innerText = `Computed ID (${NOTCH_SYSTEMS[currentNotchSystem]?.name || 'Standard'}): Unnotched`;
+        return;
+      }
+      const formatted = formatNotchForDisplay(raw, currentNotchSystem);
+      previewEl.innerText = `Computed ID (${NOTCH_SYSTEMS[currentNotchSystem]?.name || 'Standard'}): ${formatted}`;
+    }
+
+    function openIntakeModal(prefillNotchCode = null, autoExpandDiagram = false) {
+      suggestIntakeCustomId();
+      const input = document.getElementById('inNotchCode');
+      if (prefillNotchCode !== null && prefillNotchCode !== undefined) {
+        intakeActiveNotches = parseNotchStringToSet(prefillNotchCode);
+        if (input) input.value = getCanonicalNotchSequence(intakeActiveNotches) || prefillNotchCode;
+      } else if (input) {
+        intakeActiveNotches = parseNotchStringToSet(input.value);
+      }
+      initIntakeScuteDiagram();
+      toggleIntakeScutePicker(autoExpandDiagram);
       document.getElementById('intakeModal').style.display = 'flex';
     }
 
@@ -2878,7 +3217,9 @@
         });
         if (res.ok) {
           closeModal('intakeModal');
-          loadSpecimens();
+          clearRegistrySearch();
+          await loadSpecimens();
+          switchTab('specimens');
           alert('Specimen registered successfully!');
         } else {
           const err = await res.json();

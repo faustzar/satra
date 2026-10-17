@@ -426,7 +426,8 @@ class ConservationReportGenerator:
         elements.append(Paragraph("2. STUDBOOK PEDIGREE & REPRODUCTIVE LINEAGE", self.styles['SectionHeading']))
         dam_id = escape(str(specimen_data.get('dam_id') or "Unknown Wild Founder (F0)"))
         sire_id = escape(str(specimen_data.get('sire_id') or "Unknown Wild Founder (F0)"))
-        clutch_count = specimen_data.get('clutch_count') or 0
+        clutches_list = specimen_data.get('clutches') or []
+        clutch_count = specimen_data.get('clutch_count') if specimen_data.get('clutch_count') is not None else len(clutches_list)
         gen_status = "F0 (Founder Stock)" if not specimen_data.get('dam_id') else "F1 (Captive Bred)"
         pedigree_data = [
             [
@@ -439,9 +440,21 @@ class ConservationReportGenerator:
                 Paragraph("<b>Generation Status:</b>", self.styles['TableCellText']),
                 Paragraph(gen_status, self.styles['TableCellText']),
                 Paragraph("<b>Active Clutches / Offspring:</b>", self.styles['TableCellText']),
-                Paragraph(f"{clutch_count} recorded clutches", self.styles['TableCellText'])
+                Paragraph(f"{clutch_count} recorded clutch(es)", self.styles['TableCellText'])
             ]
         ]
+        if clutches_list:
+            latest_c = clutches_list[0]
+            c_code = escape(str(latest_c.get('clutch_code') or 'CLUTCH'))
+            c_date = escape(str(latest_c.get('oviposition_date') or '--'))
+            c_eggs = f"{latest_c.get('viable_eggs', 1)}/{latest_c.get('total_eggs', 1)} viable"
+            c_temp = f"{latest_c.get('target_temp_c', 31.5)}°C ({escape(str(latest_c.get('predicted_sex') or 'TSD'))})"
+            pedigree_data.append([
+                Paragraph("<b>Latest Clutch &amp; Oviposition:</b>", self.styles['TableCellText']),
+                Paragraph(f"<b>{c_code}</b> ({c_date}, {c_eggs})", self.styles['TableCellText']),
+                Paragraph("<b>Incubation TSD Target:</b>", self.styles['TableCellText']),
+                Paragraph(c_temp, self.styles['TableCellText'])
+            ])
         pedigree_table = Table(pedigree_data, colWidths=[4.2 * cm, 4.8 * cm, 4.2 * cm, 4.8 * cm])
         pedigree_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),

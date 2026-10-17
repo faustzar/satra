@@ -380,6 +380,47 @@ class TestPDFReportGenerator(unittest.TestCase):
         self.assertTrue(pdf_bytes.startswith(b"%PDF"))
         self.assertGreater(len(pdf_bytes), 3000)
 
+    def test_breeding_clutches_and_tsd_in_pdf(self):
+        """Test PDF generation when recorded database clutches and TSD incubation parameters are present."""
+        data = {
+            "custom_identifier": "LEOP-2026-001",
+            "species_name": "Stigmochelys pardalis",
+            "common_name": "Leopard Tortoise",
+            "sex": "Female",
+            "status": "Released",
+            "clutch_count": 2,
+            "clutches": [
+                {
+                    "clutch_code": "CLUTCH-2026-001",
+                    "oviposition_date": "2026-10-05",
+                    "total_eggs": 1,
+                    "viable_eggs": 1,
+                    "incubation_mode": "Artificial",
+                    "target_temp_c": 31.5,
+                    "predicted_sex": "Predominantly Female (95%+)",
+                    "eggs": [
+                        {
+                            "egg_code": "CLUTCH-2026-001-E01",
+                            "initial_mass_grams": 12.4,
+                            "length_mm": 34.6,
+                            "width_mm": 24.9,
+                            "coleman_volume_cm3": 11.23,
+                            "fertility_status": "Fertile"
+                        }
+                    ]
+                }
+            ],
+            "latest_mass": 151.4,
+            "latest_scl": 92.6,
+            "latest_sh": 40.2,
+            "latest_sw": 68.8,
+            "inspections": []
+        }
+        pdf_bytes = self.generator.generate_specimen_report(data)
+        self.assertIsInstance(pdf_bytes, bytes)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+        self.assertGreater(len(pdf_bytes), 2000)
+
 if __name__ == "__main__":
     unittest.main()
 

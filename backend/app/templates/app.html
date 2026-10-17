@@ -1095,34 +1095,71 @@
     <!-- TAB 5: BREEDING & TSD -->
     <div id="tab-breeding" class="tab-content">
       <div class="grid-2">
+        <!-- Card 1: TSD Incubator Controller & Quick Clutch Registration -->
         <div class="card">
-          <div class="card-title"><i class="fa-solid fa-temperature-arrow-up" style="color: #fb923c;"></i> Temperature-Dependent Sex Determination (TSD)</div>
-          <p style="font-size: 13px; color: var(--text-muted); margin: 6px 0 16px 0;">
-            Adjust incubator temperature to control conservation captive-breeding sex ratios (Pattern Ia).
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+            <div class="card-title" style="margin: 0;"><i class="fa-solid fa-temperature-arrow-up" style="color: #fb923c;"></i> 1. Temperature-Dependent Sex Determination (TSD)</div>
+            <button class="btn btn-gold" style="font-size: 11px; padding: 6px 10px;" onclick="openClutchModal()">
+              <i class="fa-solid fa-egg"></i> + Register Clutch
+            </button>
+          </div>
+          <p style="font-size: 13px; color: var(--text-muted); margin: 6px 0 14px 0;">
+            Adjust incubator target temperature to manage conservation captive-breeding sex ratios (Chelonian Pattern Ia; pivotal threshold \(\approx 30.8^\circ\text{C}\)).
           </p>
 
           <label style="font-size: 13px; font-weight: 600;">Incubation Target: <span id="tempVal" style="color: #fb923c;">31.5</span>°C</label>
           <input type="range" id="tempRange" min="28.0" max="33.5" step="0.1" value="31.5" oninput="updateTSD()">
 
-          <div style="background: var(--card-inner); padding: 18px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 10px;">
+          <div style="background: var(--card-inner); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 10px;">
             <div style="font-size: 12px; color: var(--text-muted);">Predicted Hatchling Sex Ratio:</div>
             <div id="tsdPrediction" style="font-size: 20px; font-weight: 800; color: var(--accent-clay); margin-top: 6px;">Predominantly Female</div>
             <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;" id="tsdNote">Temperatures &gt; 31.5°C produce 95%+ females.</div>
           </div>
-        </div>
 
-        <div class="card">
-          <div class="card-title"><i class="fa-solid fa-list-check" style="color: var(--primary-light);"></i> Active Clutches in Incubator</div>
-          <div style="background: #090d16; padding: 14px; border-radius: 12px; margin-top: 12px; border: 1px solid var(--border-color);">
-            <div style="display: flex; justify-content: space-between; font-weight: 700;">
-              <span>CLUTCH-2026-012</span>
-              <span class="badge badge-wild">Day 45 / 120</span>
+          <!-- Breeding Summary KPIs -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px;">
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Active Clutches</div>
+              <div id="breedingKpiClutches" style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 800; color: var(--primary-light); margin-top: 2px;">--</div>
             </div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Species: Stigmochelys pardalis • 11 Eggs</div>
-            <div style="margin-top: 8px; height: 6px; background: #334155; border-radius: 4px; overflow: hidden;">
-              <div style="width: 37%; height: 100%; background: #4ade80;"></div>
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Viable Eggs</div>
+              <div id="breedingKpiViableEggs" style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 800; color: var(--accent-gold); margin-top: 2px;">--</div>
+            </div>
+            <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Studbook Pairings</div>
+              <div id="breedingKpiPairings" style="font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 800; color: #38bdf8; margin-top: 2px;">--</div>
             </div>
           </div>
+        </div>
+
+        <!-- Card 2: Active Clutches in Incubator (Live Database-Backed) -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <div class="card-title" style="margin: 0;"><i class="fa-solid fa-list-check" style="color: var(--primary-light);"></i> 2. Active Clutches &amp; Coleman Egg Incubation</div>
+            <span id="activeClutchesCountBadge" class="badge badge-wild" style="font-size: 11px;">Loading...</span>
+          </div>
+          <div id="activeClutchesContainer" style="display: flex; flex-direction: column; gap: 12px; max-height: 420px; overflow-y: auto;">
+            <!-- Populated dynamically by loadBreedingAndClutches() -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Captive & Wild Breeding Pairings & Courtship Log -->
+      <div class="card" style="margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div class="card-title" style="margin: 0;"><i class="fa-solid fa-dna" style="color: #f472b6;"></i> 3. Studbook Breeding Pairings &amp; Courtship Log</div>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0 0;">
+              Track maternal (Dam) and paternal (Sire) genetic pairings, courtship behaviors, copulation confirmation, and resulting clutches.
+            </p>
+          </div>
+          <button class="btn btn-secondary" style="font-size: 12px; border-color: #f472b6; color: #f472b6;" onclick="openPairingModal()">
+            <i class="fa-solid fa-heart"></i> + Log Breeding Pairing
+          </button>
+        </div>
+        <div id="breedingPairingsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 12px;">
+          <!-- Populated dynamically by loadBreedingAndClutches() -->
         </div>
       </div>
     </div>
@@ -2017,6 +2054,143 @@
           <i class="fa-solid fa-check"></i> Save Preferences
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Register Clutch & Egg Incubation Modal -->
+  <div class="modal-backdrop" id="clutchModal">
+    <div class="modal-box" style="max-width: 620px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-egg" style="font-size: 18px; color: var(--accent-gold);"></i>
+          <h2 style="font-size: 18px; font-weight: 800; margin: 0;">Register Clutch &amp; Oviposition Event</h2>
+        </div>
+        <button class="btn btn-secondary" onclick="closeModal('clutchModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="clutchForm" onsubmit="event.preventDefault(); submitClutchForm();">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 700;">Maternal Dam (Female Tortoise) *</label>
+            <select id="clutchDamSelect" required onchange="prefillClutchFromGravidInspection()"></select>
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 700;">Linked Breeding Pairing (Optional)</label>
+            <select id="clutchPairingSelect">
+              <option value="">-- Wild / Unpaired Founder --</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 700;">Clutch Code</label>
+            <input type="text" id="clutchCodeInput" placeholder="e.g. CLUTCH-2026-003">
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 700;">Oviposition Date</label>
+            <input type="date" id="clutchDateInput" required>
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 700;">Incubation Mode</label>
+            <select id="clutchModeInput">
+              <option value="Artificial" selected>Artificial Incubator</option>
+              <option value="InSitu">In-Situ Protected Nest</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 700;">Total Eggs Laid *</label>
+            <input type="number" id="clutchTotalEggs" min="1" max="30" value="1" required>
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 700;">Viable / Fertile Eggs</label>
+            <input type="number" id="clutchViableEggs" min="0" max="30" value="1">
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 700;">Target TSD Temp (°C)</label>
+            <input type="number" step="0.1" id="clutchTempInput" min="26.0" max="34.5" value="31.5">
+          </div>
+        </div>
+
+        <div style="background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 14px;">
+          <div style="font-size: 12px; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">
+            <i class="fa-solid fa-ruler-combined"></i> Baseline Egg Biometrics (Coleman 1991 Non-Spherical Ellipsoid)
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted);">Initial Egg Mass (g)</label>
+              <input type="number" step="0.1" id="clutchEggMass" placeholder="12.4" value="12.4" style="margin-bottom: 0;">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted);">Egg Length L (mm)</label>
+              <input type="number" step="0.1" id="clutchEggLength" placeholder="34.6" value="34.6" style="margin-bottom: 0;">
+            </div>
+            <div>
+              <label style="font-size: 11px; color: var(--text-muted);">Egg Width W (mm)</label>
+              <input type="number" step="0.1" id="clutchEggWidth" placeholder="24.9" value="24.9" style="margin-bottom: 0;">
+            </div>
+          </div>
+          <div id="clutchPrefillNotice" style="font-size: 11px; color: #4ade80; margin-top: 6px; display: none;"></div>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('clutchModal')">Cancel</button>
+          <button type="submit" class="btn btn-gold"><i class="fa-solid fa-check"></i> Save Clutch &amp; Generate Egg Records</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Log Breeding Pairing Modal -->
+  <div class="modal-backdrop" id="pairingModal">
+    <div class="modal-box" style="max-width: 560px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-heart" style="font-size: 18px; color: #f472b6;"></i>
+          <h2 style="font-size: 18px; font-weight: 800; margin: 0;">Log Studbook Breeding Pairing</h2>
+        </div>
+        <button class="btn btn-secondary" onclick="closeModal('pairingModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="pairingForm" onsubmit="event.preventDefault(); submitPairingForm();">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 700;">Dam (Female) *</label>
+            <select id="pairingDamSelect" required></select>
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 700;">Sire (Male) *</label>
+            <select id="pairingSireSelect" required></select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 700;">Pairing Date</label>
+            <input type="date" id="pairingDateInput" required>
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 700;">Enclosure / Reserve Sector</label>
+            <input type="text" id="pairingLocationInput" value="Sanctuary Breeding Boma B2">
+          </div>
+        </div>
+
+        <label style="font-size: 12px; font-weight: 700;">Courtship &amp; Behavioral Observations</label>
+        <textarea id="pairingBehaviorsInput" rows="2" placeholder="Observed head-bobbing, olfactory investigation, mounting, vocalization...">Spring courtship: head-bobbing, olfactory investigation, confirmed mounting</textarea>
+
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px;">
+          <input type="checkbox" id="pairingCopulationCheck" checked style="width: 16px; height: 16px; margin: 0;">
+          <span>Copulation / Intromission Visually Confirmed</span>
+        </label>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('pairingModal')">Cancel</button>
+          <button type="submit" class="btn btn-gold"><i class="fa-solid fa-check"></i> Save Studbook Pairing</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -4268,6 +4442,332 @@
       `;
     }
 
+    // Live Database-Backed Breeding, Clutches & Egg Incubation Tracker (Tab 5)
+    let currentClutchesCache = [];
+    let currentPairingsCache = [];
+
+    async function loadBreedingAndClutches() {
+      try {
+        const [clutchesRes, pairingsRes] = await Promise.all([
+          fetch('/api/v1/breeding/clutches'),
+          fetch('/api/v1/breeding/pairings')
+        ]);
+        currentClutchesCache = clutchesRes.ok ? await clutchesRes.json() : [];
+        currentPairingsCache = pairingsRes.ok ? await pairingsRes.json() : [];
+
+        renderActiveClutches();
+        renderBreedingPairings();
+      } catch (err) {
+        console.error('Failed to load breeding clutches and pairings', err);
+      }
+    }
+
+    function renderActiveClutches() {
+      const container = document.getElementById('activeClutchesContainer');
+      const badge = document.getElementById('activeClutchesCountBadge');
+      const kpiClutches = document.getElementById('breedingKpiClutches');
+      const kpiEggs = document.getElementById('breedingKpiViableEggs');
+
+      const totalViable = currentClutchesCache.reduce((acc, c) => acc + (Number(c.viable_eggs) || 0), 0);
+      const totalEggs = currentClutchesCache.reduce((acc, c) => acc + (Number(c.total_eggs) || 0), 0);
+
+      if (badge) badge.innerText = `${currentClutchesCache.length} Active Clutch${currentClutchesCache.length === 1 ? '' : 'es'} (${totalViable}/${totalEggs} Viable Eggs)`;
+      if (kpiClutches) kpiClutches.innerText = String(currentClutchesCache.length);
+      if (kpiEggs) kpiEggs.innerText = `${totalViable} / ${totalEggs}`;
+
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (currentClutchesCache.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 28px 16px; color: var(--text-muted); font-size: 13px;">
+            <i class="fa-solid fa-egg" style="font-size: 28px; opacity: 0.45; margin-bottom: 8px; display: block;"></i>
+            No clutches registered yet. Click <strong>+ Register Clutch</strong> to log an oviposition event.
+          </div>
+        `;
+        return;
+      }
+
+      currentClutchesCache.forEach(c => {
+        const oviDate = c.oviposition_date ? new Date(c.oviposition_date).toLocaleDateString() : 'Recent';
+        const sireTag = c.sire_identifier ? ` × Sire: <strong>${c.sire_identifier}</strong>` : ' • Wild / Founder Mate';
+        const volStr = c.mean_coleman_volume_cm3 ? ` • Mean V<sub>egg</sub>: <strong>${c.mean_coleman_volume_cm3.toFixed(2)} cm³</strong>` : '';
+
+        let eggsRowsHtml = '';
+        (c.eggs || []).forEach(egg => {
+          const eMass = egg.initial_mass_grams ? formatMass(egg.initial_mass_grams) : '—';
+          const eDim = (egg.length_mm && egg.width_mm) ? `${egg.length_mm.toFixed(1)}×${egg.width_mm.toFixed(1)} mm` : '—';
+          const eVol = egg.coleman_volume_cm3 ? `${egg.coleman_volume_cm3.toFixed(2)} cm³` : '—';
+          const statusColor = egg.fertility_status === 'Hatched' ? '#38bdf8' : (egg.fertility_status === 'Fertile' || egg.fertility_status === 'Viable' ? '#4ade80' : '#ef4444');
+
+          eggsRowsHtml += `
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 8px; background: rgba(0,0,0,0.25); border-radius: 6px; font-size: 11px; flex-wrap: wrap;">
+              <div>
+                <strong style="font-family: 'JetBrains Mono', monospace; color: var(--accent-gold);">${egg.egg_code}</strong>
+                <span style="color: var(--text-muted); margin-left: 6px;">Mass: ${eMass} • Dim: ${eDim} • V<sub>egg</sub>: <strong style="color:#38bdf8;">${eVol}</strong></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <select onchange="updateEggFertilityStatus('${egg.id}', this.value)" style="margin: 0; padding: 2px 6px; font-size: 10.5px; width: auto; color: ${statusColor}; font-weight: 700;">
+                  <option value="Fertile" ${egg.fertility_status === 'Fertile' ? 'selected' : ''}>Fertile (Candled)</option>
+                  <option value="Viable" ${egg.fertility_status === 'Viable' ? 'selected' : ''}>Viable</option>
+                  <option value="Hatched" ${egg.fertility_status === 'Hatched' ? 'selected' : ''}>Pipping / Hatched</option>
+                  <option value="Infertile" ${egg.fertility_status === 'Infertile' ? 'selected' : ''}>Infertile</option>
+                  <option value="EarlyDeath" ${egg.fertility_status === 'EarlyDeath' ? 'selected' : ''}>Early Embryonic Arrest</option>
+                </select>
+              </div>
+            </div>
+          `;
+        });
+
+        const card = document.createElement('div');
+        card.style = "background: var(--card-inner); padding: 14px; border-radius: 12px; border: 1px solid var(--border-color);";
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 700; flex-wrap: wrap; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--primary-light);">${c.clutch_code}</span>
+              <span class="badge badge-released" style="font-size: 9.5px;">${c.incubation_mode} (${c.target_incubation_temp_c.toFixed(1)}°C)</span>
+            </div>
+            <span class="badge badge-wild">Day ${c.days_incubating} / ${c.target_incubation_days} (${c.progress_pct}%)</span>
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">
+            Dam: <strong style="color: var(--text-main);">${c.dam_identifier}</strong> (<em>${c.species_name}</em>)${sireTag} • Laid: ${oviDate}
+          </div>
+          <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;">
+            Viable Eggs: <strong style="color: #4ade80;">${c.viable_eggs}/${c.total_eggs}</strong>${volStr} • TSD Prediction: <strong style="color: var(--accent-clay);">${c.predicted_sex}</strong>
+          </div>
+          <div style="margin-top: 8px; height: 6px; background: #334155; border-radius: 4px; overflow: hidden;">
+            <div style="width: ${Math.max(5, c.progress_pct)}%; height: 100%; background: linear-gradient(90deg, #4ade80, #22c55e);"></div>
+          </div>
+          <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 5px;">
+            ${eggsRowsHtml}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderBreedingPairings() {
+      const listEl = document.getElementById('breedingPairingsList');
+      const kpiPairings = document.getElementById('breedingKpiPairings');
+      if (kpiPairings) kpiPairings.innerText = String(currentPairingsCache.length);
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      if (currentPairingsCache.length === 0) {
+        listEl.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px;">
+            No breeding pairings recorded yet. Click <strong>+ Log Breeding Pairing</strong> above.
+          </div>
+        `;
+        return;
+      }
+
+      currentPairingsCache.forEach(p => {
+        const pDate = p.pairing_date ? new Date(p.pairing_date).toLocaleDateString() : 'Recent';
+        const card = document.createElement('div');
+        card.style = "background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px;";
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-weight: 800; font-size: 13px; color: var(--text-main);">
+              <i class="fa-solid fa-venus" style="color: #f472b6;"></i> ${p.dam_identifier}
+              <span style="color: var(--text-muted); margin: 0 4px;">×</span>
+              <i class="fa-solid fa-mars" style="color: #38bdf8;"></i> ${p.sire_identifier}
+            </div>
+            <span class="badge ${p.copulation_confirmed ? 'badge-wild' : 'badge-rehab'}" style="font-size: 9.5px;">
+              ${p.copulation_confirmed ? 'Copulation Confirmed' : 'Courtship Only'}
+            </span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted);">
+            <strong>Date:</strong> ${pDate} • <strong>Location:</strong> ${p.enclosure_or_gps || 'Reserve'} • <strong>Clutches:</strong> ${p.clutch_count || 0}
+          </div>
+          ${p.courtship_behaviors ? `<div style="font-size: 11.5px; color: var(--text-main); margin-top: 6px; font-style: italic;">"${p.courtship_behaviors}"</div>` : ''}
+        `;
+        listEl.appendChild(card);
+      });
+    }
+
+    function openClutchModal(preselectedDamId = null) {
+      const damSelect = document.getElementById('clutchDamSelect');
+      const pairingSelect = document.getElementById('clutchPairingSelect');
+      const dateInput = document.getElementById('clutchDateInput');
+      const codeInput = document.getElementById('clutchCodeInput');
+      const tempInput = document.getElementById('clutchTempInput');
+
+      if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+      if (codeInput) {
+        const nextNum = String((currentClutchesCache ? currentClutchesCache.length : 0) + 1).padStart(3, '0');
+        codeInput.value = `CLUTCH-${new Date().getFullYear()}-${nextNum}`;
+      }
+      const sliderTemp = document.getElementById('tempRange') ? parseFloat(document.getElementById('tempRange').value) : 31.5;
+      if (tempInput && !isNaN(sliderTemp)) tempInput.value = sliderTemp.toFixed(1);
+
+      if (damSelect) {
+        damSelect.innerHTML = '';
+        const females = (currentSpecimensCache || []).filter(s => s.sex !== 'Male');
+        const list = females.length > 0 ? females : (currentSpecimensCache || []);
+        list.forEach(sp => {
+          const opt = document.createElement('option');
+          opt.value = sp.id;
+          opt.innerText = `${sp.custom_identifier} (${sp.common_name || sp.species_name})`;
+          if (preselectedDamId && sp.id === preselectedDamId) opt.selected = true;
+          damSelect.appendChild(opt);
+        });
+      }
+
+      if (pairingSelect) {
+        pairingSelect.innerHTML = '<option value="">-- Wild / Unpaired Founder --</option>';
+        (currentPairingsCache || []).forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.innerText = `${p.dam_identifier} × ${p.sire_identifier} (${p.pairing_date ? new Date(p.pairing_date).toLocaleDateString() : 'Paired'})`;
+          pairingSelect.appendChild(opt);
+        });
+      }
+
+      prefillClutchFromGravidInspection();
+      document.getElementById('clutchModal').style.display = 'flex';
+    }
+
+    function prefillClutchFromGravidInspection() {
+      const damSelect = document.getElementById('clutchDamSelect');
+      const noticeEl = document.getElementById('clutchPrefillNotice');
+      if (!damSelect) return;
+      const damId = damSelect.value;
+      const gravidObs = (currentObservationsCache || []).find(o => o.specimen_id === damId && (o.egg_length_mm || o.eggs_palpated));
+      if (gravidObs) {
+        if (gravidObs.estimated_egg_count && gravidObs.estimated_egg_count > 0) {
+          document.getElementById('clutchTotalEggs').value = gravidObs.estimated_egg_count;
+          document.getElementById('clutchViableEggs').value = gravidObs.estimated_egg_count;
+        }
+        if (gravidObs.egg_length_mm) document.getElementById('clutchEggLength').value = gravidObs.egg_length_mm;
+        if (gravidObs.egg_width_mm) document.getElementById('clutchEggWidth').value = gravidObs.egg_width_mm;
+        if (gravidObs.egg_volume_cm3) {
+          document.getElementById('clutchEggMass').value = (gravidObs.egg_volume_cm3 * 1.08).toFixed(1);
+        }
+        if (noticeEl) {
+          noticeEl.style.display = 'block';
+          noticeEl.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Auto-linked from Dam's latest gravid radiograph (${gravidObs.egg_length_mm || 34.6}×${gravidObs.egg_width_mm || 24.9} mm, Coleman V<sub>egg</sub> ${gravidObs.egg_volume_cm3 ? gravidObs.egg_volume_cm3.toFixed(2) : '11.23'} cm³).`;
+        }
+      } else if (noticeEl) {
+        noticeEl.style.display = 'none';
+      }
+    }
+
+    async function submitClutchForm() {
+      const damId = document.getElementById('clutchDamSelect').value;
+      if (!damId) {
+        alert('Please select a Maternal Dam.');
+        return;
+      }
+      const totalEggs = parseInt(document.getElementById('clutchTotalEggs').value, 10) || 1;
+      const viableEggs = parseInt(document.getElementById('clutchViableEggs').value, 10);
+      const dateVal = document.getElementById('clutchDateInput').value;
+
+      const payload = {
+        dam_id: damId,
+        pairing_id: document.getElementById('clutchPairingSelect').value || null,
+        clutch_code: document.getElementById('clutchCodeInput').value || null,
+        oviposition_date: dateVal ? new Date(dateVal).toISOString() : new Date().toISOString(),
+        incubation_mode: document.getElementById('clutchModeInput').value || 'Artificial',
+        total_eggs: totalEggs,
+        viable_eggs: !isNaN(viableEggs) ? viableEggs : totalEggs,
+        target_incubation_temp_c: parseFloat(document.getElementById('clutchTempInput').value) || 31.5,
+        initial_egg_mass_grams: parseFloat(document.getElementById('clutchEggMass').value) || null,
+        initial_egg_length_mm: parseFloat(document.getElementById('clutchEggLength').value) || null,
+        initial_egg_width_mm: parseFloat(document.getElementById('clutchEggWidth').value) || null
+      };
+
+      try {
+        const res = await fetch('/api/v1/breeding/clutches', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          closeModal('clutchModal');
+          await loadBreedingAndClutches();
+        } else {
+          const err = await res.json();
+          alert('Failed to register clutch: ' + (err.detail || JSON.stringify(err)));
+        }
+      } catch (err) {
+        console.error('Error registering clutch', err);
+      }
+    }
+
+    async function updateEggFertilityStatus(eggId, newStatus) {
+      try {
+        const res = await fetch(`/api/v1/breeding/eggs/${eggId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fertility_status: newStatus })
+        });
+        if (res.ok) {
+          await loadBreedingAndClutches();
+        }
+      } catch (err) {
+        console.error('Failed to update egg status', err);
+      }
+    }
+
+    function openPairingModal() {
+      const damSelect = document.getElementById('pairingDamSelect');
+      const sireSelect = document.getElementById('pairingSireSelect');
+      const dateInput = document.getElementById('pairingDateInput');
+      if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+
+      if (damSelect && sireSelect) {
+        damSelect.innerHTML = '';
+        sireSelect.innerHTML = '';
+        (currentSpecimensCache || []).forEach(sp => {
+          const optD = document.createElement('option');
+          optD.value = sp.id;
+          optD.innerText = `${sp.custom_identifier} (${sp.sex || 'Unknown'} • ${sp.common_name || sp.species_name})`;
+          if (sp.sex === 'Female') optD.selected = true;
+          damSelect.appendChild(optD);
+
+          const optS = document.createElement('option');
+          optS.value = sp.id;
+          optS.innerText = `${sp.custom_identifier} (${sp.sex || 'Unknown'} • ${sp.common_name || sp.species_name})`;
+          if (sp.sex === 'Male') optS.selected = true;
+          sireSelect.appendChild(optS);
+        });
+      }
+      document.getElementById('pairingModal').style.display = 'flex';
+    }
+
+    async function submitPairingForm() {
+      const damId = document.getElementById('pairingDamSelect').value;
+      const sireId = document.getElementById('pairingSireSelect').value;
+      const dateVal = document.getElementById('pairingDateInput').value;
+
+      const payload = {
+        dam_id: damId,
+        sire_id: sireId,
+        pairing_date: dateVal ? new Date(dateVal).toISOString() : new Date().toISOString(),
+        enclosure_or_gps: document.getElementById('pairingLocationInput').value || 'Sanctuary Breeding Boma',
+        courtship_behaviors: document.getElementById('pairingBehaviorsInput').value || null,
+        copulation_confirmed: document.getElementById('pairingCopulationCheck').checked
+      };
+
+      try {
+        const res = await fetch('/api/v1/breeding/pairings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          closeModal('pairingModal');
+          await loadBreedingAndClutches();
+        } else {
+          const err = await res.json();
+          alert('Failed to save pairing: ' + (err.detail || JSON.stringify(err)));
+        }
+      } catch (err) {
+        console.error('Error saving pairing', err);
+      }
+    }
+
     // Theme Handling (Safari Earth Day/Night)
     function updateThemeUI(theme) {
       const icon = document.getElementById('themeIcon');
@@ -4305,6 +4805,7 @@
 
         await loadSpecimens();
         await loadObservations();
+        await loadBreedingAndClutches();
         populateHealthTrajectorySelect();
         updateSpecimensCardMarkings();
         calculateJacksons();

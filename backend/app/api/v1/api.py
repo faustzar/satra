@@ -10,7 +10,7 @@ from sqlalchemy import func
 import math
 
 from app.db.session import get_db
-from app.models.models import Specimen, Sighting, HealthInspection, BreedingPairing, SpeciesTaxonomy
+from app.models.models import Specimen, Sighting, HealthInspection, BreedingPairing, Clutch, EggRecord, SpeciesTaxonomy
 from app.services.recognition_service import biometric_catalog_service
 from app.services.pdf_report_service import report_generator
 
@@ -125,6 +125,42 @@ class BreedingPairingCreate(BaseModel):
     enclosure_or_gps: Optional[str] = "Enclosure B3"
     courtship_behaviors: Optional[str] = "Observed head-bobbing, mounting and vocalization"
     copulation_confirmed: bool = True
+
+class EggRecordCreate(BaseModel):
+    egg_code: Optional[str] = None
+    initial_mass_grams: Optional[float] = Field(None, example=12.4)
+    length_mm: Optional[float] = Field(None, example=34.6)
+    width_mm: Optional[float] = Field(None, example=24.9)
+    fertility_status: str = Field("Fertile", example="Fertile")  # Fertile | Infertile | EarlyDeath | Viable | Hatched
+    pipping_date: Optional[datetime] = None
+    emergence_date: Optional[datetime] = None
+    neonate_specimen_id: Optional[str] = None
+
+class EggRecordUpdate(BaseModel):
+    initial_mass_grams: Optional[float] = None
+    length_mm: Optional[float] = None
+    width_mm: Optional[float] = None
+    fertility_status: Optional[str] = None
+    pipping_date: Optional[datetime] = None
+    emergence_date: Optional[datetime] = None
+    neonate_specimen_id: Optional[str] = None
+
+class ClutchCreate(BaseModel):
+    pairing_id: Optional[str] = None
+    dam_id: str
+    clutch_code: Optional[str] = None
+    oviposition_date: Optional[datetime] = None
+    nest_latitude: Optional[float] = None
+    nest_longitude: Optional[float] = None
+    total_eggs: int = Field(1, ge=1, le=30)
+    viable_eggs: Optional[int] = None
+    incubation_mode: str = Field("Artificial", example="Artificial")  # Artificial | InSitu
+    target_incubation_temp_c: float = Field(31.5, example=31.5)
+    predicted_sex: Optional[str] = None
+    initial_egg_mass_grams: Optional[float] = Field(None, description="Optional default egg mass to auto-generate egg records")
+    initial_egg_length_mm: Optional[float] = Field(None, description="Optional default egg length (mm) for Coleman volume")
+    initial_egg_width_mm: Optional[float] = Field(None, description="Optional default egg width (mm) for Coleman volume")
+    eggs: Optional[List[EggRecordCreate]] = None
 
 class RecognitionMatch(BaseModel):
     specimen_id: str
@@ -330,6 +366,69 @@ def record_health_inspection(inspection_in: HealthInspectionCreate, db: Session 
         "sighting_logged": sighting_created
     }
 
+def _predict_tsd_sex_ratio(temp_c: float) -> str:
+    """Predict hatchling sex ratio under Pattern Ia TSD (pivotal threshold ~30.8°C)."""
+    if temp_c is None:
+        return "Balanced 1:1 Ratio"
+    if temp_c >= 31.3:
+        return "Predominantly Female (95%+)"
+    elif temp_c <= 29.8:
+        return "Predominantly Male (90%+)"
+    return "Balanced Mixed Ratio (~1:1 Pivotal)"
+
+
+def _serialize_egg(egg: EggRecord) -> dict:
+    coleman_vol = None
+    if egg.length_mm and egg.width_mm and egg.length_mm > 0 and egg.width_mm > 0:
+        coleman_vol = round((math.pi * egg.length_mm * (egg.width_mm ** 2)) / 6000.0, 2)
+    return {
+        "id": egg.id,
+        "clutch_id": egg.clutch_id,
+        "egg_code": egg.egg_code,
+        "initial_mass_grams": egg.initial_mass_grams,
+        "length_mm": egg.length_mm,
+        "width_mm": egg.width_mm,
+        "coleman_volume_cm3": coleman_vol,
+        "fertility_status": egg.fertility_status or "Fertile",
+        "pipping_date": egg.pipping_date.isoformat() if egg.pipping_date else None,
+        "emergence_date": egg.emergence_date.isoformat() if egg.emergence_date else None,
+        "neonate_specimen_id": egg.neonate_specimen_id,
+    }
+
+
+@api_router.get("/breeding/pairings")
+def get_breeding_pairings(
+    specimen_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Retrieve recorded captive and wild courtship/breeding pairings with dam and sire metadata."""
+    query = db.query(BreedingPairing)
+    if specimen_id:
+        query = query.filter((BreedingPairing.dam_id == specimen_id) | (BreedingPairing.sire_id == specimen_id))
+    pairings = query.order_by(BreedingPairing.pairing_date.desc()).all()
+
+    specimens_map = {s.id: s for s in db.query(Specimen).all()}
+    result = []
+    for p in pairings:
+        dam = specimens_map.get(p.dam_id)
+        sire = specimens_map.get(p.sire_id)
+        result.append({
+            "id": p.id,
+            "dam_id": p.dam_id,
+            "dam_identifier": dam.custom_identifier if dam else p.dam_id,
+            "dam_species": dam.species_name if dam else None,
+            "sire_id": p.sire_id,
+            "sire_identifier": sire.custom_identifier if sire else p.sire_id,
+            "sire_species": sire.species_name if sire else None,
+            "pairing_date": p.pairing_date.isoformat() if p.pairing_date else None,
+            "enclosure_or_gps": p.enclosure_or_gps,
+            "courtship_behaviors": p.courtship_behaviors,
+            "copulation_confirmed": bool(p.copulation_confirmed),
+            "clutch_count": len(p.clutches) if p.clutches else 0,
+        })
+    return result
+
+
 @api_router.post("/breeding/pairings")
 def log_breeding_pairing(pairing_in: BreedingPairingCreate, db: Session = Depends(get_db)):
     """Log a captive breeding pairing and courtship observation."""
@@ -350,6 +449,224 @@ def log_breeding_pairing(pairing_in: BreedingPairingCreate, db: Session = Depend
         "pairing_id": pairing.id,
         "pairing_date": pairing.pairing_date
     }
+
+
+@api_router.get("/breeding/clutches")
+def get_clutches(
+    dam_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Retrieve all clutches with incubation progress, TSD predictions, and individual Coleman egg records."""
+    query = db.query(Clutch)
+    if dam_id:
+        query = query.filter(Clutch.dam_id == dam_id)
+    clutches = query.order_by(Clutch.oviposition_date.desc()).all()
+
+    specimens_map = {s.id: s for s in db.query(Specimen).all()}
+    now = datetime.utcnow()
+    result = []
+
+    for c in clutches:
+        dam = specimens_map.get(c.dam_id)
+        sire = None
+        if c.pairing and c.pairing.sire_id:
+            sire = specimens_map.get(c.pairing.sire_id)
+
+        species_name = dam.species_name if dam else "Homopus signatus signatus"
+        # Expected incubation duration: ~110 days for Homopus/Chersobius padlopers, ~120 days for larger tortoises
+        target_days = 110 if ("homopus" in species_name.lower() or "chersobius" in species_name.lower() or "psammobates" in species_name.lower()) else 120
+        ovi_dt = c.oviposition_date or now
+        days_incubating = max(0, (now - ovi_dt).days)
+        progress_pct = min(100, round((days_incubating / float(target_days)) * 100))
+
+        eggs_serialized = [_serialize_egg(e) for e in sorted(c.eggs or [], key=lambda x: x.egg_code or "")]
+        mean_coleman_vol = None
+        vols = [e["coleman_volume_cm3"] for e in eggs_serialized if e["coleman_volume_cm3"] is not None]
+        if vols:
+            mean_coleman_vol = round(sum(vols) / len(vols), 2)
+
+        result.append({
+            "id": c.id,
+            "clutch_code": c.clutch_code,
+            "pairing_id": c.pairing_id,
+            "dam_id": c.dam_id,
+            "dam_identifier": dam.custom_identifier if dam else c.dam_id,
+            "sire_id": sire.id if sire else (c.pairing.sire_id if c.pairing else None),
+            "sire_identifier": sire.custom_identifier if sire else None,
+            "species_name": species_name,
+            "common_name": dam.common_name if dam else "Tortoise",
+            "oviposition_date": ovi_dt.isoformat(),
+            "days_incubating": days_incubating,
+            "target_incubation_days": target_days,
+            "progress_pct": progress_pct,
+            "nest_latitude": c.nest_latitude,
+            "nest_longitude": c.nest_longitude,
+            "total_eggs": c.total_eggs or len(eggs_serialized) or 1,
+            "viable_eggs": c.viable_eggs if c.viable_eggs is not None else len([e for e in eggs_serialized if e["fertility_status"] not in ("Infertile", "EarlyDeath")]),
+            "incubation_mode": c.incubation_mode or "Artificial",
+            "target_incubation_temp_c": c.target_incubation_temp_c or 31.5,
+            "predicted_sex": c.predicted_sex or _predict_tsd_sex_ratio(c.target_incubation_temp_c or 31.5),
+            "mean_coleman_volume_cm3": mean_coleman_vol,
+            "eggs": eggs_serialized,
+        })
+    return result
+
+
+@api_router.post("/breeding/clutches")
+def create_clutch(clutch_in: ClutchCreate, db: Session = Depends(get_db)):
+    """Register a newly laid clutch, compute TSD sex prediction, and auto-create individual EggRecords."""
+    clutch_id = str(uuid.uuid4())
+    year_str = (clutch_in.oviposition_date or datetime.utcnow()).strftime("%Y")
+    existing_count = db.query(Clutch).count()
+    clutch_code = (clutch_in.clutch_code or "").strip() or f"CLUTCH-{year_str}-{existing_count + 1:03d}"
+
+    dup = db.query(Clutch).filter(Clutch.clutch_code == clutch_code).first()
+    if dup:
+        clutch_code = f"{clutch_code}-{str(uuid.uuid4())[:4].upper()}"
+
+    pred_sex = clutch_in.predicted_sex or _predict_tsd_sex_ratio(clutch_in.target_incubation_temp_c)
+    viable = clutch_in.viable_eggs if clutch_in.viable_eggs is not None else clutch_in.total_eggs
+
+    new_clutch = Clutch(
+        id=clutch_id,
+        pairing_id=clutch_in.pairing_id or None,
+        dam_id=clutch_in.dam_id,
+        clutch_code=clutch_code,
+        oviposition_date=clutch_in.oviposition_date or datetime.utcnow(),
+        nest_latitude=clutch_in.nest_latitude,
+        nest_longitude=clutch_in.nest_longitude,
+        total_eggs=clutch_in.total_eggs,
+        viable_eggs=viable,
+        incubation_mode=clutch_in.incubation_mode or "Artificial",
+        target_incubation_temp_c=clutch_in.target_incubation_temp_c,
+        predicted_sex=pred_sex,
+    )
+    db.add(new_clutch)
+    db.flush()
+
+    created_eggs = []
+    if clutch_in.eggs and len(clutch_in.eggs) > 0:
+        for idx, e_in in enumerate(clutch_in.eggs, start=1):
+            ecode = (e_in.egg_code or "").strip() or f"{clutch_code}-E{idx:02d}"
+            egg = EggRecord(
+                id=str(uuid.uuid4()),
+                clutch_id=clutch_id,
+                egg_code=ecode,
+                initial_mass_grams=e_in.initial_mass_grams,
+                length_mm=e_in.length_mm,
+                width_mm=e_in.width_mm,
+                fertility_status=e_in.fertility_status or "Fertile",
+                pipping_date=e_in.pipping_date,
+                emergence_date=e_in.emergence_date,
+                neonate_specimen_id=e_in.neonate_specimen_id,
+            )
+            db.add(egg)
+            created_eggs.append(egg)
+    else:
+        # Auto-populate EggRecords from total_eggs and default dimensions (or latest gravid radiography of Dam)
+        default_l = clutch_in.initial_egg_length_mm
+        default_w = clutch_in.initial_egg_width_mm
+        default_m = clutch_in.initial_egg_mass_grams
+        if (default_l is None or default_w is None) and clutch_in.dam_id:
+            last_gravid = db.query(HealthInspection).filter(
+                HealthInspection.specimen_id == clutch_in.dam_id,
+                HealthInspection.egg_length_mm.isnot(None)
+            ).order_by(HealthInspection.inspected_at.desc()).first()
+            if last_gravid:
+                default_l = default_l or last_gravid.egg_length_mm
+                default_w = default_w or last_gravid.egg_width_mm
+                if default_m is None and last_gravid.egg_volume_cm3:
+                    default_m = round(last_gravid.egg_volume_cm3 * 1.08, 1)
+
+        for idx in range(1, (clutch_in.total_eggs or 1) + 1):
+            ecode = f"{clutch_code}-E{idx:02d}"
+            egg = EggRecord(
+                id=str(uuid.uuid4()),
+                clutch_id=clutch_id,
+                egg_code=ecode,
+                initial_mass_grams=default_m,
+                length_mm=default_l,
+                width_mm=default_w,
+                fertility_status="Fertile" if idx <= viable else "Infertile",
+            )
+            db.add(egg)
+            created_eggs.append(egg)
+
+    db.commit()
+    db.refresh(new_clutch)
+    return {
+        "status": "success",
+        "clutch_id": new_clutch.id,
+        "clutch_code": new_clutch.clutch_code,
+        "predicted_sex": new_clutch.predicted_sex,
+        "eggs_created": len(created_eggs),
+    }
+
+
+@api_router.post("/breeding/clutches/{clutch_id}/eggs")
+def add_egg_to_clutch(clutch_id: str, egg_in: EggRecordCreate, db: Session = Depends(get_db)):
+    """Add an individual EggRecord with Coleman (1991) dimensions and candling fertility status to a clutch."""
+    clutch = db.query(Clutch).filter(Clutch.id == clutch_id).first()
+    if not clutch:
+        raise HTTPException(status_code=404, detail="Clutch not found.")
+
+    existing_eggs = db.query(EggRecord).filter(EggRecord.clutch_id == clutch_id).count()
+    egg_code = (egg_in.egg_code or "").strip() or f"{clutch.clutch_code}-E{existing_eggs + 1:02d}"
+    if db.query(EggRecord).filter(EggRecord.egg_code == egg_code).first():
+        egg_code = f"{egg_code}-{str(uuid.uuid4())[:3].upper()}"
+
+    egg = EggRecord(
+        id=str(uuid.uuid4()),
+        clutch_id=clutch_id,
+        egg_code=egg_code,
+        initial_mass_grams=egg_in.initial_mass_grams,
+        length_mm=egg_in.length_mm,
+        width_mm=egg_in.width_mm,
+        fertility_status=egg_in.fertility_status or "Fertile",
+        pipping_date=egg_in.pipping_date,
+        emergence_date=egg_in.emergence_date,
+        neonate_specimen_id=egg_in.neonate_specimen_id,
+    )
+    db.add(egg)
+    clutch.total_eggs = existing_eggs + 1
+    db.commit()
+    db.refresh(egg)
+    return _serialize_egg(egg)
+
+
+@api_router.patch("/breeding/eggs/{egg_id}")
+def update_egg_record(egg_id: str, egg_in: EggRecordUpdate, db: Session = Depends(get_db)):
+    """Update an egg's fertility status (candling), pipping date, emergence date, or dimensions."""
+    egg = db.query(EggRecord).filter(EggRecord.id == egg_id).first()
+    if not egg:
+        raise HTTPException(status_code=404, detail="Egg record not found.")
+
+    if egg_in.initial_mass_grams is not None:
+        egg.initial_mass_grams = egg_in.initial_mass_grams
+    if egg_in.length_mm is not None:
+        egg.length_mm = egg_in.length_mm
+    if egg_in.width_mm is not None:
+        egg.width_mm = egg_in.width_mm
+    if egg_in.fertility_status is not None:
+        egg.fertility_status = egg_in.fertility_status
+    if egg_in.pipping_date is not None:
+        egg.pipping_date = egg_in.pipping_date
+    if egg_in.emergence_date is not None:
+        egg.emergence_date = egg_in.emergence_date
+    if egg_in.neonate_specimen_id is not None:
+        egg.neonate_specimen_id = egg_in.neonate_specimen_id
+
+    # Recompute parent clutch viable_eggs count
+    if egg.clutch_id:
+        parent_clutch = db.query(Clutch).filter(Clutch.id == egg.clutch_id).first()
+        if parent_clutch:
+            all_eggs = db.query(EggRecord).filter(EggRecord.clutch_id == egg.clutch_id).all()
+            parent_clutch.viable_eggs = len([e for e in all_eggs if (e.fertility_status or "Fertile") not in ("Infertile", "EarlyDeath")])
+
+    db.commit()
+    db.refresh(egg)
+    return _serialize_egg(egg)
+
 
 @api_router.post("/recognition/match-shell", response_model=List[RecognitionMatch])
 async def match_shell_pattern(
@@ -674,6 +991,32 @@ def get_specimen_pdf_report(
     except Exception:
         pass
 
+    # Query recorded clutches and breeding pairings for this specimen
+    specimen_clutches = []
+    clutch_count = 0
+    try:
+        raw_clutches = db.query(Clutch).filter(Clutch.dam_id == specimen.id).order_by(Clutch.oviposition_date.desc()).all()
+        if not raw_clutches:
+            # Check if sire via BreedingPairing
+            sire_pairing_ids = [p.id for p in db.query(BreedingPairing).filter(BreedingPairing.sire_id == specimen.id).all()]
+            if sire_pairing_ids:
+                raw_clutches = db.query(Clutch).filter(Clutch.pairing_id.in_(sire_pairing_ids)).order_by(Clutch.oviposition_date.desc()).all()
+        clutch_count = len(raw_clutches)
+        for c in raw_clutches:
+            eggs_list = [_serialize_egg(e) for e in sorted(c.eggs or [], key=lambda x: x.egg_code or "")]
+            specimen_clutches.append({
+                "clutch_code": c.clutch_code,
+                "oviposition_date": c.oviposition_date.strftime("%Y-%m-%d") if c.oviposition_date else "--",
+                "total_eggs": c.total_eggs or len(eggs_list) or 1,
+                "viable_eggs": c.viable_eggs if c.viable_eggs is not None else len(eggs_list),
+                "incubation_mode": c.incubation_mode or "Artificial",
+                "target_temp_c": c.target_incubation_temp_c or 31.5,
+                "predicted_sex": c.predicted_sex or _predict_tsd_sex_ratio(c.target_incubation_temp_c or 31.5),
+                "eggs": eggs_list,
+            })
+    except Exception as cl_err:
+        logger.warning(f"Could not query clutches for specimen {specimen.id}: {cl_err}")
+
     specimen_data = {
         "custom_identifier": specimen.custom_identifier or "N/A",
         "species_name": specimen.species_name or "N/A",
@@ -688,6 +1031,8 @@ def get_specimen_pdf_report(
         "status": specimen.status or "Wild",
         "dam_id": specimen.dam_id,
         "sire_id": specimen.sire_id,
+        "clutch_count": clutch_count,
+        "clutches": specimen_clutches,
         "inspections": inspection_records,
         "latest_mass": latest_mass,
         "latest_scl": latest_scl,

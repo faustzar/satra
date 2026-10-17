@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse
 from app.config import settings
 from app.api.v1.api import api_router
 from app.db.session import engine, Base, SessionLocal
-from app.models.models import SpeciesTaxonomy, Specimen, Sighting, HealthInspection
+from app.models.models import SpeciesTaxonomy, Specimen, Sighting, HealthInspection, BreedingPairing, Clutch, EggRecord
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -401,6 +401,90 @@ async def lifespan(app: FastAPI):
                 ),
             ]
             db.add_all(seed_inspections)
+            db.commit()
+
+        # Seed baseline Breeding Pairings, Clutches & Egg Records for Tab 5
+        existing_clutch = db.query(Clutch).first()
+        if not existing_clutch:
+            now = datetime.utcnow()
+            pairing1 = BreedingPairing(
+                id="f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c",
+                dam_id="e4f5a3b2-1c2d-4e5f-9a8b-0c1d2e3f4a5b",
+                sire_id="b1c2d3e4-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
+                pairing_date=now - timedelta(days=60),
+                enclosure_or_gps="Sanctuary Breeding Boma B2 (-33.8290, 19.1250)",
+                courtship_behaviors="Spring courtship: head-bobbing, olfactory investigation, confirmed mounting",
+                copulation_confirmed=True
+            )
+            db.add(pairing1)
+            db.flush()
+
+            clutch1 = Clutch(
+                id="a9b8c7d6-e5f4-4a3b-9c2d-1e0f9a8b7c6d",
+                pairing_id=pairing1.id,
+                dam_id="e4f5a3b2-1c2d-4e5f-9a8b-0c1d2e3f4a5b",
+                clutch_code="CLUTCH-2026-001",
+                oviposition_date=now - timedelta(days=12),
+                nest_latitude=-33.8292,
+                nest_longitude=19.1254,
+                total_eggs=1,
+                viable_eggs=1,
+                incubation_mode="Artificial",
+                target_incubation_temp_c=31.5,
+                predicted_sex="Predominantly Female (95%+)"
+            )
+            clutch2 = Clutch(
+                id="b8c7d6e5-f4a3-4b2c-8d1e-0f9a8b7c6d5e",
+                pairing_id=None,
+                dam_id="c3d4e5f6-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+                clutch_code="CLUTCH-2026-002",
+                oviposition_date=now - timedelta(days=45),
+                nest_latitude=-33.7920,
+                nest_longitude=19.0830,
+                total_eggs=3,
+                viable_eggs=3,
+                incubation_mode="Artificial",
+                target_incubation_temp_c=30.8,
+                predicted_sex="Balanced Mixed Ratio (~1:1 Pivotal)"
+            )
+            db.add_all([clutch1, clutch2])
+            db.flush()
+
+            seed_eggs = [
+                EggRecord(
+                    clutch_id=clutch1.id,
+                    egg_code="CLUTCH-2026-001-E01",
+                    initial_mass_grams=12.4,
+                    length_mm=34.6,
+                    width_mm=24.9,
+                    fertility_status="Fertile"
+                ),
+                EggRecord(
+                    clutch_id=clutch2.id,
+                    egg_code="CLUTCH-2026-002-E01",
+                    initial_mass_grams=11.8,
+                    length_mm=33.8,
+                    width_mm=24.4,
+                    fertility_status="Fertile"
+                ),
+                EggRecord(
+                    clutch_id=clutch2.id,
+                    egg_code="CLUTCH-2026-002-E02",
+                    initial_mass_grams=12.1,
+                    length_mm=34.1,
+                    width_mm=24.6,
+                    fertility_status="Fertile"
+                ),
+                EggRecord(
+                    clutch_id=clutch2.id,
+                    egg_code="CLUTCH-2026-002-E03",
+                    initial_mass_grams=11.5,
+                    length_mm=33.2,
+                    width_mm=24.1,
+                    fertility_status="Viable"
+                ),
+            ]
+            db.add_all(seed_eggs)
             db.commit()
     finally:
         db.close()

@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Response, Query
+﻿from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, Response, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from datetime import datetime
 import uuid
 import re
@@ -10,7 +10,7 @@ from sqlalchemy import func
 import math
 
 from app.db.session import get_db
-from app.models.models import Specimen, Sighting, HealthInspection, BreedingPairing, Clutch, EggRecord, SpeciesTaxonomy
+from app.models.models import Specimen, Sighting, HealthInspection, BreedingPairing, Clutch, EggRecord, SpeciesTaxonomy, PhotoRecord, PhotoRecord
 from app.services.recognition_service import biometric_catalog_service
 from app.services.pdf_report_service import report_generator
 
@@ -30,10 +30,33 @@ class SpecimenBase(BaseModel):
     status: str = Field("Wild", example="InRehab")
     dam_id: Optional[str] = None
     sire_id: Optional[str] = None
+    primary_photo_id: Optional[str] = None
 
 class SpecimenResponse(SpecimenBase):
     id: str
     created_at: datetime
+    primary_photo_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class PhotoRecordBase(BaseModel):
+    photo_type: str = "Carapace"
+    cloud_url: str
+    thumbnail_url: Optional[str] = None
+    is_primary_avatar: bool = False
+    capture_context: str = "ResearchIntake"
+    markings_json: Optional[Any] = None
+    exif_metadata: Optional[Any] = None
+    inspection_id: Optional[str] = None
+
+class PhotoRecordCreate(PhotoRecordBase):
+    specimen_id: Optional[str] = None
+
+class PhotoRecordResponse(PhotoRecordBase):
+    id: str
+    specimen_id: Optional[str] = None
+    captured_at: datetime
 
     class Config:
         from_attributes = True
@@ -690,6 +713,96 @@ async def match_shell_pattern(
         return [RecognitionMatch(**m) for m in matches]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Biometric analysis error: {str(e)}")
+
+# --- Specimen Photo Album & Marking Endpoints ---
+
+# --- Global Photo Album Endpoint ---
+
+@api_router.get("/photos", response_model=List[PhotoRecordResponse])
+def get_all_photos(
+    specimen_id: Optional[str] = None,
+    photo_type: Optional[str] = None,
+    capture_context: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Retrieve photos across all specimens or filtered by specimen, angle, and capture context."""
+    query = db.query(PhotoRecord)
+    if specimen_id:
+        query = query.filter(PhotoRecord.specimen_id == specimen_id)
+    if photo_type and photo_type != "All":
+        query = query.filter(PhotoRecord.photo_type == photo_type)
+    if capture_context and capture_context != "All":
+        query = query.filter(PhotoRecord.capture_context == capture_context)
+    return query.order_by(PhotoRecord.captured_at.desc()).all()
+
+@api_router.get("/specimens/{specimen_id}/photos", response_model=List[PhotoRecordResponse])
+def get_specimen_photos(specimen_id: str, photo_type: Optional[str] = None, db: Session = Depends(get_db)):
+    """Retrieve all photos for a specimen, ordered by newest first, optionally filtered by angle."""
+    query = db.query(PhotoRecord).filter(PhotoRecord.specimen_id == specimen_id)
+    if photo_type and photo_type != "All":
+        query = query.filter(PhotoRecord.photo_type == photo_type)
+    return query.order_by(PhotoRecord.captured_at.desc()).all()
+
+@api_router.post("/specimens/{specimen_id}/photos", response_model=PhotoRecordResponse)
+def add_specimen_photo(specimen_id: str, photo_in: PhotoRecordCreate, db: Session = Depends(get_db)):
+    """Upload or record a photo for a specimen with markings and view type."""
+    specimen = db.query(Specimen).filter(Specimen.id == specimen_id).first()
+    if not specimen:
+        raise HTTPException(status_code=404, detail="Specimen not found")
+
+    if photo_in.is_primary_avatar:
+        db.query(PhotoRecord).filter(PhotoRecord.specimen_id == specimen_id).update({"is_primary_avatar": False})
+
+    photo = PhotoRecord(
+        specimen_id=specimen_id,
+        inspection_id=photo_in.inspection_id,
+        photo_type=photo_in.photo_type,
+        cloud_url=photo_in.cloud_url,
+        thumbnail_url=photo_in.thumbnail_url or photo_in.cloud_url,
+        is_primary_avatar=photo_in.is_primary_avatar,
+        capture_context=photo_in.capture_context,
+        markings_json=photo_in.markings_json,
+        exif_metadata=photo_in.exif_metadata,
+        captured_at=datetime.utcnow()
+    )
+    db.add(photo)
+    db.commit()
+    db.refresh(photo)
+
+    if photo.is_primary_avatar:
+        specimen.primary_photo_id = photo.id
+        db.commit()
+
+    return photo
+
+@api_router.patch("/specimens/{specimen_id}/photos/{photo_id}/make-primary")
+def set_primary_photo(specimen_id: str, photo_id: str, db: Session = Depends(get_db)):
+    """Set a specific photo as the specimen primary avatar icon."""
+    specimen = db.query(Specimen).filter(Specimen.id == specimen_id).first()
+    if not specimen:
+        raise HTTPException(status_code=404, detail="Specimen not found")
+
+    photo = db.query(PhotoRecord).filter(PhotoRecord.id == photo_id, PhotoRecord.specimen_id == specimen_id).first()
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    db.query(PhotoRecord).filter(PhotoRecord.specimen_id == specimen_id).update({"is_primary_avatar": False})
+    photo.is_primary_avatar = True
+    specimen.primary_photo_id = photo.id
+    db.commit()
+
+    return {"status": "success", "primary_photo_id": photo.id, "cloud_url": photo.cloud_url}
+
+@api_router.patch("/specimens/{specimen_id}/photos/{photo_id}/markings")
+def update_photo_markings(specimen_id: str, photo_id: str, markings: List[Dict[str, Any]], db: Session = Depends(get_db)):
+    """Update manual/detected anatomical marking pins on a photo."""
+    photo = db.query(PhotoRecord).filter(PhotoRecord.id == photo_id, PhotoRecord.specimen_id == specimen_id).first()
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    photo.markings_json = markings
+    db.commit()
+    return {"status": "success", "photo_id": photo.id, "markings": markings}
 
 @api_router.get("/sightings/geojson")
 def get_sightings_geojson(

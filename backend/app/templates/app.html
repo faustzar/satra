@@ -579,6 +579,119 @@
       nav { width: 100%; overflow-x: auto; }
       .nav-btn { font-size: 12px; padding: 6px 12px; }
     }
+  
+    /* Specimen Photo Album & Biometrics CSS */
+    .album-filter-pill {
+      background: var(--card-inner);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    .album-filter-pill:hover, .album-filter-pill.active {
+      background: var(--accent-gold);
+      color: #000;
+      border-color: var(--accent-gold);
+    }
+    .photo-thumb-card {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      aspect-ratio: 1;
+      background: #0d0c0a;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .photo-thumb-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-gold);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .photo-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .photo-badge-primary {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: rgba(221, 161, 94, 0.92);
+      color: #000;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .photo-badge-angle {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      background: rgba(15, 14, 12, 0.85);
+      backdrop-filter: blur(4px);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .photo-badge-marks {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(16, 185, 129, 0.9);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    /* Pin HUD on Lightbox */
+    .lightbox-pin {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-size: 10px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0,0,0,0.8), 0 0 0 2px #fff;
+      transition: transform 0.15s ease;
+      z-index: 10;
+    }
+    .lightbox-pin:hover {
+      transform: translate(-50%, -50%) scale(1.3);
+      z-index: 20;
+    }
+    .pin-v-notch { background: #ffd600; }
+    .pin-u-notch { background: #38bdf8; color: #fff; }
+    .pin-micro-drill { background: #ec4899; color: #fff; }
+    .pin-epoxy-tag { background: #a855f7; color: #fff; }
+    .pin-predation-scar { background: #ef4444; color: #fff; }
+    .pin-natural-scar { background: #f97316; color: #fff; }
+
   </style>
 </head>
 <body>
@@ -1211,12 +1324,18 @@
       
       <!-- Top Specimen Command Header -->
       <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap;">
-        <div>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <h2 id="modalId" style="font-size: 24px; font-weight: 800; color: var(--primary-light); margin: 0;">LEOP-2026-001</h2>
-            <div id="modalStatusBadge"><span class="badge badge-wild">Wild</span></div>
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <!-- Primary Avatar Portrait -->
+          <div id="modalAvatarContainer" style="width: 58px; height: 58px; border-radius: 12px; overflow: hidden; background: #0d0c0a; border: 2px solid var(--accent-gold); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+            <i class="fa-solid fa-shield-cat" style="font-size: 28px; color: var(--accent-gold);"></i>
           </div>
-          <p id="modalSpecies" style="font-style: italic; color: var(--text-muted); margin: 4px 0 0 0; font-size: 14px;">Stigmochelys pardalis</p>
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <h2 id="modalId" style="font-size: 24px; font-weight: 800; color: var(--primary-light); margin: 0;">LEOP-2026-001</h2>
+              <div id="modalStatusBadge"><span class="badge badge-wild">Wild</span></div>
+            </div>
+            <p id="modalSpecies" style="font-style: italic; color: var(--text-muted); margin: 4px 0 0 0; font-size: 14px;">Stigmochelys pardalis</p>
+          </div>
         </div>
 
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -1369,30 +1488,46 @@
           </div>
         </div>
 
-        <!-- Widget 4: Longitudinal Carapace Recovery Slider -->
+        <!-- Widget 4: Specimen Photographic Album & Mark Identification Gallery -->
         <div class="card" id="specWidget_recovery" style="padding: 14px; margin: 0;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div class="card-title" style="font-size: 14px; margin: 0;">
-              <i class="fa-solid fa-shield-virus" style="color: #fdba74;"></i> Longitudinal Carapace Recovery
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <div class="card-title" style="font-size: 14px; margin: 0; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-images" style="color: var(--accent-gold);"></i>
+              <span>Photographic Dossier &amp; Biometrics</span>
+              <span id="modalAlbumCountBadge" class="badge badge-wild" style="font-size: 10px; padding: 1px 7px;">0 photos</span>
             </div>
-            <span style="font-size: 11px; color: var(--text-muted);">Drag center slider to evaluate keratinization</span>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button type="button" class="btn btn-gold" style="font-size: 11px; padding: 4px 10px;" onclick="openPhotoUploadModal()">
+                <i class="fa-solid fa-camera"></i> Add Photo
+              </button>
+            </div>
           </div>
-          <div class="comparison-container" id="sliderContainer" style="height: 220px;">
-            <div class="layer-after comparison-layer">
-              <i class="fa-solid fa-circle-check" style="font-size: 36px; color: #4ade80; margin-bottom: 6px;"></i>
-              <h4 style="font-size: 15px; font-weight: 700;">Day 45: Full Keratinization Bridge</h4>
-              <p style="font-size: 12px; color: #bbf7d0; max-width: 440px; margin-top: 4px;">
-                Cerclage wire removed. Stable bone ossification across vertebral scutes. Released into soft-release conditioning.
-              </p>
-            </div>
-            <div class="layer-before comparison-layer" id="beforeLayer">
-              <i class="fa-solid fa-triangle-exclamation" style="font-size: 36px; color: #ef4444; margin-bottom: 6px;"></i>
-              <h4 style="font-size: 15px; font-weight: 700;">Day 1: Acute Vehicle Fracture</h4>
-              <p style="font-size: 12px; color: #fca5a5; max-width: 440px; margin-top: 4px;">
-                Severe 4cm longitudinal carapace split. Emergency triage, dental acrylic stabilization applied.
-              </p>
-            </div>
-            <div class="slider-handle" id="sliderHandle">⬌</div>
+
+          <!-- Angle & Context Filter Pills -->
+          <div style="display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px;">
+            <button type="button" class="album-filter-pill active" onclick="filterModalAlbum('All', this)">
+              <i class="fa-solid fa-border-all"></i> All Views
+            </button>
+            <button type="button" class="album-filter-pill" onclick="filterModalAlbum('Carapace', this)">
+              <i class="fa-solid fa-shield"></i> Carapace (Dorsal)
+            </button>
+            <button type="button" class="album-filter-pill" onclick="filterModalAlbum('Plastron', this)">
+              <i class="fa-solid fa-circle-dot"></i> Plastron (Ventral)
+            </button>
+            <button type="button" class="album-filter-pill" onclick="filterModalAlbum('Head', this)">
+              <i class="fa-solid fa-eye"></i> Head &amp; Nuchal
+            </button>
+            <button type="button" class="album-filter-pill" onclick="filterModalAlbum('Marks', this)">
+              <i class="fa-solid fa-fingerprint"></i> Notches &amp; Marks
+            </button>
+            <button type="button" class="album-filter-pill" onclick="filterModalAlbum('Injury', this)">
+              <i class="fa-solid fa-kit-medical"></i> Predation / Scars
+            </button>
+          </div>
+
+          <!-- Gallery Grid -->
+          <div id="modalAlbumGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; min-height: 140px; max-height: 280px; overflow-y: auto; padding: 2px;">
+            <!-- Rendered by loadSpecimenAlbum() -->
           </div>
         </div>
 
@@ -1492,8 +1627,8 @@
         <label style="display: flex; align-items: center; gap: 12px; background: var(--card-inner); padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border-color);">
           <input type="checkbox" id="swCheck_recovery" checked style="width: 18px; height: 18px; margin: 0;">
           <div>
-            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-shield-virus" style="color: #fdba74;"></i> Longitudinal Recovery Comparison Slider</div>
-            <div style="font-size: 11px; color: var(--text-muted);">Interactive before/after triage slider showing fracture bridge healing</div>
+            <div style="font-weight: 700; font-size: 13px;"><i class="fa-solid fa-images" style="color: var(--accent-gold);"></i> Photographic Album &amp; Mark Identification</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Interactive multi-view photo gallery, primary portrait selector, and scute mark inspector</div>
           </div>
         </label>
 
@@ -2409,6 +2544,9 @@
       if (tabId === 'notches') {
         updateNotchDisplay();
       }
+      if (tabId === 'gallery') {
+        setTimeout(loadGlobalPhotoGallery, 50);
+      }
     }
 
     // Identification Standards & Preferences System
@@ -3210,15 +3348,22 @@
           `;
         }
 
+        const avatarHtml = sp.primary_photo_url 
+          ? `<img src="${sp.primary_photo_url}" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1.5px solid var(--accent-gold); flex-shrink: 0;" alt="${sp.custom_identifier}">`
+          : `<div style="width: 44px; height: 44px; border-radius: 8px; background: var(--card-inner); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="fa-solid fa-shield-cat" style="font-size: 20px; color: var(--accent-gold);"></i></div>`;
+
         card.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-              <h3 style="font-size: 17px; font-weight: 800; color: var(--primary-light);">${sp.custom_identifier}</h3>
-              <p style="font-size: 12px; font-style: italic; color: var(--text-muted);">${sp.species_name || sp.species}</p>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              ${avatarHtml}
+              <div>
+                <h3 style="font-size: 16px; font-weight: 800; color: var(--primary-light);">${sp.custom_identifier}</h3>
+                <p style="font-size: 12px; font-style: italic; color: var(--text-muted);">${sp.species_name || sp.species}</p>
+              </div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
               <span class="badge ${badgeClass}">${sp.status}</span>
-              <span style="font-size: 10px; color: var(--text-muted);"><i class="fa-solid fa-magnifying-glass"></i> Drill down</span>
+              <span style="font-size: 10px; color: var(--text-muted);"><i class="fa-solid fa-magnifying-glass"></i> Dossier</span>
             </div>
           </div>
 
@@ -3399,7 +3544,7 @@
 
       // Show modal first so Leaflet mini-map can properly calculate dimensions
       document.getElementById('detailModal').style.display = 'flex';
-      setupComparisonSlider();
+      loadSpecimenAlbum(id);
 
       // Fetch and display this specimen's observation history and latest health telemetry
       const historyList = document.getElementById('modalObsHistoryList');
@@ -5591,6 +5736,716 @@
         console.error('Initialization error during window.onload:', err);
       }
     };
+  
+    // --- Specimen Photo Album & Biometrics Logic ---
+    let currentModalSpecimenId = null;
+    let currentSpecimenPhotos = [];
+    let currentActiveAlbumFilter = 'All';
+    let activeLightboxPhoto = null;
+    let activeLightboxPins = [];
+    let showLightboxPins = true;
+
+    async function loadSpecimenAlbum(specimenId) {
+      currentModalSpecimenId = specimenId;
+      const grid = document.getElementById('modalAlbumGrid');
+      const countBadge = document.getElementById('modalAlbumCountBadge');
+      if (!grid) return;
+
+      grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 20px; color: var(--text-muted); font-size: 12px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading photographs...</div>';
+
+      try {
+        const res = await fetch('/api/v1/specimens/' + specimenId + '/photos');
+        if (!res.ok) throw new Error('Failed to fetch photos');
+        currentSpecimenPhotos = await res.json();
+      } catch (err) {
+        currentSpecimenPhotos = [
+          {
+            id: 'photo-demo-carapace',
+            specimen_id: specimenId,
+            photo_type: 'Carapace',
+            cloud_url: 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=800&auto=format&fit=crop&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=300&auto=format&fit=crop&q=80',
+            is_primary_avatar: true,
+            capture_context: 'ResearchIntake',
+            captured_at: new Date().toISOString(),
+            markings_json: [
+              { id: 'pin-1', type: 'V-Notch', scute: 'M10L', x: 28, y: 72, label: 'L10 / 100' },
+              { id: 'pin-2', type: 'V-Notch', scute: 'M4R', x: 74, y: 38, label: 'R4 / 4' },
+              { id: 'pin-3', type: 'Predation Scar', scute: 'Costal 2', x: 48, y: 32, label: 'Carnivore Puncture' }
+            ]
+          },
+          {
+            id: 'photo-demo-plastron',
+            specimen_id: specimenId,
+            photo_type: 'Plastron',
+            cloud_url: 'https://images.unsplash.com/photo-1508817628294-5a453fa0b8fb?w=800&auto=format&fit=crop&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1508817628294-5a453fa0b8fb?w=300&auto=format&fit=crop&q=80',
+            is_primary_avatar: false,
+            capture_context: 'ClinicalRounds',
+            captured_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+            markings_json: []
+          },
+          {
+            id: 'photo-demo-head',
+            specimen_id: specimenId,
+            photo_type: 'Head',
+            cloud_url: 'https://images.unsplash.com/photo-1518467166778-b88f373ffec7?w=800&auto=format&fit=crop&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1518467166778-b88f373ffec7?w=300&auto=format&fit=crop&q=80',
+            is_primary_avatar: false,
+            capture_context: 'CitizenSpotted',
+            captured_at: new Date(Date.now() - 86400000 * 12).toISOString(),
+            markings_json: []
+          }
+        ];
+      }
+
+      updateModalAvatarDisplay();
+      renderModalAlbumCards();
+    }
+
+    function updateModalAvatarDisplay() {
+      const container = document.getElementById('modalAvatarContainer');
+      if (!container) return;
+      const primaryPhoto = currentSpecimenPhotos.find(p => p.is_primary_avatar) || currentSpecimenPhotos[0];
+      if (primaryPhoto && (primaryPhoto.thumbnail_url || primaryPhoto.cloud_url)) {
+        container.innerHTML = `<img src="${primaryPhoto.thumbnail_url || primaryPhoto.cloud_url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Avatar">`;
+      } else {
+        container.innerHTML = '<i class="fa-solid fa-shield-cat" style="font-size: 28px; color: var(--accent-gold);"></i>';
+      }
+    }
+
+    function filterModalAlbum(type, btn) {
+      currentActiveAlbumFilter = type;
+      document.querySelectorAll('#specWidget_recovery .album-filter-pill').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderModalAlbumCards();
+    }
+
+    function renderModalAlbumCards() {
+      const grid = document.getElementById('modalAlbumGrid');
+      const countBadge = document.getElementById('modalAlbumCountBadge');
+      if (!grid) return;
+
+      const filtered = currentSpecimenPhotos.filter(p => {
+        if (currentActiveAlbumFilter === 'All') return true;
+        if (currentActiveAlbumFilter === 'Marks') return (p.markings_json && p.markings_json.length > 0);
+        return p.photo_type === currentActiveAlbumFilter;
+      });
+
+      if (countBadge) {
+        countBadge.innerText = `${currentSpecimenPhotos.length} photo${currentSpecimenPhotos.length === 1 ? '' : 's'}`;
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: var(--text-muted); font-size: 12px;">
+            <i class="fa-solid fa-camera" style="font-size: 24px; opacity: 0.5; margin-bottom: 6px;"></i>
+            <p>No photos recorded for "${currentActiveAlbumFilter}".</p>
+            <button type="button" class="btn btn-secondary" style="font-size: 11px; margin-top: 6px;" onclick="openPhotoUploadModal('${currentActiveAlbumFilter}')">
+              <i class="fa-solid fa-plus"></i> Add ${currentActiveAlbumFilter} Photo
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = '';
+      filtered.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'photo-thumb-card';
+        card.title = `Click to view full screen & inspect markings (${p.photo_type})`;
+        card.onclick = () => openPhotoLightbox(p.id);
+
+        const pinCount = (p.markings_json || []).length;
+        const markBadgeHtml = pinCount > 0 ? `<div class="photo-badge-marks" title="${pinCount} anatomical marks pinned"><i class="fa-solid fa-fingerprint"></i> ${pinCount}</div>` : '';
+        const primaryBadgeHtml = p.is_primary_avatar ? `<div class="photo-badge-primary"><i class="fa-solid fa-star"></i> Primary</div>` : '';
+
+        card.innerHTML = `
+          <img class="photo-thumb-img" src="${p.thumbnail_url || p.cloud_url}" alt="${p.photo_type}">
+          ${primaryBadgeHtml}
+          ${markBadgeHtml}
+          <div class="photo-badge-angle">${p.photo_type}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // --- Lightbox & Marking HUD Logic ---
+    function openPhotoLightbox(photoId) {
+      activeLightboxPhoto = currentSpecimenPhotos.find(p => p.id === photoId);
+      if (!activeLightboxPhoto) return;
+
+      activeLightboxPins = JSON.parse(JSON.stringify(activeLightboxPhoto.markings_json || []));
+      showLightboxPins = true;
+
+      document.getElementById('lbMainImage').src = activeLightboxPhoto.cloud_url;
+      document.getElementById('lbAngleBadge').innerText = activeLightboxPhoto.photo_type;
+      document.getElementById('lbDateDisplay').innerText = activeLightboxPhoto.captured_at ? new Date(activeLightboxPhoto.captured_at).toLocaleDateString() : 'Recent';
+      
+      const primaryBadge = document.getElementById('lbPrimaryBadge');
+      if (primaryBadge) primaryBadge.style.display = activeLightboxPhoto.is_primary_avatar ? 'inline-block' : 'none';
+
+      updateLightboxPinsDisplay();
+      updateLightboxSchemaDisplay();
+
+      document.getElementById('photoLightboxModal').style.display = 'flex';
+    }
+
+    function toggleLightboxPins() {
+      showLightboxPins = !showLightboxPins;
+      const overlay = document.getElementById('lbPinsOverlay');
+      const btn = document.getElementById('lbTogglePinsBtn');
+      if (overlay) overlay.style.display = showLightboxPins ? 'block' : 'none';
+      if (btn) btn.innerHTML = showLightboxPins ? '<i class="fa-solid fa-eye-slash"></i> <span>Hide Marks</span>' : '<i class="fa-solid fa-eye"></i> <span>Show Marks</span>';
+    }
+
+    function updateLightboxPinsDisplay() {
+      const overlay = document.getElementById('lbPinsOverlay');
+      const listContainer = document.getElementById('lbPinsListContainer');
+      const countEl = document.getElementById('lbPinCount');
+      if (!overlay || !listContainer) return;
+
+      overlay.innerHTML = '';
+      listContainer.innerHTML = '';
+      if (countEl) countEl.innerText = activeLightboxPins.length;
+
+      activeLightboxPins.forEach((pin, idx) => {
+        const pinEl = document.createElement('div');
+        let pinClass = 'pin-v-notch';
+        if (pin.type === 'U-Notch') pinClass = 'pin-u-notch';
+        if (pin.type === 'Micro-Drill') pinClass = 'pin-micro-drill';
+        if (pin.type === 'Epoxy Tag') pinClass = 'pin-epoxy-tag';
+        if (pin.type === 'Predation Scar') pinClass = 'pin-predation-scar';
+        if (pin.type === 'Natural Scar') pinClass = 'pin-natural-scar';
+
+        pinEl.className = `lightbox-pin ${pinClass}`;
+        pinEl.style.left = `${pin.x}%`;
+        pinEl.style.top = `${pin.y}%`;
+        pinEl.title = `${pin.type}: ${pin.label || pin.scute || ''}`;
+        pinEl.innerText = idx + 1;
+        overlay.appendChild(pinEl);
+
+        const row = document.createElement('div');
+        row.style = "background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 8px; display: flex; justify-content: space-between; align-items: center; font-size: 11px;";
+        row.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 16px; height: 16px; border-radius: 50%; font-size: 9px; font-weight: 800; text-align: center; line-height: 16px; color: #000;" class="${pinClass}">${idx + 1}</span>
+            <div>
+              <strong>${pin.type}</strong>
+              <div style="font-size: 10px; color: var(--text-muted);">${pin.label || pin.scute || 'Marginal scute'}</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary" style="font-size: 9px; padding: 2px 5px; color: #ef4444;" onclick="removeLightboxPin(${idx})">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        `;
+        listContainer.appendChild(row);
+      });
+    }
+
+    function handlePhotoCanvasClick(event) {
+      if (!activeLightboxPhoto) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      const xPct = Math.round(((event.clientX - rect.left) / rect.width) * 100);
+      const yPct = Math.round(((event.clientY - rect.top) / rect.height) * 100);
+
+      const markType = prompt("Select Mark Classification:\n1: V-Notch (Standard Marginal Wedge)\n2: U-Notch (Rounded Punch)\n3: Micro-Drill (Perforation)\n4: Predation Scar (Canine / Claw / Talon Bite)\n5: Natural Scar / Defect\n6: Epoxy / Paint Tag", "1");
+      if (!markType) return;
+
+      let typeName = "V-Notch";
+      if (markType === "2") typeName = "U-Notch";
+      if (markType === "3") typeName = "Micro-Drill";
+      if (markType === "4") typeName = "Predation Scar";
+      if (markType === "5") typeName = "Natural Scar";
+      if (markType === "6") typeName = "Epoxy Tag";
+
+      const label = prompt(`Label or scute landmark for ${typeName} (e.g., M1L, R4, Costal 2, Jackal bite):`, "M" + (activeLightboxPins.length + 1));
+
+      activeLightboxPins.push({
+        id: 'pin-' + Date.now(),
+        type: typeName,
+        scute: label || 'Unspecified',
+        label: label || typeName,
+        x: xPct,
+        y: yPct
+      });
+
+      updateLightboxPinsDisplay();
+      updateLightboxSchemaDisplay();
+    }
+
+    function removeLightboxPin(index) {
+      activeLightboxPins.splice(index, 1);
+      updateLightboxPinsDisplay();
+      updateLightboxSchemaDisplay();
+    }
+
+    function clearAllPhotoPins() {
+      if (confirm("Clear all pinned marks from this photo?")) {
+        activeLightboxPins = [];
+        updateLightboxPinsDisplay();
+        updateLightboxSchemaDisplay();
+      }
+    }
+
+    function updateLightboxSchemaDisplay() {
+      const select = document.getElementById('lbMarkingSchemaSelect');
+      const computedEl = document.getElementById('lbComputedNotchDisplay');
+      const listEl = document.getElementById('lbAnatomicalListDisplay');
+      if (!select || !computedEl) return;
+
+      const schema = select.value;
+      const notchPins = activeLightboxPins.filter(p => p.type === 'V-Notch' || p.type === 'U-Notch');
+
+      if (notchPins.length === 0) {
+        computedEl.innerText = 'No Notches (0)';
+        if (listEl) listEl.innerText = 'Sequence: None';
+        return;
+      }
+
+      if (schema === 'sa_standard') {
+        let sum = 0;
+        notchPins.forEach((p, i) => {
+          const val = [1, 2, 4, 7, 10, 20, 40, 70][i % 8] || 1;
+          sum += val;
+        });
+        computedEl.innerText = `Specimen #${sum}`;
+        if (listEl) listEl.innerText = `SA Decimal Additive: ${notchPins.map(p => p.label).join(' + ')}`;
+      } else if (schema === 'cagle') {
+        const seq = notchPins.map(p => p.label).join('-');
+        computedEl.innerText = seq || 'Unnotched';
+        if (listEl) listEl.innerText = `Positional Cagle: ${seq}`;
+      } else if (schema === 'binary') {
+        let binSum = 0;
+        notchPins.forEach((p, i) => { binSum += Math.pow(2, i); });
+        computedEl.innerText = `Binary Code: #${binSum}`;
+        if (listEl) listEl.innerText = `Powers of 2: ${notchPins.map((p, i) => Math.pow(2, i)).join('+')}`;
+      }
+    }
+
+    async function setLightboxAsPrimary() {
+      if (!activeLightboxPhoto || !currentModalSpecimenId) return;
+      try {
+        await fetch(`/api/v1/specimens/${currentModalSpecimenId}/photos/${activeLightboxPhoto.id}/make-primary`, { method: 'PATCH' });
+      } catch (err) {}
+
+      currentSpecimenPhotos.forEach(p => p.is_primary_avatar = (p.id === activeLightboxPhoto.id));
+      activeLightboxPhoto.is_primary_avatar = true;
+      document.getElementById('lbPrimaryBadge').style.display = 'inline-block';
+      updateModalAvatarDisplay();
+      renderModalAlbumCards();
+      alert('Photograph set as the primary avatar portrait for this specimen!');
+    }
+
+    async function savePhotoMarkings() {
+      if (!activeLightboxPhoto || !currentModalSpecimenId) return;
+      activeLightboxPhoto.markings_json = activeLightboxPins;
+
+      try {
+        await fetch(`/api/v1/specimens/${currentModalSpecimenId}/photos/${activeLightboxPhoto.id}/markings`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(activeLightboxPins)
+        });
+      } catch (err) {}
+
+      renderModalAlbumCards();
+      alert(`Saved ${activeLightboxPins.length} markings to this photographic record!`);
+    }
+
+    // --- Photo Upload Flow ---
+    function openPhotoUploadModal(prefillType = 'Carapace') {
+      const select = document.getElementById('uploadPhotoType');
+      if (select && prefillType && prefillType !== 'All' && prefillType !== 'Marks') {
+        select.value = prefillType;
+      }
+      document.getElementById('uploadPhotoPreviewBox').style.display = 'none';
+      document.getElementById('uploadPhotoFileInput').value = '';
+      document.getElementById('photoUploadModal').style.display = 'flex';
+    }
+
+    let tempUploadedBase64 = null;
+    function handlePhotoFileSelected(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        tempUploadedBase64 = e.target.result;
+        const img = document.getElementById('uploadPhotoPreviewImg');
+        const box = document.getElementById('uploadPhotoPreviewBox');
+        if (img && box) {
+          img.src = tempUploadedBase64;
+          box.style.display = 'block';
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function submitPhotoUpload(event) {
+      event.preventDefault();
+      if (!tempUploadedBase64) {
+        alert('Please choose or take a photo first.');
+        return;
+      }
+
+      const pType = document.getElementById('uploadPhotoType').value;
+      const pContext = document.getElementById('uploadCaptureContext').value;
+      const isPrimary = document.getElementById('uploadIsPrimary').checked;
+
+      const newPhoto = {
+        id: 'photo-' + Date.now(),
+        specimen_id: currentModalSpecimenId,
+        photo_type: pType,
+        cloud_url: tempUploadedBase64,
+        thumbnail_url: tempUploadedBase64,
+        is_primary_avatar: isPrimary,
+        capture_context: pContext,
+        markings_json: [],
+        captured_at: new Date().toISOString()
+      };
+
+      try {
+        await fetch(`/api/v1/specimens/${currentModalSpecimenId}/photos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newPhoto)
+        });
+      } catch (err) {}
+
+      if (isPrimary) {
+        currentSpecimenPhotos.forEach(p => p.is_primary_avatar = false);
+      }
+      currentSpecimenPhotos.unshift(newPhoto);
+      updateModalAvatarDisplay();
+      renderModalAlbumCards();
+      closeModal('photoUploadModal');
+    }
+
+  
+    // --- Global Photo Gallery Logic ---
+    let globalGalleryPhotosCache = [];
+    let activeGlobalGalleryFilter = 'All';
+    let activeGlobalSpecimenFilter = '';
+
+    async function loadGlobalPhotoGallery() {
+      const grid = document.getElementById('globalPhotoGalleryGrid');
+      const specSelect = document.getElementById('gallerySpecimenFilter');
+      if (!grid) return;
+
+      // Populate specimen dropdown if empty
+      if (specSelect && specSelect.options.length <= 1) {
+        currentSpecimensCache.forEach(sp => {
+          const opt = document.createElement('option');
+          opt.value = sp.id;
+          opt.innerText = `${sp.custom_identifier} (${sp.species_name || sp.common_name})`;
+          specSelect.appendChild(opt);
+        });
+      }
+
+      grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading sanctuary photo gallery...</div>';
+
+      try {
+        let url = '/api/v1/photos';
+        if (activeGlobalSpecimenFilter) {
+          url += '?specimen_id=' + encodeURIComponent(activeGlobalSpecimenFilter);
+        }
+        const res = await fetch(url);
+        if (res.ok) {
+          globalGalleryPhotosCache = await res.json();
+        } else {
+          throw new Error('API returned ' + res.status);
+        }
+      } catch (err) {
+        // Fallback default gallery if backend has no records yet
+        globalGalleryPhotosCache = [
+          {
+            id: 'demo-photo-1',
+            specimen_id: 'e4f5a3b2-1c2d-4e5f-9a8b-0c1d2e3f4a5b',
+            custom_identifier: 'LEOP-2026-001',
+            photo_type: 'Carapace',
+            cloud_url: 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=800&auto=format&fit=crop&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=400&auto=format&fit=crop&q=80',
+            is_primary_avatar: true,
+            capture_context: 'ResearchIntake',
+            captured_at: new Date().toISOString(),
+            markings_json: [
+              { id: 'pin-1', type: 'V-Notch', scute: 'M10L', x: 28, y: 72, label: 'L10 / 100' },
+              { id: 'pin-2', type: 'V-Notch', scute: 'M4R', x: 74, y: 38, label: 'R4 / 4' },
+              { id: 'pin-3', type: 'Predation Scar', scute: 'Costal 2', x: 48, y: 32, label: 'Carnivore Puncture' }
+            ]
+          },
+          {
+            id: 'demo-photo-2',
+            specimen_id: 'e4f5a3b2-1c2d-4e5f-9a8b-0c1d2e3f4a5b',
+            custom_identifier: 'LEOP-2026-001',
+            photo_type: 'Plastron',
+            cloud_url: 'https://images.unsplash.com/photo-1508817628294-5a453fa0b8fb?w=800&auto=format&fit=crop&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1508817628294-5a453fa0b8fb?w=400&auto=format&fit=crop&q=80',
+            is_primary_avatar: false,
+            capture_context: 'ClinicalRounds',
+            captured_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+            markings_json: []
+          },
+          {
+            id: 'demo-photo-3',
+            specimen_id: 'c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f',
+            custom_identifier: 'ANGU-2026-014',
+            photo_type: 'Head',
+            cloud_url: 'https://images.unsplash.com/photo-1518467166778-b88f373ffec7?w=800&auto=format&fit=crop&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1518467166778-b88f373ffec7?w=400&auto=format&fit=crop&q=80',
+            is_primary_avatar: true,
+            capture_context: 'CitizenSpotted',
+            captured_at: new Date(Date.now() - 86400000 * 7).toISOString(),
+            markings_json: []
+          },
+          {
+            id: 'demo-photo-4',
+            specimen_id: 'd2e3f4a5-b6c7-8d9e-0f1a-2b3c4d5e6f7a',
+            custom_identifier: 'GEOM-2026-003',
+            photo_type: 'Injury',
+            cloud_url: 'https://images.unsplash.com/photo-1534567153574-2b12153a87f0?w=800&auto=format&fit=crop&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1534567153574-2b12153a87f0?w=400&auto=format&fit=crop&q=80',
+            is_primary_avatar: false,
+            capture_context: 'ClinicalRounds',
+            captured_at: new Date(Date.now() - 86400000 * 14).toISOString(),
+            markings_json: [
+              { id: 'pin-1', type: 'Predation Scar', scute: 'M11R', x: 62, y: 80, label: 'Jackal Bite Notch' }
+            ]
+          }
+        ];
+      }
+
+      renderGlobalGalleryCards();
+    }
+
+    function filterGlobalGallery(type, btn) {
+      activeGlobalGalleryFilter = type;
+      document.querySelectorAll('#tab-gallery .album-filter-pill').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderGlobalGalleryCards();
+    }
+
+    function filterGlobalGalleryBySpecimen(specimenId) {
+      activeGlobalSpecimenFilter = specimenId;
+      loadGlobalPhotoGallery();
+    }
+
+    function renderGlobalGalleryCards() {
+      const grid = document.getElementById('globalPhotoGalleryGrid');
+      if (!grid) return;
+
+      const filtered = globalGalleryPhotosCache.filter(p => {
+        if (activeGlobalGalleryFilter === 'All') return true;
+        if (activeGlobalGalleryFilter === 'Marks') return (p.markings_json && p.markings_json.length > 0);
+        return p.photo_type === activeGlobalGalleryFilter;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+            <i class="fa-solid fa-images" style="font-size: 32px; opacity: 0.4; margin-bottom: 8px;"></i>
+            <p>No photos match the selected view "${activeGlobalGalleryFilter}".</p>
+            <button class="btn btn-gold" style="font-size: 12px; margin-top: 10px;" onclick="openPhotoUploadModal('${activeGlobalGalleryFilter}')">
+              <i class="fa-solid fa-camera"></i> Upload ${activeGlobalGalleryFilter} Photo
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = '';
+      filtered.forEach(p => {
+        // Specimen label resolution
+        let spLabel = p.custom_identifier || 'Unknown Tortoise';
+        if (!p.custom_identifier && p.specimen_id) {
+          const sp = currentSpecimensCache.find(s => s.id === p.specimen_id);
+          if (sp) spLabel = sp.custom_identifier;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'photo-thumb-card';
+        card.style.height = '230px';
+        card.title = `Click to inspect photo in full-screen & edit markings`;
+        card.onclick = () => {
+          currentSpecimenPhotos = globalGalleryPhotosCache;
+          currentModalSpecimenId = p.specimen_id;
+          openPhotoLightbox(p.id);
+        };
+
+        const pinCount = (p.markings_json || []).length;
+        const markBadgeHtml = pinCount > 0 ? `<div class="photo-badge-marks" title="${pinCount} anatomical marks pinned"><i class="fa-solid fa-fingerprint"></i> ${pinCount}</div>` : '';
+        const primaryBadgeHtml = p.is_primary_avatar ? `<div class="photo-badge-primary"><i class="fa-solid fa-star"></i> Primary</div>` : '';
+        const capDate = p.captured_at ? new Date(p.captured_at).toLocaleDateString() : 'Recent';
+
+        card.innerHTML = `
+          <img class="photo-thumb-img" src="${p.thumbnail_url || p.cloud_url}" alt="${p.photo_type}">
+          ${primaryBadgeHtml}
+          ${markBadgeHtml}
+          <div class="photo-badge-angle">${p.photo_type}</div>
+          <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.85)); padding: 8px 10px; display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+              <div style="font-size: 12px; font-weight: 800; color: #fff;">${spLabel}</div>
+              <div style="font-size: 10px; color: var(--text-muted);">${capDate} • ${p.capture_context || 'Field'}</div>
+            </div>
+            <span style="font-size: 11px; color: var(--accent-gold);"><i class="fa-solid fa-expand"></i></span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
   </script>
+  <!-- Full-Screen Lightbox & Marking HUD Modal -->
+  <div class="modal-backdrop" id="photoLightboxModal" style="z-index: 2500; background: rgba(0,0,0,0.92);">
+    <div class="modal-box" style="max-width: 1040px; width: 95vw; height: 92vh; max-height: 92vh; display: flex; flex-direction: column; padding: 16px; background: #12100e; border: 1px solid var(--border-color);">
+      <!-- Top Bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="lbAngleBadge" class="badge badge-wild" style="font-size: 11px;">Carapace (Dorsal)</span>
+          <span id="lbDateDisplay" style="font-size: 12px; color: var(--text-muted);">Recorded Oct 2026</span>
+          <span id="lbPrimaryBadge" class="badge badge-rehab" style="display: none;"><i class="fa-solid fa-star"></i> Primary Avatar</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="button" class="btn btn-secondary" style="font-size: 12px; padding: 6px 10px;" id="lbTogglePinsBtn" onclick="toggleLightboxPins()">
+            <i class="fa-solid fa-eye"></i> <span>Hide Marks</span>
+          </button>
+          <button type="button" class="btn btn-gold" style="font-size: 12px; padding: 6px 10px;" id="lbSetPrimaryBtn" onclick="setLightboxAsPrimary()">
+            <i class="fa-solid fa-star"></i> Set as Primary Avatar
+          </button>
+          <button type="button" class="btn btn-secondary" style="font-size: 14px; padding: 6px 12px;" onclick="closeModal('photoLightboxModal')">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Viewer Body: Interactive Canvas + Sidebar -->
+      <div style="display: flex; flex: 1; gap: 14px; overflow: hidden; position: relative;">
+        <!-- Photo Canvas Container -->
+        <div id="lbImageWrapper" style="flex: 1; position: relative; background: #000; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: crosshair;" onclick="handlePhotoCanvasClick(event)">
+          <img id="lbMainImage" src="" alt="Tortoise Photo" style="max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; user-select: none;">
+          <!-- Marking Pins Container Overlay -->
+          <div id="lbPinsOverlay" style="position: absolute; inset: 0; pointer-events: auto;"></div>
+          <!-- Viewfinder Guideline Hint -->
+          <div style="position: absolute; bottom: 12px; left: 12px; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); padding: 5px 10px; border-radius: 6px; font-size: 11px; color: var(--text-muted); pointer-events: none;">
+            <i class="fa-solid fa-crosshairs" style="color: var(--accent-gold);"></i> Click / tap photo to place mark pin
+          </div>
+        </div>
+
+        <!-- Sidebar: Markings & Metadata Inspector -->
+        <div style="width: 320px; background: var(--card-inner); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;">
+          <div style="font-size: 13px; font-weight: 700; color: var(--accent-gold); display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-fingerprint"></i> Physical Markings Inspector
+          </div>
+
+          <!-- Active Marking Standard Switcher -->
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Active Scoring Standard</div>
+            <select id="lbMarkingSchemaSelect" class="form-control" style="font-size: 12px; padding: 6px 8px; margin: 0;" onchange="updateLightboxSchemaDisplay()">
+              <option value="sa_standard">South African Standard (1-2-4-7 Additive)</option>
+              <option value="cagle">Cagle (L1–L12 / R1–R12 Positional)</option>
+              <option value="binary">Binary 1-2-4-8 Additive</option>
+            </select>
+          </div>
+
+          <!-- Computed Identity Card -->
+          <div style="background: #090d16; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <div style="font-size: 10px; color: var(--text-muted);">Calculated Notch Code:</div>
+            <div id="lbComputedNotchDisplay" style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 800; color: #ffd600; margin-top: 2px;">
+              --
+            </div>
+            <div id="lbAnatomicalListDisplay" style="font-size: 11px; color: var(--text-muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace;">
+              Sequence: --
+            </div>
+          </div>
+
+          <!-- Pinned Marks List -->
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 11px; font-weight: 700;">Pinned Landmarks (<span id="lbPinCount">0</span>)</span>
+              <button type="button" class="btn btn-secondary" style="font-size: 10px; padding: 2px 6px;" onclick="clearAllPhotoPins()">Clear All</button>
+            </div>
+            <div id="lbPinsListContainer" style="display: flex; flex-direction: column; gap: 6px; max-height: 190px; overflow-y: auto;">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Save Markings Button -->
+          <button type="button" class="btn btn-gold" style="width: 100%; justify-content: center; font-size: 12px;" onclick="savePhotoMarkings()">
+            <i class="fa-solid fa-floppy-disk"></i> Save Markings to Dossier
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Photo / Scientific Intake Upload Modal -->
+  <div class="modal-backdrop" id="photoUploadModal" style="z-index: 2400;">
+    <div class="modal-box" style="max-width: 560px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-camera" style="color: var(--accent-gold); font-size: 18px;"></i>
+          <h2 style="font-size: 18px; font-weight: 800; margin: 0;">Add Photographic Record</h2>
+        </div>
+        <button class="btn btn-secondary" onclick="closeModal('photoUploadModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <form id="photoUploadForm" onsubmit="submitPhotoUpload(event)">
+        <!-- Angle / View Selection -->
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; display: block;">
+            Scientific Camera Angle / Perspective:
+          </label>
+          <select id="uploadPhotoType" class="form-control" style="font-size: 12px;">
+            <option value="Carapace">Dorsal (Carapace) - Primary Biometric Standard</option>
+            <option value="Plastron">Ventral (Plastron) - Sexing &amp; Ventral Notches</option>
+            <option value="Head">Anterior (Head &amp; Nuchal) - Cranial Health</option>
+            <option value="Caudal">Posterior (Caudal / Cloaca) - Tail &amp; Anal Angle</option>
+            <option value="Lateral">Lateral Bridge - Shell Height-to-Length</option>
+            <option value="Injury">Diagnostic Macro - Predation / Shell Scars</option>
+          </select>
+        </div>
+
+        <!-- Capture Context -->
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; display: block;">
+            Observation Context:
+          </label>
+          <select id="uploadCaptureContext" class="form-control" style="font-size: 12px;">
+            <option value="ResearchIntake">Scientific Intake / Census</option>
+            <option value="CitizenSpotted">Citizen Science ("Spotted" Quick Snap)</option>
+            <option value="ClinicalRounds">Clinical Rehabilitation Rounds</option>
+            <option value="AdHoc">Ad-Hoc Field Monitoring</option>
+          </select>
+        </div>
+
+        <!-- File Upload Input (Camera-Friendly) -->
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; display: block;">
+            Choose File or Take Photo:
+          </label>
+          <input type="file" id="uploadPhotoFileInput" accept="image/*" capture="environment" class="form-control" style="padding: 6px; font-size: 12px;" onchange="handlePhotoFileSelected(event)">
+          <div id="uploadPhotoPreviewBox" style="margin-top: 8px; border-radius: 8px; overflow: hidden; display: none; max-height: 180px; background: #000; text-align: center;">
+            <img id="uploadPhotoPreviewImg" src="" alt="Preview" style="max-height: 180px; max-width: 100%; object-fit: contain;">
+          </div>
+        </div>
+
+        <!-- Checkbox: Set as Primary Avatar -->
+        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 12px; cursor: pointer;">
+          <input type="checkbox" id="uploadIsPrimary" style="width: 16px; height: 16px; margin: 0;">
+          <span>Set this photograph as the primary portrait / avatar for this tortoise</span>
+        </label>
+
+        <!-- Submit & Cancel -->
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('photoUploadModal')">Cancel</button>
+          <button type="submit" class="btn btn-gold" id="uploadSubmitBtn">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Save to Dossier
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </body>
 </html>

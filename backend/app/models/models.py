@@ -20,7 +20,7 @@ class SpeciesTaxonomy(Base):
     iucn_status = Column(String(10), default="LC")  # CR, EN, VU, NT, LC
     pivotal_temp_c = Column(Float, default=30.8)   # TSD Pivotal Temperature
 
-    specimens = relationship("Specimen", back_populates="taxonomy")
+    specimens = relationship("SpeciesTaxonomy", back_populates="taxonomy") if False else relationship("Specimen", back_populates="taxonomy")
 
 
 class Specimen(Base):
@@ -35,6 +35,7 @@ class Specimen(Base):
     notch_code = Column(String(50), nullable=True)
     sex = Column(String(20), default="Undetermined")  # Male | Female | Juvenile | Undetermined
     status = Column(String(30), default="Wild")       # Wild | Intake | InRehab | Breeding | Deceased | Released
+    primary_photo_id = Column(String(36), nullable=True)
 
     # Studbook Pedigree
     dam_id = Column(String(36), ForeignKey("specimens.id"), nullable=True)
@@ -187,8 +188,13 @@ class PhotoRecord(Base):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     specimen_id = Column(String(36), ForeignKey("specimens.id"), nullable=True, index=True)
     inspection_id = Column(String(36), ForeignKey("health_inspections.id"), nullable=True)
-    photo_type = Column(String(30), default="Carapace")  # Carapace | Plastron | Head | Injury | Radiograph | Candling
+    photo_type = Column(String(30), default="Carapace")  # Carapace | Plastron | Head | Caudal | Lateral | Injury | Candling
     cloud_url = Column(String(500), nullable=False)
+    thumbnail_url = Column(String(500), nullable=True)
+    is_primary_avatar = Column(Boolean, default=False)
+    capture_context = Column(String(40), default="ResearchIntake")  # CitizenSpotted | ResearchIntake | ClinicalRounds | AdHoc
+    markings_json = Column(JSON, nullable=True)  # List of pins: [{id, type, scute_landmark, x_pct, y_pct, label, schema_values}]
+    exif_metadata = Column(JSON, nullable=True)  # Camera, GPS, perpendicularity angle
     feature_descriptors = Column(Text, nullable=True)    # Serialized scute keypoint descriptors
     captured_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
